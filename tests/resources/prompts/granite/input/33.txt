@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that defines a PyTorch neural network, trains it on a small dataset, and compares the training speed before and after applying `torch.compile()`.
+
+
+Answer:

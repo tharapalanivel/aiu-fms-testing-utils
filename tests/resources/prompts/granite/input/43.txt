@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement batch gradient descent using JAX's automatic differentiation (`jax.grad`) to optimize a linear regression model. Compare the model's performance with stochastic gradient descent (SGD).
+
+
+Answer:

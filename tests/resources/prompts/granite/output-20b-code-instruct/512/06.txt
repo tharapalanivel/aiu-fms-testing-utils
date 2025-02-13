@@ -1,0 +1,105 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a linked list in C++ with support for inserting a node at any position and deleting a node by value.
+
+
+Answer:
+```
+#include <iostream>
+
+using namespace std;
+
+struct Node {
+    int data;
+    Node* next;
+};
+
+class LinkedList {
+    private:
+        Node* head;
+        Node* tail;
+        int size;
+
+    public:
+        LinkedList() {
+            head = NULL;
+            tail = NULL;
+            size = 0;
+        }
+
+        void insert(int data, int position) {
+            Node* newNode = new Node();
+            newNode->data = data;
+            newNode->next = NULL;
+
+            if (position == 0) {
+                newNode->next = head;
+                head = newNode;
+            } else {
+                Node* prevNode = head;
+                for (int i = 0; i < position - 1; i++) {
+                    prevNode = prevNode->next;
+                }
+                newNode->next = prevNode->next;
+                prevNode->next = newNode;
+            }
+
+            if (position == size) {
+                tail = newNode;
+            }
+
+            size++;
+        }
+
+        void remove(int data) {
+            Node* prevNode = head;
+            Node* currentNode = head;
+
+            while (currentNode != NULL) {
+                if (currentNode->data == data) {
+                    if (currentNode == head) {
+                        head = currentNode->next;
+                    } else if (currentNode == tail) {
+                        tail = prevNode;
+                        tail->next = NULL;
+                    } else {
+                        prevNode->next = currentNode->next;
+                    }
+                    delete currentNode;
+                    size--;
+                    break;
+                }
+                prevNode = currentNode;
+                currentNode = currentNode->next;
+            }
+        }
+
+        void print() {
+            Node* currentNode = head;
+            while (currentNode != NULL) {
+                cout << currentNode->data << " ";
+                currentNode = currentNode->next;
+            }
+            cout << endl;
+        }
+};
+
+int main() {
+    LinkedList list;
+    list.insert(1, 0);
+    list.insert(2, 0);
+    list.insert(3, 1);
+    list.insert(4, 3);
+    list.insert(5, 4);
+    list.insert(6, 5);
+    list.insert(7, 6);
+    list.insert(8, 7);
+    list.insert(9, 8);
+    list.insert(10, 9);
+    list.print();
+    list.remove(5);
+    list.print();
+   

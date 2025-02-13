@@ -1,0 +1,16 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the key differences between a parliamentary and a presidential system of government
+
+### Response:
+
+A parliamentary system of government is one in which the executive branch is chosen from and accountable to the legislature, while a presidential system is one in which the executive branch is directly elected by the people and operates independently of the legislature.
+
+In a parliamentary system, the head of government is typically the prime minister, who is selected by the political party or coalition that holds the majority of seats in the legislature. The prime minister then appoints members of the cabinet, who are also members of the legislature. This system emphasizes the importance of the legislature and the role of political parties in the governance of the country.
+
+In contrast, a presidential system features a directly elected president who serves as both the head of state and the head of government. The president is not required to be a member of the legislature, and the cabinet is appointed by the president rather than being selected from the legislature. This system emphasizes the role of the president as the leader of the country and the head of the executive branch.
+
+Another key difference between the two systems is the relationship between the executive and legislative branches. In a parliamentary system, the executive branch is accountable to the legislature, and the prime minister and cabinet are required to maintain the support of the majority of the legislators in order to remain in office. In a presidential system, the president has the power to veto legislation, and the legislature can only override the veto with a two-thirds majority.
+
+Overall, the main difference between a parliamentary and a presidential system of government is the way in which the executive branch is selected and the relationship between the executive and legislative branches. While both systems have their advantages and disadvantages, they reflect different approaches to the organization of government and the distribution of power within a political system.

@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a context manager in Python that logs the start and end time of any block of code executed within its context.
+
+
+Answer:
+Here's how you can implement a context manager that logs the start and end time of any block of code executed within its context:
+
+```python
+import time
+
+class TimeLogger:
+    def __enter__(self):
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        end_time = time.time()
+        elapsed_time = end_time - self.start_time
+        print(f"Elapsed time: {elapsed_time} seconds")
+```<|endoftext|>

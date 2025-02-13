@@ -1,0 +1,100 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a binary search tree (BST) in C++ with methods for inserting, searching, and deleting nodes, ensuring that the tree remains balanced after deletions.
+
+
+Answer:
+```
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *left;
+    Node *right;
+
+    Node(int data) {
+        this->data = data;
+        this->left = NULL;
+        this->right = NULL;
+    }
+};
+
+class BST {
+private:
+    Node *root;
+
+    Node *insertNode(Node *node, int data) {
+        if (node == NULL) {
+            return new Node(data);
+        } else {
+            if (data < node->data) {
+                node->left = insertNode(node->left, data);
+            } else if (data > node->data) {
+                node->right = insertNode(node->right, data);
+            } else {
+                return node;
+            }
+        }
+
+        return node;
+    }
+
+    Node *searchNode(Node *node, int data) {
+        if (node == NULL) {
+            return NULL;
+        } else {
+            if (data < node->data) {
+                return searchNode(node->left, data);
+            } else if (data > node->data) {
+                return searchNode(node->right, data);
+            } else {
+                return node;
+            }
+        }
+    }
+
+    Node *deleteNode(Node *node, int data) {
+        if (node == NULL) {
+            return NULL;
+        } else {
+            if (data < node->data) {
+                node->left = deleteNode(node->left, data);
+            } else if (data > node->data) {
+                node->right = deleteNode(node->right, data);
+            } else {
+                if (node->left == NULL) {
+                    Node *temp = node->right;
+                    delete node;
+                    return temp;
+                } else if (node->right == NULL) {
+                    Node *temp = node->left;
+                    delete node;
+                    return temp;
+                } else {
+                    Node *temp = node->right;
+                    while (temp->left != NULL) {
+                        temp = temp->left;
+                    }
+                    node->data = temp->data;
+                    node->right = deleteNode(node->right, temp->data);
+                }
+            }
+        }
+
+        return node;
+    }
+
+public:
+    BST() {
+        this->root = NULL;
+    }
+
+    void insert(int data) {
+       

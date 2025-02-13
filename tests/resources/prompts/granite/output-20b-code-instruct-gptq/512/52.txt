@@ -1,0 +1,99 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a C++ class for a circular queue (circular buffer) with methods to `enqueue` and `dequeue`, and check if the queue is full or empty, ensuring proper memory management.
+
+
+Answer:
+```cpp
+#include <iostream>
+#include <string>
+
+class CircularQueue {
+private:
+    int* queue;
+    int front;
+    int back;
+    int size;
+
+public:
+    CircularQueue(int size) {
+        this->size = size;
+        queue = new int[size];
+        front = -1;
+        back = -1;
+    }
+
+    void enqueue(int value) {
+        if (isFull()) {
+            std::cout << "Queue is full" << std::endl;
+            return;
+        }
+
+        if (front == -1) {
+            front = 0;
+            back = 0;
+        } else if (back == size - 1) {
+            back = 0;
+        } else {
+            back++;
+        }
+
+        queue[back] = value;
+    }
+
+    int dequeue() {
+        if (isEmpty()) {
+            std::cout << "Queue is empty" << std::endl;
+            return -1;
+        }
+
+        int value = queue[front];
+
+        if (front == back) {
+            front = -1;
+            back = -1;
+        } else if (front == size - 1) {
+            front = 0;
+        } else {
+            front++;
+        }
+
+        return value;
+    }
+
+    bool isFull() {
+        return (front == 0 && back == size - 1) || (front == back + 1);
+    }
+
+    bool isEmpty() {
+        return front == -1;
+    }
+};
+
+int main() {
+    CircularQueue queue(5);
+
+    queue.enqueue(1);
+    queue.enqueue(2);
+    queue.enqueue(3);
+    queue.enqueue(4);
+    queue.enqueue(5);
+
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+
+    queue.enqueue(6);
+    queue.enqueue(7);
+    queue.enqueue(8);
+
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+    std::cout << queue.dequeue() << std::endl;
+
+    return 0

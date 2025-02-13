@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain some popular greetings in Spanish.
+
+### Response:
+
+Hello! Spanish greetings are an important part of the culture and can vary depending on the time of day. Here are some popular greetings in Spanish:
+
+* "Hola" (OH-lah) - This is a general greeting that can be used at any time of day. It's similar to "hello" in English.
+* "Buenos días" (BWEH-nohs DEE-ahs) - This means "good morning" and is used until around lunchtime.
+* "Buenas tardes" (BWEH-nahs TAR-dehs) - This means "good afternoon" and is used from around lunchtime until early evening.
+* "Buenas noches" (BWEH-nahs NOH-chehs) - This means "good night" and is used in the evening or when parting ways for the night.
+
+I hope this helps! If you have any more questions, feel free to ask.

@@ -1,0 +1,57 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python program that performs post-training quantization on a neural network and compares the accuracy of the quantized model with the original floating-point model.
+
+
+Answer:
+```python
+import tensorflow as tf
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.keras.utils import to_categorical
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+import numpy as np
+import argparse
+import os
+
+# construct the argument parser and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-d", "--dataset", required=True, help="path to input dataset")
+ap.add_argument("-m", "--model", type=str, default="mobilenet", help="name of pre-trained model")
+ap.add_argument("-q", "--quantize", type=int, default=100, help="number of images to use for quantization")
+args = vars(ap.parse_args())
+
+# load the MobileNetV2 network, ensuring the head FC layer sets are left off
+model = MobileNetV2(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
+
+# loop over the layers in the base model and freeze them so they will *not* be updated during the first training process
+for layer in model.layers:
+    layer.trainable = False
+
+# load the new dataset
+print("[INFO] loading images...")
+data = []
+labels = []
+
+# loop over the input images
+for imagePath in os.listdir(args["dataset"]):
+    # extract the class label from the filename
+    label = imagePath.split(os.path.sep)[-2]
+
+    # load the input image (224x224) and preprocess it
+    image = load_img(os.path.join(args["dataset"], imagePath), target_size=(224, 224))
+    image = img_to_array(image)
+    image = preprocess_input(image)
+
+    # update the data and labels lists, respectively
+    data.append(image)
+    labels.append(label)
+
+# convert the data and labels

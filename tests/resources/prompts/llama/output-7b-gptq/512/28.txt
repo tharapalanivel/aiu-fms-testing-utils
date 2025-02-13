@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the difference between a simile and a metaphore, with examples
+
+### Response:
+Thank you for reaching out! A simile and a metaphor are both literary devices used to compare two things, but they differ in their structure and meaning.
+
+A simile is a comparison made between two things using the words "like" or "as." For example, "He ran like a cheetah" or "She sings as sweetly as a bird." The comparison is made directly and explicitly, leaving no room for interpretation.
+
+On the other hand, a metaphor is a comparison made between two things without using the words "like" or "as." For example, "He is a cheetah in speed" or "Her voice is a bird's song." The comparison is made indirectly, relying on the reader's understanding to make the connection.
+
+While both similes and metaphors are used to create vivid imagery and convey complex ideas, they serve different purposes and have different effects on the reader. Similes are often used to create a more concrete and specific image, while metaphors are used to create a more abstract and symbolic image.
+
+I hope this explanation helps clarify the difference between similes and metaphors for you! Let me know if you have any further questions.

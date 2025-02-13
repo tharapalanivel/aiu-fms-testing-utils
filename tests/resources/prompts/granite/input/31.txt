@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that fine-tunes a pre-trained BERT model from the HuggingFace library on a text classification dataset, such as the IMDb movie reviews dataset.
+
+
+Answer:

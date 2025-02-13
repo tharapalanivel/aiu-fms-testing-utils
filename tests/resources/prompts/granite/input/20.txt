@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a basic stack data structure in C that supports `push`, `pop`, and `peep` operations. The stack should dynamically resize when more elements are added beyond its initial capacity.
+
+
+Answer:

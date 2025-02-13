@@ -1,0 +1,27 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an Assembly program that multiplies two integers provided as input and stores the result in a register. Use the x86 architecture.
+
+
+Answer:
+```assembly
+section .data
+    num1 dd 5
+    num2 dd 10
+
+section .text
+    global _start
+
+_start:
+    mov eax, [num1]
+    mov ebx, [num2]
+    imul eax, ebx
+    mov [result], eax
+
+    ; exit the program
+    mov eax, 1
+    int 0x80
+```<|endoftext|>

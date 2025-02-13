@@ -1,0 +1,17 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a C++ template function that swaps the values of two variables, regardless of their data type.
+
+
+Answer:
+```cpp
+template <typename T>
+void swap(T& a, T& b) {
+    T temp = a;
+    a = b;
+    b = temp;
+}
+```<|endoftext|>

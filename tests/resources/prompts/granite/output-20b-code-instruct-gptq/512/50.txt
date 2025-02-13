@@ -1,0 +1,25 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement numerical integration using Simpson's rule in Julia to compute the definite integral of a function over a given interval.
+
+
+Answer:
+```julia
+function simpsons_rule(f, a, b, n)
+    h = (b - a) / n
+    x = a + h
+    s = f(a) + f(b)
+    for i in 1:n-1
+        if i % 2 == 0
+            s += 4 * f(x)
+        else
+            s += 2 * f(x)
+        end
+        x += h
+    end
+    return h / 3 * s
+end
+```<|endoftext|>

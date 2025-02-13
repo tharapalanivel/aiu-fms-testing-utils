@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a custom exception class in Python called `InvalidAgeError`. Write a function that raises this exception when an input age is less than 0 or greater than 120, with a message explaining the error.
+
+
+Answer:
+Here's how you can implement this:
+
+```python
+class InvalidAgeError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+def validate_age(age):
+    if age < 0 or age > 120:
+        raise InvalidAgeError("Age must be between 0 and 120.")
+```
+
+This implementation creates a custom exception class called `InvalidAgeError` that inherits from the built-in `Exception` class. The `__init__` method of the custom exception class takes a message as an argument and passes it to the parent class's `__init__` method.
+
+The `validate_age` function takes an age as an argument and raises an `InvalidAgeError` if the age is less than 0 or greater than 120.<|endoftext|>

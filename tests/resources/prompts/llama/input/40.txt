@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Compare the representation of dystopia in George Orwell's `1984`, Aldous Huxley's `Brave New World`, and Yevgeny Zamyatin's `We`
+
+### Response:

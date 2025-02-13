@@ -1,0 +1,45 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Go function that reads a JSON file containing an array of numbers and returns the sum of all numbers.
+
+
+Answer:
+```
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+)
+
+func main() {
+	// Read the JSON file
+	jsonFile, err := ioutil.ReadFile("numbers.json")
+	if err != nil {
+		fmt.Println("Error reading JSON file:", err)
+		return
+	}
+
+	// Unmarshal the JSON data into a Go slice
+	var numbers []int
+	if err := json.Unmarshal(jsonFile, &numbers); err != nil {
+		fmt.Println("Error unmarshalling JSON:", err)
+		return
+	}
+
+	// Calculate the sum of the numbers
+	sum := 0
+	for _, number := range numbers {
+		sum += number
+	}
+
+	fmt.Println("Sum of numbers:", sum)
+}
+```
+
+Explanation:
+In this code, we first read the JSON file using ioutil.ReadFile(). Then, we unmarshal the JSON data into a Go slice using json.Unmarshal(). Finally, we iterate over the slice and add each number to the sum. Finally, we print the sum using fmt.Println().<|endoftext|>

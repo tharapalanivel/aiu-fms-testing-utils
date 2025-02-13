@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Use JAX to implement a 2D convolution operation manually, without using any deep learning library. Write a function that convolves a 2D image with a given kernel and returns the resulting feature map.
+
+
+Answer:

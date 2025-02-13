@@ -1,0 +1,64 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a C++ class for a circular queue (circular buffer) with methods to `enqueue` and `dequeue`, and check if the queue is full or empty, ensuring proper memory management.
+
+
+Answer:
+Here's an example implementation of a circular queue in C++:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename T>
+class CircularQueue {
+public:
+    CircularQueue(int capacity) : capacity_(capacity), front_(0), rear_(0) {
+        data_ = new T[capacity_];
+    }
+
+    ~CircularQueue() {
+        delete[] data_;
+    }
+
+    void enqueue(const T& value) {
+        if (is_full()) {
+            throw std::runtime_error("Queue is full");
+        }
+        data_[rear_] = value;
+        rear_ = (rear_ + 1) % capacity_;
+    }
+
+    T dequeue() {
+        if (is_empty()) {
+            throw std::runtime_error("Queue is empty");
+        }
+        T value = data_[front_];
+        front_ = (front_ + 1) % capacity_;
+        return value;
+    }
+
+    bool is_full() const {
+        return (rear_ + 1) % capacity_ == front_;
+    }
+
+    bool is_empty() const {
+        return front_ == rear_;
+    }
+
+private:
+    int capacity_;
+    int front_;
+    int rear_;
+    T* data_;
+};
+```
+
+This implementation uses a vector to store the elements of the queue. The `enqueue` method adds an element to the rear of the queue, and the `dequeue` method removes an element from the front of the queue. The `is_full` and `is_empty` methods check if the queue is full or empty, respectively.
+
+The circular queue is implemented using a vector, which allows for efficient memory management. The `enqueue` method adds an element to the rear of the queue by incrementing the `rear_` index and wrapping it around if necessary. The `dequeue` method removes an element from the front of the queue by incrementing the `front_` index and wrapping it around if necessary.
+
+The `is_full` method checks if the queue is full by comparing the `rear_` index with the `front_` index plus one. If the difference is equal to the capacity of the queue, then the queue is full. The `is_empty` method checks if the queue is empty by comparing the `front_` and `rear_` indices. If they are equal, then the queue is empty.<|endoftext|>

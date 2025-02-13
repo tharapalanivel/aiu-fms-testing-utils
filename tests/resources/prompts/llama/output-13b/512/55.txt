@@ -1,0 +1,17 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Summarize the main differences between renewable and non-renewable energy sources
+
+### Response:
+Hello! Sure, I'd be happy to help you with that.
+
+Renewable energy sources are natural resources that can be replenished over time, such as solar, wind, hydro, and geothermal energy. These sources are considered "clean" because they do not produce greenhouse gas emissions or other pollutants that can harm the environment. In contrast, non-renewable energy sources, such as fossil fuels (coal, oil, and natural gas), are finite resources that will eventually run out. These sources emit greenhouse gases and other pollutants into the atmosphere, contributing to climate change and air pollution.
+
+Some key differences between renewable and non-renewable energy sources include:
+
+* Renewable energy sources are sustainable and can be replenished over time, while non-renewable energy sources are finite and will eventually run out.
+* Renewable energy sources emit little to no greenhouse gases or other pollutants, while non-renewable energy sources emit harmful emissions into the atmosphere.
+* Renewable energy sources are often more expensive than non-renewable energy sources, but the cost is decreasing as technology improves.
+
+I hope this helps! Let me know if you have any other questions.

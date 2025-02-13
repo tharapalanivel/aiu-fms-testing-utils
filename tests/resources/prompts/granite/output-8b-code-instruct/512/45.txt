@@ -1,0 +1,60 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that monitors a directory for changes (file creation, deletion, or modification) and logs each event with a timestamp into a log file.
+
+
+Answer:
+Here's an example Bash script that monitors a directory for changes and logs each event with a timestamp into a log file:
+
+```bash
+#!/bin/bash
+
+# Set the directory to monitor
+directory="/path/to/directory"
+
+# Set the log file
+log_file="/path/to/log/file"
+
+# Create the log file if it doesn't exist
+touch $log_file
+
+# Monitor the directory for changes
+while true
+do
+    # Get the current timestamp
+    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+    # Get the list of files in the directory
+    files=$(ls -l $directory | awk '{print $9}')
+
+    # Loop through the files and log each event
+    for file in $files
+    do
+        # Check if the file was created
+        if [ ! -e $directory/$file ]
+        then
+            echo "$timestamp: File $file created" >> $log_file
+        fi
+
+        # Check if the file was deleted
+        if [ ! -e $directory/$file ]
+        then
+            echo "$timestamp: File $file deleted" >> $log_file
+        fi
+
+        # Check if the file was modified
+        if [ -e $directory/$file ]
+        then
+            echo "$timestamp: File $file modified" >> $log_file
+        fi
+    done
+
+    # Wait for 1 second before checking again
+    sleep 1
+done
+```
+
+This script uses the `ls` command to get the list of files in the directory, and then checks if each file exists. If a file is created, deleted, or modified, the script logs the event with a timestamp into the log file. The script runs in an infinite loop, so it will continue to monitor the directory for changes.<|endoftext|>

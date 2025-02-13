@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python metaclass that modifies the creation of classes by automatically adding a method `describe()` to any class that uses this metaclass. The `describe()` method should return a string with the class name.
+
+
+Answer:
+```python
+class DescribeMeta(type):
+    def __new__(cls, name, bases, attrs):
+        attrs['describe'] = lambda self: name
+        return super().__new__(cls, name, bases, attrs)
+
+class Describe(metaclass=DescribeMeta):
+    pass
+
+class MyClass(Describe):
+    pass
+
+print(MyClass.describe())
+```
+<|endoftext|>

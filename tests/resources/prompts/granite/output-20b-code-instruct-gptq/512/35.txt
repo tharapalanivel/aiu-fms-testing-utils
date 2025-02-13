@@ -1,0 +1,57 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function that applies dynamic quantization to a pre-trained transformer model (such as BERT or GPT) in PyTorch, and compares the model size and inference speed before and after quantization.
+
+
+Answer:
+Here's an example of how to implement dynamic quantization in PyTorch using the Hugging Face Transformers library:
+
+```python
+import torch
+from transformers import BertModel, BertTokenizer
+
+# Load the pre-trained BERT model
+model = BertModel.from_pretrained("bert-base-uncased")
+
+# Load the BERT tokenizer
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
+# Define the input text
+text = "This is an example of dynamic quantization in PyTorch using the Hugging Face Transformers library."
+
+# Tokenize the input text
+input_ids = tokenizer.encode(text, return_tensors="pt")
+
+# Define the quantization configuration
+quantization_config = torch.quantization.QConfig(
+    activation=torch.quantization.default_dynamic_qconfig,
+    weight=torch.quantization.default_dynamic_qconfig,
+)
+
+# Apply dynamic quantization to the model
+torch.quantization.prepare(model, qconfig=quantization_config)
+
+# Forward pass through the model
+output = model(input_ids)
+
+# Save the model
+torch.save(model, "quantized_bert.pt")
+
+# Print the model size and inference speed before and after quantization
+print("Model size before quantization:", torch.save(model, "temp.pt").size())
+print("Model size after quantization:", torch.save(model, "quantized_bert.pt").size())
+
+# Measure the inference speed before and after quantization
+with torch.no_grad():
+    before_quantization_time = time.time()
+    model(input_ids)
+    after_quantization_time = time.time()
+
+print("Inference speed before quantization:", before_quantization_time)
+print("Inference speed after quantization:", after_quantization_time)
+```
+
+This code loads the pre-trained BERT model from the Hugging Face Transformers library, defines the input text, tokenizes it, defines the quantization configuration, applies dynamic quantization to the model, saves the model, prints the model size before and after quantization, and measures the inference speed before and after quantization.<|endoftext|>

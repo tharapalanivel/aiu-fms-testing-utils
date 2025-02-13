@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a unit test suite for a simple PyTorch model that checks whether the forward pass is working correctly, ensuring it outputs the correct dimensions for different input stages.
+
+
+Answer:

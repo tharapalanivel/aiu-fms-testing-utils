@@ -1,0 +1,30 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that monitors a directory for changes (file creation, deletion, or modification) and logs each event with a timestamp into a log file.
+
+
+Answer:
+#!/bin/bash
+
+# Monitor a directory for changes (file creation, deletion, or modification) and logs each event with a timestamp into a log file.
+
+# Set the directory to monitor
+DIR="/path/to/directory"
+
+# Set the log file
+LOG_FILE="/path/to/log/file"
+
+# Create the log file if it doesn't exist
+touch $LOG_FILE
+
+# Monitor the directory for changes
+inotifywait -m -r -e create,delete,modify $DIR | while read -r line; do
+    # Get the current timestamp
+    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+
+    # Write the event and timestamp to the log file
+    echo "$TIMESTAMP - $line" >> $LOG_FILE
+done<|endoftext|>

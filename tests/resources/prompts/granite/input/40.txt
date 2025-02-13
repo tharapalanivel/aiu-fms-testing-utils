@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a binary search tree (BST) in C++ with methods for inserting, searching, and deleting nodes, ensuring that the tree remains balanced after deletions.
+
+
+Answer:

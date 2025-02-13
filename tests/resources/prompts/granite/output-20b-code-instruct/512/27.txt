@@ -1,0 +1,44 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python decorator that caches the results of a function call based on its arguments, and returns the cached result for future calls with the same arguments.
+
+
+Answer:
+```python
+from functools import wraps
+
+def memoize(func):
+    cache = {}
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        key = str(args) + str(kwargs)
+        if key not in cache:
+            cache[key] = func(*args, **kwargs)
+        return cache[key]
+
+    return wrapper
+```
+
+Explanation:
+The memoize decorator uses a cache dictionary to store the results of function calls. The wrapper function uses the str() function to convert the arguments to a string, and uses the string as a key in the cache dictionary. If the key is not in the cache, the function is called with the arguments and the result is stored in the cache. Finally, the cached result is returned.
+
+The memoize decorator is a higher-order function that takes a function as an argument and returns a wrapper function. The wrapper function uses the wraps() function from the functools module to preserve the original function's metadata, such as its name, docstring, and annotations. The wrapper function also creates a cache dictionary and uses the str() function to convert the arguments to a string.
+
+The wrapper function checks if the key is in the cache. If it is not, the function is called with the arguments and the result is stored in the cache. Finally, the cached result is returned.
+
+To use the memoize decorator, simply decorate a function with @memoize before calling it. For example:
+
+```python
+@memoize
+def add(a, b):
+    return a + b
+
+print(add(1, 2))  # Output: 3
+print(add(1, 2))  # Output: 3 (cached result)
+```
+
+In this example, the add() function is decorated with @memoize. The first call to add(1, 2) returns 3, and the second call returns the cached result of 3.<|endoftext|>

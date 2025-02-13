@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Java method that reads a CSV file and converts each row into an object of a custom class. Use Java's `BufferedReader` and handle file I/O exceptions appropriately.
+
+
+Answer:

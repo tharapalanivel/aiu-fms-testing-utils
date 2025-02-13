@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the lyrical themes and musical style of Bob Dylan's work in the 1960s
+
+### Response:

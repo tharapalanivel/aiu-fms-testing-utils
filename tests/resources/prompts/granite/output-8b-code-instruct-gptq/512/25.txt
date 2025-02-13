@@ -1,0 +1,33 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a COBOL program that reads a file containing employee records (employee ID, name, salary) and prints all employees with a salary above a given threshold.
+
+
+Answer:
+Here is a sample COBOL program that reads a file containing employee records and prints all employees with a salary above a given threshold:
+
+```cobol
+IDENTIFICATION DIVISION.
+PROGRAM-ID. employee-salary-report.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 employee-record.
+   05 employee-id PIC 9(4).
+   05 employee-name PIC X(20).
+   05 employee-salary PIC 9(6).
+77 threshold-value PIC 9(6) VALUE 5000.
+PROCEDURE DIVISION.
+OPEN INPUT employee-file.
+PERFORM UNTIL END-OF-FILE.
+    READ employee-file INTO employee-record.
+    IF employee-salary > threshold-value
+        DISPLAY employee-id, employee-name, employee-salary.
+END-PERFORM.
+CLOSE employee-file.
+STOP RUN.
+```
+
+This program reads a file named "employee-file" and prints all employees with a salary above the threshold value of 50,000. The employee records are stored in a working-storage section with fields for employee ID, name, and salary. The program uses a PERFORM loop to read each record from the file and checks if the employee's salary is above the threshold value. If it is, the program displays the employee's ID, name, and salary.<|endoftext|>

@@ -1,0 +1,16 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Write a formal email requesting a job interview
+
+### Response:
+Dear Hiring Manager,
+
+I am writing to formally request a job interview for the open position at your company. I am very interested in the opportunity to work with your team and believe that my skills and experience make me a strong candidate for the role.
+
+I have attached my resume and cover letter for your review. I would be grateful if you could consider my application and let me know if you would like to schedule an interview.
+
+Thank you for your time and consideration. I look forward to hearing from you soon.
+
+Sincerely,
+[Your Name]

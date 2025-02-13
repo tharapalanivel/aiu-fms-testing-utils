@@ -1,0 +1,26 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function using `asyncio` to make multiple asynchronous web requests and return the first successful response, cancelling the rest.
+
+
+Answer:
+Here's how you can implement this function:
+
+```python
+import asyncio
+import aiohttp
+
+async def make_async_requests(urls):
+    tasks = [
+        asyncio.create_task(aiohttp.request('GET', url))
+        for url in urls
+    ]
+    responses = await asyncio.gather(*tasks)
+    for response in responses:
+        if response.status == 200:
+            return response
+    return None
+```<|endoftext|>

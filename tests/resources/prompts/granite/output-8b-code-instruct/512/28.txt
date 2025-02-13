@@ -1,0 +1,19 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that finds all customers who made purchases in both the years 2023 and 2024, using a `customers` table and a `purchases` table with `purchase_date`.
+
+
+Answer:
+Here's how you can write the SQL query:
+
+```sql
+SELECT c.*
+FROM customers c
+JOIN purchases p ON c.customer_id = p.customer_id
+WHERE p.purchase_date >= '2023-01-01' AND p.purchase_date < '2024-01-01'
+GROUP BY c.customer_id
+HAVING COUNT(DISTINCT YEAR(p.purchase_date)) = 2;
+```<|endoftext|>

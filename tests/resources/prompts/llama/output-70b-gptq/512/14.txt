@@ -1,0 +1,54 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how to solve a quadratic equation with an example
+
+### Response:
+
+Sure, I'd be happy to help! A quadratic equation is a polynomial equation of degree two, meaning the highest power of the variable (usually x) is two. The general form of a quadratic equation is:
+
+ax^2 + bx + c = 0
+
+where a, b, and c are constants, and x is the variable. To solve a quadratic equation, there are several methods you can use:
+
+1. Factoring: If the equation can be factored into the product of two binomials, you can solve it by setting each factor equal to zero and solving for x. For example, consider the equation:
+
+x^2 + 5x + 6 = 0
+
+We can factor this equation as:
+
+(x + 3)(x + 2) = 0
+
+Now, we can set each factor equal to zero and solve for x:
+
+x + 3 = 0 --> x = -3
+
+x + 2 = 0 --> x = -2
+
+So, the solutions to the equation are x = -3 and x = -2.
+
+2. Quadratic Formula: If the equation cannot be factored, you can use the quadratic formula to solve it. The quadratic formula is:
+
+x = (-b ± √(b^2 - 4ac)) / 2a
+
+Where a, b, and c are the coefficients of the quadratic equation. This formula will give you two solutions for the variable x.
+
+For example, consider the equation:
+
+x^2 + 4x + 4 = 0
+
+We can use the quadratic formula to solve it:
+
+x = (-4 ± √(4^2 - 4(1)(4))) / 2(1)
+
+x = (-4 ± √(16 - 16)) / 2
+
+x = (-4 ± √0) / 2
+
+x = -4 / 2
+
+x = -2
+
+So, the solution to the equation is x = -2.
+
+I hope this helps! Let me know if you have any questions or need further clarification.

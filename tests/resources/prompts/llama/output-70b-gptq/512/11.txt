@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the term `Artificial Intelligence` in simple language
+
+### Response:
+
+Dear User,
+
+Artificial Intelligence (AI) refers to the ability of machines or computer programs to mimic intelligent human behavior. This includes tasks such as learning, problem-solving, decision-making, and perception. AI systems can be trained on large amounts of data to perform tasks such as image and speech recognition, natural language processing, and predictive analytics. The goal of AI is to create machines that can think and act like humans, but with the ability to process vast amounts of data and perform tasks more efficiently and accurately than humans.
+
+I hope this helps! Let me know if you have any further questions.
+
+Best regards,
+[Your Name]

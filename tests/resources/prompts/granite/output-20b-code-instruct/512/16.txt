@@ -1,0 +1,17 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that retrieves that top 3 most frequently purchased products from a `sales` table, with columns `product_id`, `quantity`, and `sale_date`.
+
+
+Answer:
+```sql
+SELECT product_id, SUM(quantity) AS quantity, sale_date
+FROM sales
+GROUP BY product_id, sale_date
+ORDER BY quantity DESC
+LIMIT 3;
+```
+<|endoftext|>

@@ -1,0 +1,10 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Translate the following exchange: "Good morning, how are you? I am well, thank you, my plane just landed." into Spanish
+
+### Response:
+
+Buenos días, ¿cómo estás? Estoy bien, gracias, mi avión acaba de aterrizar.
+
+Please note that the translation is word-for-word and the response may need to be adjusted depending on the context and the level of formality desired.

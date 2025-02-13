@@ -1,0 +1,39 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Bash script that compresses all `.txt` files in a directory into a `.zip` file, but excludes files that are larger than 1MB.
+
+
+Answer:
+```bash
+#!/bin/bash
+
+# Get the directory path from the user
+read -p "Enter the directory path: " directory
+
+# Check if the directory exists
+if [ ! -d "$directory" ]; then
+  echo "Directory does not exist."
+  exit 1
+fi
+
+# Create a temporary directory to store the compressed files
+temp_dir=$(mktemp -d)
+
+# Compress the files in the directory
+for file in $directory/*.txt; do
+  if [ -f "$file" ] && [ -s "$file" ] && [ $(wc -c <"$file") -le 1048576 ]; then
+    zip -r "$temp_dir/$(basename "$file")" "$file"
+  fi
+done
+
+# Create a zip archive of the compressed files
+zip -r "$directory.zip" "$temp_dir"
+
+# Delete the temporary directory
+rm -rf "$temp_dir"
+
+echo "Done."
+```<|endoftext|>

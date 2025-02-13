@@ -1,0 +1,23 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Briefly compare the narrative styles of `The Divine Comedy` by Dante and `The Odyssey` by Homer
+
+### Response:
+
+Dear User,
+
+Thank you for your request. In terms of narrative style, both `The Divine Comedy` by Dante and `The Odyssey` by Homer are epic poems that share some similarities, but also have notable differences.
+
+One of the main similarities between the two works is their use of a first-person narrator. Both Dante and Odysseus serve as the narrators of their respective stories, guiding the reader through their journeys and providing personal insights into their experiences. Additionally, both works are structured around a central quest or journey, with `The Divine Comedy` following Dante's journey through the afterlife and `The Odyssey` following Odysseus' journey home after the Trojan War.
+
+However, there are also some significant differences in narrative style between the two works. For example, `The Divine Comedy` is written in a more formal, elevated style, reflecting the poem's focus on spiritual themes and the author's desire to create a work of high art. In contrast, `The Odyssey` is written in a more straightforward, direct style, with a focus on action and adventure.
+
+Another difference is the use of imagery and symbolism. `The Divine Comedy` is rich in symbolic imagery, with Dante using various allegorical figures and events to convey spiritual truths. In contrast, `The Odyssey` relies more on descriptive imagery, with Homer using vivid descriptions of the natural world to create a sense of atmosphere and mood.
+
+Overall, while both `The Divine Comedy` and `The Odyssey` share some similarities in terms of narrative style, there are also some notable differences that reflect the unique themes and goals of each work.
+
+Thank you for your interest in this topic. If you have any further questions, please don't hesitate to ask.
+
+Best regards,
+[Your Name]

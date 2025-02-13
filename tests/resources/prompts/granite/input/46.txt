@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that joins two tables, `orders` and `customers`, and retrieves the top 5 customers who have placed the highest number of orders in the past year.
+
+
+Answer:

@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using Java's `ExecutorService`, write a program that submits a list of tasks (runnable) and waits for all of them to complete before printing a final message.
+
+
+Answer:
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Main {
+    public static void main(String[] args) {
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        List<Runnable> tasks = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            tasks.add(() -> {
+                System.out.println("Hello from task " + Thread.currentThread().getName());
+            });
+        }
+
+        executor.invokeAll(tasks);
+        System.out.println("All tasks completed");
+        executor.shutdown();
+    }
+}
+```<|endoftext|>

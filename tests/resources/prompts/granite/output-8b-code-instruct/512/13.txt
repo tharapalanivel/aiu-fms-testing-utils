@@ -1,0 +1,38 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using Java's `CompletableFuture`, write a method that performs two asynchronous HTTP requests and returns the combined response after both requests have been completed.
+
+
+Answer:
+Here's an example implementation of the method:
+
+```java
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+public class HttpUtils {
+    public static String combineResponses(String url1, String url2) {
+        CompletableFuture<String> future1 = sendRequest(url1);
+        CompletableFuture<String> future2 = sendRequest(url2);
+
+        return future1.thenCombine(future2, (response1, response2) -> response1 + response2)
+                .exceptionally(CompletionException::getCause)
+                .join();
+    }
+
+    private static CompletableFuture<String> sendRequest(String url) {
+        return CompletableFuture.supplyAsync(() -> {
+            // Simulate an HTTP request
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return "Response from " + url;
+        });
+    }
+}
+```<|endoftext|>

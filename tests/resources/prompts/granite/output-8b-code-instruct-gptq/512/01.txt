@@ -1,0 +1,35 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using the Java streams API, write a simple function which will get the cumulative sum of a list of integers.
+
+
+Answer:
+Here's an example of how you can implement this using the Java streams API:
+
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+public class CumulativeSum {
+    public static int[] getSum(List<Integer> numbers) {
+        int[] sums = new int[numbers.size()];
+        IntStream.range(0, numbers.size())
+                .forEach(i -> sums[i] = IntStream.range(0, i + 1)
+                        .map(j -> numbers.get(j))
+                        .sum());
+        return sums;
+    }
+
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(1, 2, 3, 4, 5);
+        int[] sums = getSum(numbers);
+        System.out.println(List.of(sums));
+    }
+}
+```
+
+In this implementation, we use the `IntStream.range()` method to create a stream of integers from 0 to the length of the input list. We then use the `map()` method to apply a function to each element of the stream, which is to sum the elements from 0 to the current index. Finally, we use the `collect()` method to collect the results into an array.<|endoftext|>

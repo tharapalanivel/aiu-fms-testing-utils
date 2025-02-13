@@ -1,0 +1,18 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a bubble sort function in python.
+
+
+Answer:
+```
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr
+```<|endoftext|>

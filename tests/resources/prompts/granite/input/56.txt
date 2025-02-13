@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python program that uses the `multiprocessing` library to create a pool of worker processes that calculate the factorial of numbers in a large list concurrently.
+
+
+Answer:

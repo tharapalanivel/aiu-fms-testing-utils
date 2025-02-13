@@ -1,0 +1,39 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Build a Python function that creates an inference pipeline for a transformer model using the HuggingFace `pipeline()` API, The function should classify input text into one of several predefined categories.
+
+
+Answer:
+```python
+from transformers import pipeline
+
+def build_inference_pipeline(model_name, categories):
+    """
+    Builds an inference pipeline for a transformer model using the HuggingFace `pipeline()` API.
+
+    Parameters:
+    model_name (str): The name of the transformer model to use for inference.
+    categories (list): A list of categories to classify input text into.
+
+    Returns:
+    pipeline: The inference pipeline.
+    """
+
+    # Load the model
+    model = pipeline(model_name)
+
+    # Define the inference pipeline
+    def inference_pipeline(text):
+        # Run the text through the model
+        result = model(text)
+
+        # Get the most likely category
+        category = categories[result[0]['label']]
+
+        return category
+
+    return inference_pipeline
+```<|endoftext|>

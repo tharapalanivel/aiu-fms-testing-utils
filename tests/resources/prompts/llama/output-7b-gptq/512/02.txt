@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain some popular greetings in Spanish.
+
+### Response:
+¡Hola! (OH-lah) - Hello! This is one of the most common greetings in Spanish, used during the day.
+
+¿Cómo estás? (KOH-moh eh-STAH) - How are you? This is another common greeting used to ask about someone's well-being.
+
+¿Qué onda? (KAY OH-nah) - What's up? This is a more casual greeting used with friends or acquaintances.
+
+¿Cómo te va? (KOH-moh eh-VAH) - How are you doing? This is a more formal greeting used in formal situations.
+
+I hope this helps you learn some popular Spanish greetings! Let me know if you have any other questions.

@@ -1,0 +1,34 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:
+
+The Pythagorean theorem is a mathematical concept that describes the relationship between the sides of a right triangle. It states that the square of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the other two sides. The formula for this is:
+
+a^2 + b^2 = c^2
+
+Where a and b are the lengths of the other two sides, and c is the length of the hypotenuse.
+
+A real-world example of using the Pythagorean theorem would be in the construction industry. Imagine a building contractor needs to determine the height of a wall that meets a roof at a 90-degree angle. The contractor knows the length of the wall (a) and the length of the roof (b), but not the height of the wall (c). By using the Pythagorean theorem, the contractor can calculate the height of the wall as follows:
+
+a^2 + b^2 = c^2
+
+Let's say the length of the wall is 30 feet and the length of the roof is 40 feet. Plugging these values into the formula, we get:
+
+30^2 + 40^2 = c^2
+
+900 + 1600 = c^2
+
+2500 = c^2
+
+Now, we take the square root of both sides to find the height of the wall:
+
+c = sqrt(2500)
+
+c = 50 feet
+
+Therefore, the height of the wall is 50 feet.
+
+I hope this example helps illustrate how the Pythagorean theorem can be applied in a real-world context. If you have any further questions or need additional clarification, please don't hesitate to ask!

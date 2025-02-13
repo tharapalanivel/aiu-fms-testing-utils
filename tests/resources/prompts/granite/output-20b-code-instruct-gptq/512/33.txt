@@ -1,0 +1,66 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that defines a PyTorch neural network, trains it on a small dataset, and compares the training speed before and after applying `torch.compile()`.
+
+
+Answer:
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+# Define the neural network
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(28 * 28, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = x.view(-1, 28 * 28)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+# Load the training data
+train_data = torch.load("train_data.pt")
+
+# Create the model and optimizer
+model = Net()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Train the model
+for epoch in range(5):
+    for batch_idx, (data, target) in enumerate(train_data):
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.cross_entropy(output, target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % 100 == 0:
+            print("Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                epoch, batch_idx * len(data), len(train_data.dataset),
+                100. * batch_idx / len(train_data), loss.item()))
+
+# Save the model
+torch.save(model.state_dict(), "model.pt")
+
+# Load the model
+model = Net()
+model.load_state_dict(torch.load("model.pt"))
+
+# Compile the model
+model = torch.compile(model)
+
+# Measure the training speed before and after compilation
+before_time = 0
+after_time = 0
+for _ in range(10):
+    before_start = torch.cuda.Event(enable_timing=True)
+    before_end = torch.cuda.Event(enable

@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an Assembly program that takes an integer as input, calculates it factorial using a loop, and stores the result in a register. Use x86 architecture.
+
+
+Answer:
+```assembly
+section .data
+    input db 5 ; input integer
+    result dq 1 ; initialize result to 1
+
+section .text
+    global _start
+
+_start:
+    mov ecx, [input] ; load input integer into ecx
+    mov rax, [result] ; load result into rax
+
+loop_start:
+    cmp ecx, 0 ; check if counter is zero
+    je loop_end ; if counter is zero, exit loop
+    imul rax, rcx ; multiply result by counter
+    dec ecx ; decrement counter
+    jmp loop_start ; repeat loop
+
+loop_end:
+    ; result is now stored in rax
+    ; you can now use the result for further processing or output
+```<|endoftext|>

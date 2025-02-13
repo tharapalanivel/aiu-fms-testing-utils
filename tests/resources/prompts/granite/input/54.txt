@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that groups customers by country and calculates the average order value per country using data from a `customers` and an `orders` table.
+
+
+Answer:

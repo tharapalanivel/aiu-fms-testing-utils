@@ -1,0 +1,29 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that accepts a list of filenames as input, checks if each file is writable, and if so, appends a timestamp to the end of each file.
+
+
+Answer:
+#!/bin/bash
+
+# Check if the number of arguments is correct
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <file1> <file2> ..."
+    exit 1
+fi
+
+# Loop through each file
+for file in $@; do
+    # Check if the file is writable
+    if [ -w $file ]; then
+        # Append a timestamp to the end of the file
+        echo "Appending timestamp to $file"
+        echo "$(date)" >> $file
+    else
+        echo "Error: $file is not writable"
+    fi
+done
+<|endoftext|>

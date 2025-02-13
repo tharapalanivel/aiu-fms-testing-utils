@@ -1,0 +1,23 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a simple decorator in python which will modify all string inputs to ints if possible.
+
+
+Answer:
+```
+def string_to_int(func):
+    def wrapper(*args, **kwargs):
+        new_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                try:
+                    arg = int(arg)
+                except ValueError:
+                    pass
+            new_args.append(arg)
+        return func(*new_args, **kwargs)
+    return wrapper
+```<|endoftext|>

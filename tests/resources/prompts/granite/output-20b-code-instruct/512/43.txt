@@ -1,0 +1,64 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement batch gradient descent using JAX's automatic differentiation (`jax.grad`) to optimize a linear regression model. Compare the model's performance with stochastic gradient descent (SGD).
+
+
+Answer:
+```python
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+from sklearn.datasets import make_regression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+
+sns.set_theme(style="darkgrid")
+
+# Generate synthetic data
+X, y = make_regression(n_samples=1000, n_features=1, noise=10, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define the model parameters
+w = jnp.array([0.0])
+b = jnp.array([0.0])
+
+# Define the model function
+def model(X, w, b):
+    return X * w + b
+
+# Define the loss function
+def loss_fn(X, y, w, b):
+    y_pred = model(X, w, b)
+    return jnp.mean((y_pred - y) ** 2)
+
+# Define the gradient function
+grad_fn = jax.grad(loss_fn)
+
+# Define the training loop
+def train(X_train, y_train, X_test, y_test, num_epochs, learning_rate):
+    train_loss = []
+    test_loss = []
+    for epoch in range(num_epochs):
+        # Compute gradients
+        grad_w, grad_b = grad_fn(X_train, y_train, w, b)
+
+        # Update parameters
+        w -= learning_rate * grad_w
+        b -= learning_rate * grad_b
+
+        # Compute training and test loss
+        train_loss.append(loss_fn(X_train, y_train, w, b))
+        test_loss.append(loss_fn(X_test, y_test, w, b))
+
+    return train_loss, test_loss
+
+# Train the model using SGD
+num_epochs = 100
+learning_rate = 0.01
+train_loss, test_loss = train(X_train, y_train, X_test, y_test

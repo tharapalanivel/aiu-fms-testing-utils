@@ -1,0 +1,42 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Rust program that implements a simple finite state machine (FSM) to control the flow of a traffic light system, transitioning between green, yellow, and red states.
+
+
+Answer:
+```rust
+use std::time::Duration;
+use std::thread;
+
+enum TrafficLight {
+    Green,
+    Yellow,
+    Red,
+}
+
+fn main() {
+    let mut state = TrafficLight::Green;
+
+    loop {
+        match state {
+            TrafficLight::Green => {
+                println!("Green");
+                state = TrafficLight::Yellow;
+            }
+            TrafficLight::Yellow => {
+                println!("Yellow");
+                state = TrafficLight::Red;
+            }
+            TrafficLight::Red => {
+                println!("Red");
+                state = TrafficLight::Green;
+            }
+        }
+
+        thread::sleep(Duration::from_secs(1));
+    }
+}
+```<|endoftext|>

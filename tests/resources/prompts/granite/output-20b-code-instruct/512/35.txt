@@ -1,0 +1,41 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function that applies dynamic quantization to a pre-trained transformer model (such as BERT or GPT) in PyTorch, and compares the model size and inference speed before and after quantization.
+
+
+Answer:
+Here's an example of how to implement dynamic quantization in PyTorch for a pre-trained transformer model:
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.quantized as nnq
+
+# Load a pre-trained transformer model
+model = torch.hub.load('huggingface/pytorch-transformers', 'model_name')
+
+# Convert the model to a quantized version
+model_quantized = torch.quantization.quantize_dynamic(
+    model, {nn.Linear}, dtype=torch.qint8
+)
+
+# Compare the model size and inference speed
+print(f"Model size before quantization: {model.num_parameters() * 4 / 1024 / 1024:.2f} MB")
+print(f"Model size after quantization: {model_quantized.num_parameters() * 4 / 1024 / 1024:.2f} MB")
+
+# Run inference on a single input
+input_ids = torch.tensor([[1, 2, 3, 4, 5]])
+output = model(input_ids)
+output_quantized = model_quantized(input_ids)
+
+# Compare the outputs
+print(f"Output before quantization: {output}")
+print(f"Output after quantization: {output_quantized}")
+```
+
+This code loads a pre-trained transformer model from the Hugging Face model hub, converts it to a quantized version using the `quantize_dynamic` function, and compares the model size and inference speed before and after quantization. It also runs inference on a single input and compares the outputs before and after quantization.
+
+Note that this is just an example and you may need to adjust the code to fit your specific use case.<|endoftext|>

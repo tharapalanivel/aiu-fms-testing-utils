@@ -1,0 +1,17 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the term `Artificial Intelligence` in simple language
+
+### Response:
+
+Dear User,
+
+Thank you for reaching out to us with your request. `Artificial Intelligence` (AI) refers to the ability of machines or computer programs to mimic intelligent human behavior. In other words, AI systems can perform tasks that typically require human intelligence, such as understanding natural language, recognizing images, making decisions, and solving problems.
+
+AI systems use algorithms and data to learn from experience and improve their performance over time. They can be applied in various fields, such as customer service, healthcare, finance, transportation, and entertainment. Examples of AI include virtual assistants like Siri and Alexa, self-driving cars, and personalized product recommendations.
+
+We hope this explanation helps you understand the concept of Artificial Intelligence. If you have any further questions or concerns, please feel free to ask.
+
+Best regards,
+[Your Name]

@@ -1,0 +1,14 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query to find the second highest salary in an `employees` table, where each row contains an employee's `id`, `name`, and `salary`.
+
+
+Answer:
+```sql
+SELECT
+    (SELECT DISTINCT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1) AS SecondHighestSalary
+```
+<|endoftext|>

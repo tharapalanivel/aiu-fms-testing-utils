@@ -1,0 +1,46 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console.
+
+
+Answer:
+Here is an example Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console:
+
+```java
+import java.sql.*;
+
+public class MySQLExample {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/mydatabase";
+        String user = "root";
+        String password = "password";
+
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM mytable");
+
+            System.out.println("ID | NAME | AGE");
+            System.out.println("----------------------");
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                int age = resultSet.getInt("age");
+                System.out.println(id + " | " + name + " | " + age);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+This script assumes that you have a MySQL database named "mydatabase" with a table named "mytable" that contains columns named "id", "name", and "age". You will need to replace the URL, username, and password with your own database credentials.
+
+The script establishes a connection to the MySQL database using the JDBC driver. It then creates a statement object and executes a SELECT query to retrieve all rows from the "mytable" table. The results are stored in a ResultSet object, which is iterated over using a while loop.
+
+For each row in the ResultSet, the script retrieves the values of the "id", "name", and "age" columns and prints them in a formatted table in the console.
+
+Note that this script assumes that you have the MySQL JDBC driver installed in your Java environment. If you don't have the driver installed, you will need to download and install it from the official MySQL website.<|endoftext|>

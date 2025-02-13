@@ -1,0 +1,57 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a basic stack data structure in C that supports `push`, `pop`, and `peep` operations. The stack should dynamically resize when more elements are added beyond its initial capacity.
+
+
+Answer:
+Here's an example implementation of a basic stack data structure in C that supports `push`, `pop`, and `peep` operations:
+
+```c
+#include <stdlib.h>
+
+typedef struct {
+    int *data;
+    int size;
+    int capacity;
+} Stack;
+
+Stack *stack_create() {
+    Stack *stack = (Stack *)malloc(sizeof(Stack));
+    stack->data = (int *)malloc(sizeof(int) * 10);
+    stack->size = 0;
+    stack->capacity = 10;
+    return stack;
+}
+
+void stack_destroy(Stack *stack) {
+    free(stack->data);
+    free(stack);
+}
+
+void stack_push(Stack *stack, int value) {
+    if (stack->size == stack->capacity) {
+        stack->capacity *= 2;
+        stack->data = (int *)realloc(stack->data, sizeof(int) * stack->capacity);
+    }
+    stack->data[stack->size++] = value;
+}
+
+int stack_pop(Stack *stack) {
+    if (stack->size == 0) {
+        return -1;
+    }
+    return stack->data[--stack->size];
+}
+
+int stack_peep(Stack *stack) {
+    if (stack->size == 0) {
+        return -1;
+    }
+    return stack->data[stack->size - 1];
+}
+```
+
+The `stack_create` function initializes a new stack with an initial capacity of 10. The `stack_destroy` function frees the memory allocated for the stack and its data. The `stack_push` function adds a new element to the stack, resizing the stack if necessary. The `stack_pop` function removes and returns the top element from the stack. The `stack_peep` function returns the top element from the stack without removing it.<|endoftext|>

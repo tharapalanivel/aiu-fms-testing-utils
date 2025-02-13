@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a program in Rust that implements a simple producer-consumer problem using channels, where multiple producers send data to a consumer that processes it asynchronously.
+
+
+Answer:

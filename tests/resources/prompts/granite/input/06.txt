@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a linked list in C++ with support for inserting a node at any position and deleting a node by value.
+
+
+Answer:

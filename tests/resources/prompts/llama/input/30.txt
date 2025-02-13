@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the role of grassroot movements in advancing civil rights and social justice systems
+
+### Response:

@@ -1,0 +1,60 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python program that performs post-training quantization on a neural network and compares the accuracy of the quantized model with the original floating-point model.
+
+
+Answer:
+```python
+import tensorflow as tf
+import tensorflow_model_optimization as tfmot
+
+# Load the MNIST dataset
+mnist = tf.keras.datasets.mnist
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+
+# Normalize the input image so that each pixel value is between 0 and 1.
+train_images = train_images / 255.0
+test_images = test_images / 255.0
+
+# Define the model architecture
+model = tf.keras.Sequential([
+  tf.keras.layers.Flatten(input_shape=(28, 28)),
+  tf.keras.layers.Dense(128, activation='relu'),
+  tf.keras.layers.Dense(10)
+])
+
+# Compile the model
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+# Train the model
+model.fit(
+  train_images,
+  train_labels,
+  epochs=10,
+  validation_data=(test_images, test_labels)
+)
+
+# Quantize the model
+quantized_model = tfmot.quantization.keras.quantize_model(model)
+
+# Compile the quantized model
+quantized_model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+# Train the quantized model
+quantized_model.fit(
+  train_images,
+  train_labels,
+  epochs=10,
+  validation_data=(test_images, test_labels)
+)
+
+# Evaluate the quantized model
+quantized_model.evaluate(test_images, test_labels)
+```<|endoftext|>

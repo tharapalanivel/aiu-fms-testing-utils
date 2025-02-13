@@ -1,0 +1,26 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Use JAX to implement a 2D convolution operation manually, without using any deep learning library. Write a function that convolves a 2D image with a given kernel and returns the resulting feature map.
+
+
+Answer:
+Here's how you can implement a 2D convolution operation manually using JAX:
+
+```python
+import jax.numpy as jnp
+
+def conv2d(image, kernel):
+    image_padded = jnp.pad(image, ((1, 1), (1, 1)), mode='constant')
+    kernel_flipped = jnp.flip(kernel, axis=(0, 1))
+    feature_map = jnp.zeros_like(image)
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            feature_map[i, j] = jnp.sum(image_padded[i:i+3, j:j+3] * kernel_flipped)
+
+    return feature_map
+```
+
+This implementation uses JAX's `pad` function to add padding to the image, `flip` function to flip the kernel, and `sum` function to perform the convolution operation. The resulting feature map is returned.<|endoftext|>

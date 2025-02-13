@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an Assembly program that reads a string from the user and reverses it in place using a loop. Use x86 Assembly instructions and store the result in memory.
+
+
+Answer:

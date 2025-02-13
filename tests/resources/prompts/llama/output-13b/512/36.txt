@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Briefly compare the narrative styles of `The Divine Comedy` by Dante and `The Odyssey` by Homer
+
+### Response:
+Hello! I'd be happy to help you compare the narrative styles of `The Divine Comedy` by Dante and `The Odyssey` by Homer.
+
+While both works are considered classics of Western literature, there are some notable differences in their narrative styles. One of the main differences is the tone and mood of the works. `The Divine Comedy` is written in a more introspective and contemplative tone, reflecting Dante's own spiritual journey and search for enlightenment. In contrast, `The Odyssey` is written in a more adventurous and action-packed tone, following the journey of Odysseus as he makes his way home after the Trojan War.
+
+Another difference is the use of imagery and symbolism. Dante's work is rich in religious and mythological imagery, drawing heavily from Christian theology and medieval allegory. Homer's work, on the other hand, relies more on physical descriptions of the natural world and the characters that inhabit it.
+
+Finally, the structure of the two works differs as well. `The Divine Comedy` is divided into three cantiche, each of which represents a different aspect of the afterlife. In contrast, `The Odyssey` is structured around the journey of Odysseus, with each book representing a different stage of his journey home.
+
+Overall, while both works share some similarities in their use of epic poetry and mythological themes, the narrative styles of `The Divine Comedy` and `The Odyssey` are distinct and reflect the unique goals and perspectives of their respective authors.

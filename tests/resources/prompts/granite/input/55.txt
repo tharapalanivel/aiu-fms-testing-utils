@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that accepts a list of filenames as input, checks if each file is writable, and if so, appends a timestamp to the end of each file.
+
+
+Answer:

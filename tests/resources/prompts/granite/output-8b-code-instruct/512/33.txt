@@ -1,0 +1,65 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that defines a PyTorch neural network, trains it on a small dataset, and compares the training speed before and after applying `torch.compile()`.
+
+
+Answer:
+Here's an example of how you can write a Python script that defines a PyTorch neural network, trains it on a small dataset, and compares the training speed before and after applying `torch.compile()`:
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import time
+
+# Define a simple neural network
+class SimpleNet(nn.Module):
+    def __init__(self):
+        super(SimpleNet, self).__init__()
+        self.fc1 = nn.Linear(10, 10)
+        self.fc2 = nn.Linear(10, 10)
+        self.fc3 = nn.Linear(10, 10)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        return x
+
+# Create an instance of the neural network
+net = SimpleNet()
+
+# Define the loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+
+# Define a simple training loop
+def train(net, criterion, optimizer, num_epochs=10):
+    for epoch in range(num_epochs):
+        start_time = time.time()
+        for i, data in enumerate(train_loader, 0):
+            inputs, labels = data
+            optimizer.zero_grad()
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+        end_time = time.time()
+        print(f"Epoch {epoch+1}: {end_time - start_time} seconds")
+
+# Train the neural network
+train(net, criterion, optimizer)
+
+# Compile the neural network using torch.compile()
+net_compiled = torch.compile(net)
+
+# Train the compiled neural network
+train(net_compiled, criterion, optimizer)
+```
+
+In this example, we define a simple neural network using PyTorch's `nn.Module` API. We then train the network using a simple training loop that iterates over a small dataset and updates the network's parameters using stochastic gradient descent.
+
+After training the network, we compile it using `torch.compile()` to generate a faster version of the network

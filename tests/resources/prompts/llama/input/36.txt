@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Briefly compare the narrative styles of `The Divine Comedy` by Dante and `The Odyssey` by Homer
+
+### Response:

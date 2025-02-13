@@ -1,0 +1,22 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Ruby function that takes a block and retries the block up to 3 times if it raises an exception, then returns the values if successful or re-raises the error.
+
+
+Answer:
+```ruby
+def retry_block(block)
+  retries = 0
+  begin
+    block.call
+  rescue => e
+    retries += 1
+    retry if retries < 3
+    raise e
+  end
+end
+```
+<|endoftext|>

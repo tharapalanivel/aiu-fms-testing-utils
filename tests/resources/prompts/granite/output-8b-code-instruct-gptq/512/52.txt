@@ -1,0 +1,65 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a C++ class for a circular queue (circular buffer) with methods to `enqueue` and `dequeue`, and check if the queue is full or empty, ensuring proper memory management.
+
+
+Answer:
+Here's an example implementation of a circular queue in C++:
+
+```cpp
+#include <iostream>
+#include <vector>
+
+template <typename T>
+class CircularQueue {
+public:
+    CircularQueue(int capacity) : capacity_(capacity), size_(0), front_(0), rear_(0) {
+        data_ = new T[capacity_];
+    }
+
+    ~CircularQueue() {
+        delete[] data_;
+    }
+
+    void enqueue(const T& value) {
+        if (is_full()) {
+            throw std::runtime_error("Queue is full");
+        }
+        data_[rear_] = value;
+        rear_ = (rear_ + 1) % capacity_;
+        size_++;
+    }
+
+    T dequeue() {
+        if (is_empty()) {
+            throw std::runtime_error("Queue is empty");
+        }
+        T value = data_[front_];
+        front_ = (front_ + 1) % capacity_;
+        size_--;
+        return value;
+    }
+
+    bool is_full() const {
+        return size_ == capacity_;
+    }
+
+    bool is_empty() const {
+        return size_ == 0;
+    }
+
+private:
+    int capacity_;
+    int size_;
+    int front_;
+    int rear_;
+    T* data_;
+};
+```
+
+This implementation uses a dynamic array to store the elements of the queue. The `enqueue` method adds an element to the rear of the queue, and the `dequeue` method removes an element from the front of the queue. The `is_full` and `is_empty` methods check if the queue is full or empty, respectively.
+
+Note that this implementation assumes that the template type `T` has a default constructor and a copy constructor. If the template type does not have these constructors, you may need to modify the implementation accordingly.<|endoftext|>

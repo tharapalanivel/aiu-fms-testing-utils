@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the concept of a food chain and its importance in an ecosystem
+
+### Response:

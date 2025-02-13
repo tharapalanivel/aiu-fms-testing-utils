@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a COBOL program that processes a list of employee records from a flat file, calculates the total payroll (sum of salaries), and generates a report sorted by department.
+
+
+Answer:

@@ -1,0 +1,37 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a program in Rust that implements a simple producer-consumer problem using channels, where multiple producers send data to a consumer that processes it asynchronously.
+
+
+Answer:
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    let producer = thread::spawn(move || {
+        for i in 0..10 {
+            tx.send(i).unwrap();
+            println!("Producer sent: {}", i);
+        }
+    });
+
+    let consumer = thread::spawn(move || {
+        for i in rx {
+            println!("Consumer received: {}", i);
+        }
+    });
+
+    producer.join().unwrap();
+    consumer.join().unwrap();
+}
+```
+
+This program uses two threads, one for the producer and one for the consumer. The producer sends data to the consumer using a channel, which is a first-in, first-out (FIFO) queue. The consumer receives the data and processes it asynchronously.
+
+In this example, the producer sends integers from 0 to 9 to the consumer. The consumer prints out the received data.<|endoftext|>

@@ -1,0 +1,22 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using the Java streams API, write a simple function which will get the cumulative sum of a list of integers.
+
+
+Answer:
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+public class CumulativeSum {
+    public static List<Integer> cumulativeSum(List<Integer> list) {
+        return IntStream.range(0, list.size())
+                .mapToObj(i -> list.subList(0, i + 1).stream().mapToInt(Integer::intValue).sum())
+                .collect(Collectors.toList());
+    }
+}
+```<|endoftext|>

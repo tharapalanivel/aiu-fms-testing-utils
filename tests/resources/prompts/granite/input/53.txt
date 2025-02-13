@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console.
+
+
+Answer:

@@ -1,0 +1,23 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how to solve a quadratic equation with an example
+
+### Response:
+Hello! I'd be happy to help you understand how to solve a quadratic equation. A quadratic equation is a type of equation that has the form:
+
+ax^2 + bx + c = 0
+
+where a, b, and c are constants. To solve a quadratic equation, there are several methods you can use. One common method is to factor the equation, which means finding two numbers whose product is ac and whose sum is b. For example, if the equation is x^2 + 5x + 6 = 0, we can factor it as (x + 3)(x + 2) = 0.
+
+Once we have factored the equation, we can set each factor equal to 0 and solve for x. In this case, we would have:
+
+x + 3 = 0 and x + 2 = 0
+
+Solving for x, we get:
+
+x = -3 and x = -2
+
+So, the solutions to the equation are x = -3 and x = -2.
+
+I hope this helps! Let me know if you have any other questions.

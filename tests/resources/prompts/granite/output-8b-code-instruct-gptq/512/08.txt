@@ -1,0 +1,21 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python function using `multiprocessing` that calculates the sum of squares of a large list of integers in parallel.
+
+
+Answer:
+Here's how you can implement this:
+
+```python
+import multiprocessing
+
+def sum_of_squares(numbers):
+    pool = multiprocessing.Pool()
+    results = pool.map(lambda x: x**2, numbers)
+    pool.close()
+    pool.join()
+    return sum(results)
+```<|endoftext|>

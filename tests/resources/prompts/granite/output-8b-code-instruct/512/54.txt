@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that groups customers by country and calculates the average order value per country using data from a `customers` and an `orders` table.
+
+
+Answer:
+Here's an example SQL query that groups customers by country and calculates the average order value per country:
+
+```sql
+SELECT
+    c.country,
+    AVG(o.order_value) AS avg_order_value
+FROM
+    customers c
+JOIN
+    orders o ON c.customer_id = o.customer_id
+GROUP BY
+    c.country;
+```
+
+This query joins the `customers` and `orders` tables on the `customer_id` column and groups the results by country using the `GROUP BY` clause. The `AVG` function is used to calculate the average order value per country.<|endoftext|>

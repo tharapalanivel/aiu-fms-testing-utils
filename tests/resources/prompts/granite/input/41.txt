@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an Assembly program that takes an integer as input, calculates it factorial using a loop, and stores the result in a register. Use x86 architecture.
+
+
+Answer:

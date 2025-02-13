@@ -1,0 +1,92 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a linked list in C++ with support for inserting a node at any position and deleting a node by value.
+
+
+Answer:
+```cpp
+#include <iostream>
+
+struct Node {
+    int data;
+    Node* next;
+};
+
+class LinkedList {
+private:
+    Node* head;
+
+public:
+    LinkedList() {
+        head = nullptr;
+    }
+
+    void insertNode(int value, int position) {
+        Node* newNode = new Node();
+        newNode->data = value;
+        newNode->next = nullptr;
+
+        if (position == 0) {
+            newNode->next = head;
+            head = newNode;
+        } else {
+            Node* curr = head;
+            for (int i = 0; i < position - 1; i++) {
+                if (curr->next == nullptr) {
+                    std::cout << "Position out of bounds" << std::endl;
+                    return;
+                }
+                curr = curr->next;
+            }
+            newNode->next = curr->next;
+            curr->next = newNode;
+        }
+    }
+
+    void deleteNode(int value) {
+        Node* curr = head;
+        Node* prev = nullptr;
+
+        while (curr != nullptr) {
+            if (curr->data == value) {
+                if (prev == nullptr) {
+                    head = curr->next;
+                } else {
+                    prev->next = curr->next;
+                }
+                delete curr;
+                return;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+        std::cout << "Node not found" << std::endl;
+    }
+
+    void printList() {
+        Node* curr = head;
+        while (curr != nullptr) {
+            std::cout << curr->data << " ";
+            curr = curr->next;
+        }
+        std::cout << std::endl;
+    }
+};
+
+int main() {
+    LinkedList list;
+    list.insertNode(1, 0);
+    list.insertNode(2, 1);
+    list.insertNode(3, 2);
+    list.insertNode(4, 3);
+    list.printList(); // Output: 4 3 2 1
+
+    list.deleteNode(3);
+    list.printList(); // Output: 4 2 1
+
+    return 0;
+}
+```<|endoftext|>

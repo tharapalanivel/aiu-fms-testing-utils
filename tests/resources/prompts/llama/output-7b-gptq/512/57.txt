@@ -1,0 +1,13 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the key differences between a parliamentary and a presidential system of government
+
+### Response:
+Thank you for reaching out! A parliamentary system of government is characterized by a single political party or coalition holding a majority of seats in the legislature, which in turn elects a prime minister. In contrast, a presidential system features an independent head of state who is elected through a direct election by the people.
+
+In a parliamentary system, the prime minister is accountable to the legislature and can be removed by a vote of no confidence. In contrast, the president in a presidential system serves a fixed term and can only be removed through impeachment proceedings.
+
+Another key difference is the distribution of power between the executive and legislative branches. In a parliamentary system, the prime minister and cabinet are responsible to the legislature and must maintain the confidence of the majority of legislators to remain in office. In a presidential system, the president has more independence and can veto legislative decisions, although the legislature can override the veto with a two-thirds majority.
+
+I hope this helps clarify the key differences between these two systems of government! Let me know if you have any further questions.

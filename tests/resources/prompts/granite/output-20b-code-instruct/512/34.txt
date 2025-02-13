@@ -1,0 +1,49 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that loads a pre-trained neural network from PyTorch, converts it to a quantized version using PyTorch's static quantization techniques, and evaluates its performance on a validation set.
+
+
+Answer:
+```python
+import torch
+import torchvision
+import torchvision.transforms as transforms
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.utils.data
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load the pre-trained model
+model = torchvision.models.resnet18(pretrained=True)
+
+# Convert the model to a quantized version using static quantization
+model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+torch.quantization.prepare(model, inplace=True)
+
+# Load the validation dataset
+val_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+val_dataset = torchvision.datasets.ImageFolder(root='path/to/validation/dataset', transform=val_transform)
+val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+
+# Evaluate the quantized model on the validation dataset
+model.eval()
+with torch.no_grad():
+    correct = 0
+    total = 0
+    for images, labels in val_loader:
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+    print('Accuracy of the quantized model on the validation dataset: {}%'.format(100 * correct / total))
+```<|endoftext|>

@@ -1,0 +1,10 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the origin and meaning of the expression "Long time no see"
+
+### Response:
+
+Hello there! "Long time no see" is an expression that is commonly used to greet someone you haven't seen in a long time. The phrase is believed to have originated in China, where it is written as "不见长时" (bù jiàn cháng shí). The phrase is a combination of two Chinese characters: "不" (bù), which means "not," and "见" (jiàn), which means "to see." The phrase is often used to express surprise or delight at seeing someone after a long time, and it is a common way to greet friends or acquaintances in Chinese culture.
+
+I hope that helps you understand the origin and meaning of this expression! Let me know if you have any other questions.

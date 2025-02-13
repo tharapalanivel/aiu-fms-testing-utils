@@ -1,0 +1,30 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python program that performs post-training quantization on a neural network and compares the accuracy of the quantized model with the original floating-point model.
+
+
+Answer:
+Here's how you can implement this:
+
+```python
+import torch
+import torch.quantization
+
+def post_training_quantization(model, input_shape):
+    model.eval()
+    quantized_model = torch.quantization.quantize_dynamic(
+        model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+    quantized_model.eval()
+    with torch.no_grad():
+        original_output = model(torch.randn(input_shape))
+        quantized_output = quantized_model(torch.randn(input_shape))
+    accuracy = (original_output == quantized_output).float().mean()
+
+    return accuracy
+```
+
+This implementation uses the `quantize_dynamic` function from the `torch.quantization` module to perform post-training quantization on the neural network. It evaluates the accuracy of the quantized model by comparing its output with the original floating-point model's output on a random input.<|endoftext|>

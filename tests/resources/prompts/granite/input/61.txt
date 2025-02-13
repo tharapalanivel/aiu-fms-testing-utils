@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python context manager class using `__enter__()` and `__exit()__` that measures the execution time of the code block within the context and prints the duration when exiting the block.
+
+
+Answer:

@@ -1,0 +1,77 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Go function that implements a concurrent file downloader. The function should download multiple files in parallel, with each file being downloaded in chunks using goroutines.
+
+
+Answer:
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sync"
+)
+
+func downloadFile(url, filename string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// Create the file
+	out, err := os.Create(filename)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error downloading file:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+		return
+	}
+}
+
+func main() {
+	// URLs of files to download
+	urls := []string{
+		"https://www.example.com/file1.txt",
+		"https://www.example.com/file2.txt",
+		"https://www.example.com/file3.txt",
+	}
+
+	// Create a WaitGroup to track the number of goroutines
+	var wg sync.WaitGroup
+
+	// Loop through the URLs and download the files
+	for _, url := range urls {
+		// Get the filename from the URL
+		filename := filepath.Base(url)
+
+		// Increment the WaitGroup counter
+		wg.Add(1)
+
+		// Launch a goroutine to download the file
+		go downloadFile(url, filename, &wg)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+
+	fmt.Println("All files downloaded successfully")
+}
+```<|endoftext|>

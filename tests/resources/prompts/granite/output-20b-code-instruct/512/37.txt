@@ -1,0 +1,42 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a unit test unit using the `pytest` framework for a simple Python class that processes a list of numerical data, including tests for edge cases such as empty list and invalid input types.
+
+
+Answer:
+```python
+import pytest
+
+class ListProcessor:
+    def __init__(self, data):
+        self.data = data
+
+    def process(self):
+        if not isinstance(self.data, list):
+            raise TypeError("Data must be a list")
+
+        if len(self.data) == 0:
+            raise ValueError("Data list must not be empty")
+
+        return sum(self.data) / len(self.data)
+
+def test_process_with_valid_data():
+    data = [1, 2, 3, 4, 5]
+    processor = ListProcessor(data)
+    assert processor.process() == 3
+
+def test_process_with_empty_list():
+    data = []
+    processor = ListProcessor(data)
+    with pytest.raises(ValueError):
+        processor.process()
+
+def test_process_with_invalid_data_type():
+    data = "invalid data type"
+    processor = ListProcessor(data)
+    with pytest.raises(TypeError):
+        processor.process()
+```<|endoftext|>

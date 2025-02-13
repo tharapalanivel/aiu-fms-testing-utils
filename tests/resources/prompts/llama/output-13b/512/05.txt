@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main operas composed by Gioachino Rossini ?
+
+### Response:
+Certainly! Gioachino Rossini was a prolific composer of opera, and some of his most famous works in this genre include:
+
+1. "The Barber of Seville" (Il Barbiere di Siviglia), a comedy premiered in 1816 that is still widely performed today.
+2. "William Tell" (Guillaume Tell), a grand opera premiered in 1829 that tells the story of the legendary Swiss hero William Tell.
+3. "The Italian Girl in Algiers" (La Cenerentola), a romantic comedy premiered in 1817 that is based on the classic fairy tale "Cinderella."
+4. "Otello" (Othello), a tragic opera premiered in 1816 that is based on the Shakespearean play of the same name.
+5. "The Thieving Magpie" (La Gazza Ladra), a comedy premiered in 1817 that tells the story of a young woman who is falsely accused of theft.
+
+I hope this information is helpful! Is there anything else you would like to know about Gioachino Rossini or his operas?

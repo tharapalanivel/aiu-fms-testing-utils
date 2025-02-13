@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the difference between a simile and a metaphore, with examples
+
+### Response:
+Thank you for reaching out! I'd be happy to help you understand the difference between a simile and a metaphor.
+
+A simile is a figure of speech that compares two things by using the words "like" or "as." For example, "He ran like a cheetah" or "She sings as sweetly as a bird." The word "like" is used to make the comparison, which helps to explain the similarity between the two things being compared.
+
+On the other hand, a metaphor is a comparison between two things without using the words "like" or "as." For example, "He is a shining star" or "Life is a journey." In a metaphor, the two things being compared are directly equated, without any additional words to explain the comparison.
+
+To illustrate the difference further, let's consider an example. Imagine you are describing a beautiful sunset to a friend. You could say, "The sunset was like a painting" (simile), or "The sunset was a painting" (metaphor). In the first example, you are using the word "like" to compare the sunset to a painting, while in the second example, you are directly equating the sunset to a painting without any additional words.
+
+I hope this helps clarify the difference between a simile and a metaphor for you! Let me know if you have any other questions.

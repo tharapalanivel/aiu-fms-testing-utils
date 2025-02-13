@@ -1,0 +1,32 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:
+Hello! I'd be happy to help you with that. The Pythagorean theorem is a fundamental concept in geometry that states that the square of the length of the hypotenuse (the side opposite the right angle) of a right triangle is equal to the sum of the squares of the other two sides. This theorem can be expressed mathematically as:
+
+a^2 + b^2 = c^2
+
+where a and b are the lengths of the other two sides, and c is the length of the hypotenuse.
+
+Here's an example of how to use the Pythagorean theorem in a real-world context:
+
+Suppose you are a carpenter building a triangular roof for a house. You need to determine the length of the hypotenuse (the side opposite the right angle) of the triangle so that you can cut the wood to the correct size. You know the length of the other two sides of the triangle, which are 5 feet and 7 feet. Using the Pythagorean theorem, you can calculate the length of the hypotenuse as follows:
+
+a = 5 feet
+b = 7 feet
+c = ?
+
+Using the theorem, we get:
+
+5^2 + 7^2 = c^2
+25 + 49 = c^2
+74 = c^2
+
+c = √74
+c ≈ 8.5 feet
+
+Therefore, the length of the hypotenuse of the triangle is approximately 8.5 feet. By using the Pythagorean theorem, you can accurately determine the length of the hypotenuse and cut the wood to the correct size for your roof.
+
+I hope this helps! Let me know if you have any other questions.

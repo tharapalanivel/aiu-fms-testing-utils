@@ -1,0 +1,23 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the difference between covalent and ionic bonds, with examples
+
+### Response:
+
+Covalent and ionic bonds are two different types of chemical bonds that are formed between atoms. A covalent bond is a chemical bond that is formed when two atoms share one or more pairs of electrons in order to form a stable molecule. This type of bond is typically formed between atoms of the same element or between atoms of different elements that have similar electronegativity values.
+
+On the other hand, an ionic bond is a chemical bond that is formed when one or more electrons are transferred from one atom to another, resulting in the formation of ions with opposite charges. The atom that loses an electron becomes a positively charged ion, called a cation, while the atom that gains an electron becomes a negatively charged ion, called an anion. The electrostatic attraction between the positively charged cation and the negatively charged anion holds the ions together and forms an ionic bond.
+
+Here are some examples of covalent and ionic bonds:
+
+* Covalent bonds:
+	+ Hydrogen (H) and oxygen (O) in water (H2O)
+	+ Carbon (C) and hydrogen (H) in methane (CH4)
+	+ Nitrogen (N) and oxygen (O) in nitrous oxide (N2O)
+* Ionic bonds:
+	+ Sodium (Na) and chlorine (Cl) in table salt (NaCl)
+	+ Calcium (Ca) and oxygen (O) in calcium oxide (CaO)
+	+ Aluminum (Al) and oxygen (O) in aluminum oxide (Al2O3)
+
+I hope this helps! Let me know if you have any further questions.

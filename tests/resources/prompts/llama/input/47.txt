@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss the influence of French existentialism on Albert Camus' `The Stranger`
+
+### Response:

@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function using `asyncio` to make multiple asynchronous web requests and return the first successful response, cancelling the rest.
+
+
+Answer:

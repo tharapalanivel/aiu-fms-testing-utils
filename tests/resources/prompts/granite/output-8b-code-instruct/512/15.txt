@@ -1,0 +1,44 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using Java's `ExecutorService`, write a program that submits a list of tasks (runnable) and waits for all of them to complete before printing a final message.
+
+
+Answer:
+Here's an example of how you can use `ExecutorService` to submit a list of tasks and wait for them to complete:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class TaskRunner {
+    public static void main(String[] args) {
+        List<Runnable> tasks = new ArrayList<>();
+        tasks.add(() -> System.out.println("Task 1"));
+        tasks.add(() -> System.out.println("Task 2"));
+        tasks.add(() -> System.out.println("Task 3"));
+
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        for (Runnable task : tasks) {
+            executor.submit(task);
+        }
+
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+            // Wait for all tasks to complete
+        }
+
+        System.out.println("All tasks completed");
+    }
+}
+```
+
+In this example, we create a list of tasks and submit them to an `ExecutorService` using the `submit` method. The `submit` method returns a `Future` object, which we can use to check if the task has completed.
+
+We then create a fixed thread pool with a size equal to the number of tasks. This ensures that all tasks are executed concurrently.
+
+Finally, we wait for all tasks to complete by calling the `shutdown` method on the `ExecutorService`. We use a `while` loop to check if the executor service is terminated, which indicates that all tasks have completed.<|endoftext|>

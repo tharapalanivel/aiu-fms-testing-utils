@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:

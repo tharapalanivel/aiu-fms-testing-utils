@@ -1,0 +1,78 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Go function that implements a concurrent file downloader. The function should download multiple files in parallel, with each file being downloaded in chunks using goroutines.
+
+
+Answer:
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sync"
+)
+
+func main() {
+	// Define the URLs of the files to download
+	urls := []string{
+		"https://www.example.com/file1.txt",
+		"https://www.example.com/file2.txt",
+		"https://www.example.com/file3.txt",
+	}
+
+	// Create a WaitGroup to track the number of goroutines running
+	var wg sync.WaitGroup
+
+	// Iterate over the URLs and download each file in parallel
+	for _, url := range urls {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			downloadFile(url)
+		}(url)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+}
+
+func downloadFile(url string) {
+	// Create a temporary file to store the downloaded data
+	tmpFile, err := os.CreateTemp("", "downloaded-file-*")
+	if err != nil {
+		fmt.Println("Error creating temporary file:", err)
+		return
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Download the file in chunks using goroutines
+	for i := 0; i < 10; i++ {
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			downloadChunk(url, tmpFile, i)
+		}(i)
+		wg.Wait()
+	}
+
+	// Rename the temporary file to the final file name
+	finalFileName := filepath.Base(url)
+	os.Rename(tmpFile.Name(), finalFileName)
+	fmt.Println("Downloaded", finalFileName)
+}
+
+func downloadChunk(url string, tmpFile *os.File, chunkNum int) {
+	// Create a client to make HTTP requests
+	client := http.Client{}
+
+	// Create a request to download the file
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("

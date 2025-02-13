@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement numerical integration using Simpson's rule in Julia to compute the definite integral of a function over a given interval.
+
+
+Answer:

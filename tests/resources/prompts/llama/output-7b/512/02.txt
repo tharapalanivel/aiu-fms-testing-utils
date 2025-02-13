@@ -1,0 +1,17 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain some popular greetings in Spanish.
+
+### Response:
+¡Hola! (Hello!) - This is a common greeting in Spanish, used to acknowledge someone or to start a conversation.
+
+¿Cómo estás? (How are you?) - This is another common greeting in Spanish, which is used to ask about someone's well-being or to show concern for their well-being.
+
+Buenos días (Good morning) - This greeting is used to acknowledge someone in the morning, and it is a polite way to start a conversation.
+
+Buenas tardes (Good afternoon) - This greeting is used to acknowledge someone in the afternoon, and it is also a polite way to start a conversation.
+
+Buenas noches (Good evening) - This greeting is used to acknowledge someone in the evening, and it is a polite way to end a conversation or to say goodnight.
+
+I hope this helps! Let me know if you have any other questions.

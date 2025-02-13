@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a JAX program that demonstrates vectorized operations by performing element-wise addition, multiplication, and exponentiation on two large arrays using `jax.numpy`.
+
+
+Answer:

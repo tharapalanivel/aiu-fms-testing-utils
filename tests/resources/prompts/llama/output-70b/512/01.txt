@@ -1,0 +1,8 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What is LLaMa?[/INST]
+
+### Response:
+
+Hello! LLaMa is an AI assistant developed by Meta AI that can understand and respond to human input in a conversational manner. It is trained on a massive dataset of text from the internet and can generate human-like responses to a wide range of topics and questions. It can be used to create chatbots, virtual assistants, and other applications that require natural language understanding and generation capabilities. Is there anything else you would like to know about LLaMa?

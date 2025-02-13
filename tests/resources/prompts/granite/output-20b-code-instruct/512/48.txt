@@ -1,0 +1,46 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a COBOL program that processes a list of employee records from a flat file, calculates the total payroll (sum of salaries), and generates a report sorted by department.
+
+
+Answer:
+```
+IDENTIFICATION DIVISION.
+PROGRAM-ID. EMPLOYEE-REPORT.
+
+DATA DIVISION.
+FILE SECTION.
+FD  EMPLOYEE-DATA
+    LABEL RECORDS STANDARD
+    VALUE OF FILE-ID "EMPLOYEE-DATA"
+    RECORDING MODE F
+    BLOCK CONTAINS 80 CHARACTERS
+    DATA RECORD IS EMPLOYEE-RECORD.
+
+WORKING-STORAGE SECTION.
+01  EMPLOYEE-RECORD.
+    05  EMPLOYEE-ID                        PIC X(8).
+    05  EMPLOYEE-NAME.
+        10  FIRST-NAME                 PIC X(20).
+        10  LAST-NAME                  PIC X(20).
+    05  DEPARTMENT                        PIC X(20).
+    05  SALARY                            PIC S9(9)V99.
+01  TOTAL-PAYROLL                     PIC S9(9)V99.
+01  DEPARTMENT-TOTAL                  PIC S9(9)V99.
+01  DEPARTMENT-NAME                   PIC X(20).
+01  DEPARTMENT-NAME-TEMP              PIC X(20).
+01  DEPARTMENT-NAME-TEMP-2            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-3            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-4            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-5            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-6            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-7            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-8            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-9            PIC X(20).
+01  DEPARTMENT-NAME-TEMP-10           PIC X(20).
+01  DEPARTMENT-NAME-TEMP-11           PIC X(20).
+01  DEPARTMENT-NAME-TEMP-12           PIC X(20).
+01  DEPARTMENT-

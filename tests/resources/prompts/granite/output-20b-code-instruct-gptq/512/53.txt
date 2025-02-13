@@ -1,0 +1,61 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console.
+
+
+Answer:
+```
+import java.sql.*;
+
+public class JDBCExample {
+    public static void main(String[] args) {
+        // Connect to the database
+        String url = "jdbc:mysql://localhost:3306/mydatabase";
+        String username = "myusername";
+        String password = "mypassword";
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, username, password);
+            System.out.println("Connected to the database");
+        } catch (SQLException e) {
+            System.out.println("Failed to connect to the database");
+            e.printStackTrace();
+            return;
+        }
+
+        // Retrieve data from the table
+        String sql = "SELECT * FROM mytable";
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            System.out.println("Retrieved data from the table");
+
+            // Display the results in a formatted table
+            System.out.println("ID\tName\tAge");
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+                System.out.println(id + "\t" + name + "\t" + age);
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to retrieve data from the table");
+            e.printStackTrace();
+            return;
+        }
+
+        // Close the connection
+        try {
+            conn.close();
+            System.out.println("Closed the connection");
+        } catch (SQLException e) {
+            System.out.println("Failed to close the connection");
+            e.printStackTrace();
+            return;
+        }
+    }
+}
+```<|endoftext|>

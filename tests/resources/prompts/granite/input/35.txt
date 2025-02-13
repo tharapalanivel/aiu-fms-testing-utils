@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function that applies dynamic quantization to a pre-trained transformer model (such as BERT or GPT) in PyTorch, and compares the model size and inference speed before and after quantization.
+
+
+Answer:

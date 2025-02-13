@@ -1,0 +1,30 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python function that makes an HTTP request using `requests.get()`. Write unit tests for the function, using the `unittest.mock` module to mock the API response without making an actual network call.
+
+
+Answer:
+```python
+import unittest
+from unittest.mock import patch
+
+import requests
+
+def get_weather(city):
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid=YOUR_API_KEY"
+    response = requests.get(url)
+    return response.json()
+
+class TestGetWeather(unittest.TestCase):
+    @patch('requests.get')
+    def test_get_weather(self, mock_get):
+        mock_get.return_value.json.return_value = {'test': 'test'}
+        result = get_weather('test')
+        self.assertEqual(result, {'test': 'test'})
+
+if __name__ == '__main__':
+    unittest.main()
+```<|endoftext|>

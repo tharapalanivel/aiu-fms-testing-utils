@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that loads a pre-trained neural network from PyTorch, converts it to a quantized version using PyTorch's static quantization techniques, and evaluates its performance on a validation set.
+
+
+Answer:

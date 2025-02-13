@@ -1,0 +1,6 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the life cycle of a star, from formation to supernova or black hole
+
+### Response:

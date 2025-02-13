@@ -1,0 +1,7 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the water cycle in simple terms for a 10-year old
+
+### Response:
+Hi there! The water cycle is like a big circle that water goes through in nature. It starts high in the sky where the sun heats up the water and makes it turn into water vapor. This vapor rises up into the air and forms clouds. When the clouds get too full of water vapor, they start to fall to the ground as rain or snow. The rain or snow falls on the ground and flows across the land into rivers, lakes, and oceans. The water in the rivers, lakes, and oceans gets heated up by the sun and turns back into water vapor. Then, the cycle starts all over again! So, the water cycle is like a big circle that never ends.

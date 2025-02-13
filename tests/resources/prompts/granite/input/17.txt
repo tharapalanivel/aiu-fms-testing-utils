@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Rust program that reads a file line by line and prints each line reversed. Handle possible errors using Rust's `Result` and `Option` types.
+
+
+Answer:

@@ -1,0 +1,40 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a unit test unit using the `pytest` framework for a simple Python class that processes a list of numerical data, including tests for edge cases such as empty list and invalid input types.
+
+
+Answer:
+Here is an example of a unit test using the `pytest` framework for a simple Python class that processes a list of numerical data:
+
+```python
+import pytest
+
+class NumericalProcessor:
+    def __init__(self, data):
+        self.data = data
+
+    def process(self):
+        if not self.data:
+            raise ValueError("Empty list")
+        if not all(isinstance(x, (int, float)) for x in self.data):
+            raise TypeError("Invalid input type")
+        return sum(self.data)
+
+def test_empty_list():
+    with pytest.raises(ValueError):
+        NumericalProcessor([]).process()
+
+def test_invalid_input_type():
+    with pytest.raises(TypeError):
+        NumericalProcessor([1, 2, "3"]).process()
+
+def test_valid_input():
+    assert NumericalProcessor([1, 2, 3]).process() == 6
+```
+
+In this example, we have a `NumericalProcessor` class that takes a list of numerical data as input and processes it by summing all the numbers in the list. We have also written three unit tests using the `pytest` framework to test the class's behavior.
+
+The first test, `test_empty_list`, checks that the `process` method raises a `ValueError` when an empty list is passed as input. The second test, `test_invalid_input_type`, checks that the `process` method raises a `TypeError` when a list containing non-numerical elements is passed as input. The third test, `test_valid_input`, checks that the `process` method returns the correct sum when a valid list of numerical data is passed as input.<|endoftext|>

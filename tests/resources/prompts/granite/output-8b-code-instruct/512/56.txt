@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python program that uses the `multiprocessing` library to create a pool of worker processes that calculate the factorial of numbers in a large list concurrently.
+
+
+Answer:
+Here's how you can implement this:
+
+```python
+import multiprocessing
+
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+def calculate_factorial(numbers):
+    pool = multiprocessing.Pool()
+    results = pool.map(factorial, numbers)
+    pool.close()
+    pool.join()
+    return results
+numbers = [1, 2, 3, 4, 5]
+results = calculate_factorial(numbers)
+print(results)
+```
+
+This implementation uses the `multiprocessing` library to create a pool of worker processes that calculate the factorial of numbers in a large list concurrently. The `calculate_factorial` function creates a pool of worker processes using `multiprocessing.Pool()`, and then uses the `map` function to apply the `factorial` function to each number in the list. The `pool.close()` and `pool.join()` methods are used to close the pool and wait for all worker processes to finish. Finally, the results are returned and printed.<|endoftext|>

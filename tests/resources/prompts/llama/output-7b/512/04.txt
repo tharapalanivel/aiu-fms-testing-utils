@@ -1,0 +1,20 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main attractions in Paris ?
+
+### Response:
+Bonjour! Paris, the City of Light, is home to numerous iconic landmarks, cultural institutions, and charming neighborhoods. Here are some of the main attractions that you won't want to miss:
+
+1. The Eiffel Tower: This iconic structure is one of the most recognizable symbols of Paris and offers breathtaking views of the city from its top deck.
+2. The Louvre Museum: Housing some of the world's most famous artworks, including the Mona Lisa, the Louvre is a must-visit for art lovers and history buffs.
+3. Notre-Dame Cathedral: This beautiful cathedral is one of the most famous examples of Gothic architecture in Europe and offers stunning views of the Seine River.
+4. The Champs-Élysées: This famous avenue is lined with cafes, shops, and theaters, and offers a glimpse into the city's vibrant nightlife.
+5. Montmartre: This charming neighborhood is known for its bohemian vibe, street artists, and stunning views of the city from the top of the hill.
+6. Arc de Triomphe: This iconic monument honors the soldiers who fought and died for France, and offers panoramic views of the city from its rooftop terrace.
+7. Musée d'Orsay: This museum houses an impressive collection of Impressionist and Post-Impressionist art, including works by Monet, Renoir, and Van Gogh.
+8. Sainte-Chapelle: This beautiful Gothic chapel is known for its stunning stained glass windows and offers a peaceful retreat from the hustle and bustle of the city.
+9. Palace of Versailles: This former royal palace is located just outside of Paris and features opulent decor, stunning gardens, and a variety of cultural attractions.
+10. Montparnasse Tower: This modern skyscraper offers panoramic views of the city from its observation deck, and is a great spot to watch the sunset over Paris.
+
+I hope this helps you plan your trip to Paris! Is there anything else I can help you with?

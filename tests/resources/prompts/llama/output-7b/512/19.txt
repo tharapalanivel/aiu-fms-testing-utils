@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the characteristics of Baroque music and name three prominent composers from that period
+
+### Response:
+Of course! Baroque music is a period of classical music that emerged in the early 17th century and lasted until the mid-18th century. Characteristics of Baroque music include complex harmonies, intricate melodies, and a strong sense of drama and emotion.
+
+Three prominent composers from the Baroque period are:
+
+1. Antonio Vivaldi (1678-1741) - Known for his concertos, including "The Four Seasons," Vivaldi was a prolific composer who wrote over 500 concertos during his lifetime.
+2. Johann Sebastian Bach (1685-1750) - A master of counterpoint and composition, Bach wrote numerous works during the Baroque period, including his famous "Cello Suites" and "Mass in B minor."
+3. George Frideric Handel (1685-1759) - A German-born composer who spent much of his career in England, Handel was known for his operas, oratorios, and instrumental works. His "Water Music" and "Messiah" are two of his most famous compositions.
+
+I hope this information helps! Let me know if you have any other questions.

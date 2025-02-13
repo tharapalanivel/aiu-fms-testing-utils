@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python decorator that caches the results of a function call based on its arguments, and returns the cached result for future calls with the same arguments.
+
+
+Answer:

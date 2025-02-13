@@ -1,0 +1,42 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console.
+
+
+Answer:
+Here is a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console:
+
+```java
+import java.sql.*;
+
+public class MySQLDatabaseExample {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/mydatabase";
+        String user = "root";
+        String password = "password";
+
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM mytable");
+
+            System.out.println("ID | NAME | AGE");
+            System.out.println("-----------------------");
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                int age = resultSet.getInt("age");
+                System.out.println(id + " | " + name + " | " + age);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+This script uses the JDBC API to connect to a MySQL database and execute a SELECT query to retrieve data from a table. It then prints the results in a formatted table in the console.
+
+Note that you need to replace the `url`, `user`, and `password` variables with the appropriate values for your MySQL database.<|endoftext|>

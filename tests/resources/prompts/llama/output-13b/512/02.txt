@@ -1,0 +1,13 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain some popular greetings in Spanish.
+
+### Response:
+¡Hola! (OH-lah) - Hello!
+
+Buenos días (BWEH-nohs DEE-ahs) - Good morning
+Buenas tardes (BWEH-nahs TAR-dehs) - Good afternoon
+Buenas noches (BWEH-nahs NOH-chehs) - Good evening
+
+These are some common greetings in Spanish that you can use when speaking with Spanish speakers. ¡Hasta luego! (HAH-stah LOH-goh) - See you later!

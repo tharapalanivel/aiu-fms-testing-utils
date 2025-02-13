@@ -1,0 +1,15 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the ancient wonders of the world ?
+
+### Response:
+The Seven Wonders of the Ancient World is a list of remarkable constructions from antiquity that were considered the most impressive achievements of their time. Here are the seven ancient wonders of the world:
+
+1. The Great Pyramid of Giza: The oldest and only surviving structure from the original list of Seven Wonders, the Great Pyramid of Giza is located in modern-day Egypt and is believed to have been built as a tomb for the pharaoh Khufu.
+2. The Hanging Gardens of Babylon: Located in present-day Iraq, the Hanging Gardens of Babylon were a series of terraced gardens supported by a complex system of arches and aqueducts, said to have been built by the Babylonian king Nebuchadnezzar II for his wife, Queen Amytis.
+3. The Statue of Zeus at Olympia: This gigantic statue of the Greek god Zeus was built by the famous sculptor Phidias and was located in the temple of Zeus at Olympia, Greece. It was completed around 432 BCE and was considered one of the greatest artistic achievements of the ancient world.
+4. The Temple of Artemis at Ephesus: This massive temple was built in present-day Turkey to honor the Greek goddess Artemis and was completed around 550 BCE. It was known for its impressive size and ornate decorations.
+5. The Mausoleum at Halicarnassus: This grand tomb was built for the Persian king Mausolus around 350 BCE in present-day Turkey. It was famous for its intricate sculptures and massive size.
+6. The Colossus of Rhodes: This massive bronze statue of the Greek god Helios was built in the Greek city of Rhodes around 280 BCE. It was destroyed in an earthquake in 226 BCE, but its remains were considered one of the most impressive sights in the ancient world.
+7. The Lighthouse of Alexandria: This towering lighthouse was built on the island of Pharos in Egypt around 280 BCE to serve as a beacon for ships. It stood at over 120 meters tall and was considered one of the most impressive architectural

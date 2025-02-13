@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement batch gradient descent using JAX's automatic differentiation (`jax.grad`) to optimize a linear regression model. Compare the model's performance with stochastic gradient descent (SGD).
+
+
+Answer:
+Here's how you can implement batch gradient descent using JAX's automatic differentiation:
+
+```python
+import jax
+import jax.numpy as jnp
+
+def loss_fn(params, X, y):
+    y_pred = jnp.dot(X, params)
+    return jnp.mean((y - y_pred) ** 2)
+
+def grad_loss_fn(params, X, y):
+    return jax.grad(loss_fn)(params, X, y)
+
+def batch_gradient_descent(params, X, y, learning_rate, num_iterations):
+    for _ in range(num_iterations):
+        grads = grad_loss_fn(params, X, y)
+        params = params - learning_rate * grads
+    return params
+```
+
+Batch gradient descent updates the model parameters by computing the gradient of the loss function with respect to the parameters and updating the parameters in the direction of the negative gradient. This process is repeated for a specified number of iterations.
+
+Comparing the performance of batch gradient descent with stochastic gradient descent (SGD) involves evaluating the model's performance on a validation set after each iteration. SGD updates the model parameters based on a randomly selected subset of the training data, while batch gradient descent updates the model parameters based on the entire training set. The choice between batch gradient descent and SGD depends on the size of the training set and the computational resources available.<|endoftext|>

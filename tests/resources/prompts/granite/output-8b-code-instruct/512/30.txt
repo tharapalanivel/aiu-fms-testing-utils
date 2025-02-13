@@ -1,0 +1,40 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Java method that reads a CSV file and converts each row into an object of a custom class. Use Java's `BufferedReader` and handle file I/O exceptions appropriately.
+
+
+Answer:
+Here's an example implementation of the method:
+
+```java
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CsvReader {
+    public static List<CustomObject> readCsv(String filePath) {
+        List<CustomObject> objects = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                CustomObject object = new CustomObject();
+                object.setId(Integer.parseInt(fields[0]));
+                object.setName(fields[1]);
+                object.setAge(Integer.parseInt(fields[2]));
+                objects.add(object);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return objects;
+    }
+}
+```
+
+In this implementation, we use a `BufferedReader` to read the CSV file line by line. For each line, we split the fields using the comma delimiter and create a new `CustomObject` instance. We set the object's properties based on the fields in the CSV file. Finally, we add the object to a list of `CustomObject` instances and return it.<|endoftext|>

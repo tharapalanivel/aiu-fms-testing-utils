@@ -1,0 +1,25 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that recursively searches for all files larger than 100MB within a given directory and moves them to a separate folder called `large_files`.
+
+
+Answer:
+Here's a Bash script that recursively searches for all files larger than 100MB within a given directory and moves them to a separate folder called `large_files`:
+
+```bash
+#!/bin/bash
+
+# Define the directory to search
+directory="/path/to/search"
+
+# Create the large_files directory if it doesn't exist
+mkdir -p large_files
+
+# Find all files larger than 100MB and move them to the large_files directory
+find "$directory" -type f -size +100M -exec mv {} large_files \;
+```
+
+This script uses the `find` command to search for all files in the specified directory and its subdirectories that are larger than 100MB. The `-type f` option ensures that only files are considered, and the `-size +100M` option specifies the file size threshold. The `-exec` option is used to execute the `mv` command to move each file to the `large_files` directory. The `{}` placeholder is replaced with the name of each file that matches the search criteria.<|endoftext|>

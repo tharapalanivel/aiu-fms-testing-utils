@@ -1,0 +1,56 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Using Java's `CompletableFuture`, write a method that performs two asynchronous HTTP requests and returns the combined response after both requests have been completed.
+
+
+Answer:
+```java
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+
+public class Solution {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+        String url1 = "https://jsonplaceholder.typicode.com/posts/1";
+        String url2 = "https://jsonplaceholder.typicode.com/posts/2";
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        HttpClient client = HttpClientBuilder.create().build();
+
+        CompletableFuture<HttpResponse> future1 = CompletableFuture.supplyAsync(() -> {
+            try {
+                return client.execute(new HttpGet(url1));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executor);
+
+        CompletableFuture<HttpResponse> future2 = CompletableFuture.supplyAsync(() -> {
+            try {
+                return client.execute(new HttpGet(url2));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executor);
+
+        CompletableFuture<String> combinedResponse = future1.thenCombine(future2, (response1, response2) -> {
+            try {
+                return response1.getEntity().getContent() + "\n" + response2.getEntity().getContent();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        System.out.println(combinedResponse.get());
+    }
+}
+```<|endoftext|>

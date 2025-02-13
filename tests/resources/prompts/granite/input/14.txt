@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Ruby class `Person` that has private attributes `name` and `age`. Provide getter and setter methods and override the `to_s` method to return a formatted string containing the person's details.
+
+
+Answer:

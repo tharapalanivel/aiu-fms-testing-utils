@@ -1,0 +1,29 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a function in C++ that takes a 2D matrix and returns its transpose without any built-in functions.
+
+
+Answer:
+Here's how you could do it:
+
+```cpp
+#include <vector>
+
+std::vector<std::vector<int>> transposeMatrix(const std::vector<std::vector<int>>& matrix) {
+    int rows = matrix.size();
+    int cols = matrix[0].size();
+
+    std::vector<std::vector<int>> transposed(cols, std::vector<int>(rows));
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            transposed[j][i] = matrix[i][j];
+        }
+    }
+
+    return transposed;
+}
+```<|endoftext|>

@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python program that performs post-training quantization on a neural network and compares the accuracy of the quantized model with the original floating-point model.
+
+
+Answer:

@@ -1,0 +1,29 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a JavaScript function that flattens a deeply nested array of integers (e.g., `[1, [2, [3, 4]]]` should become `[1, 2, 3, 4]`).
+
+
+Answer:
+Here's how you can implement this:
+
+```javascript
+function flattenArray(arr) {
+    const flattened = [];
+
+    function flatten(arr) {
+        for (const item of arr) {
+            if (Array.isArray(item)) {
+                flatten(item);
+            } else {
+                flattened.push(item);
+            }
+        }
+    }
+
+    flatten(arr);
+    return flattened;
+}
+```<|endoftext|>

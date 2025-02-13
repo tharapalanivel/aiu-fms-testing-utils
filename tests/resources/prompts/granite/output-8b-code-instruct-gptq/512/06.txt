@@ -1,0 +1,84 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a linked list in C++ with support for inserting a node at any position and deleting a node by value.
+
+
+Answer:
+```cpp
+#include <iostream>
+
+struct Node {
+    int data;
+    Node* next;
+};
+
+class LinkedList {
+private:
+    Node* head;
+    Node* tail;
+    int size;
+
+public:
+    LinkedList() {
+        head = nullptr;
+        tail = nullptr;
+        size = 0;
+    }
+
+    void insertAtHead(int data) {
+        Node* newNode = new Node();
+        newNode->data = data;
+        newNode->next = head;
+        head = newNode;
+        if (size == 0) {
+            tail = newNode;
+        }
+        size++;
+    }
+
+    void deleteNode(int data) {
+        Node* curr = head;
+        Node* prev = nullptr;
+        while (curr != nullptr) {
+            if (curr->data == data) {
+                if (prev == nullptr) {
+                    head = curr->next;
+                } else {
+                    prev->next = curr->next;
+                }
+                if (curr == tail) {
+                    tail = prev;
+                }
+                delete curr;
+                size--;
+                return;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+    }
+
+    void display() {
+        Node* curr = head;
+        while (curr != nullptr) {
+            std::cout << curr->data << " ";
+            curr = curr->next;
+        }
+        std::cout << std::endl;
+    }
+};
+
+int main() {
+    LinkedList list;
+    list.insertAtHead(1);
+    list.insertAtHead(2);
+    list.insertAtHead(3);
+    list.display(); // Output: 3 2 1
+    list.deleteNode(2);
+    list.display(); // Output: 3 1
+    return 0;
+}
+```<|endoftext|>

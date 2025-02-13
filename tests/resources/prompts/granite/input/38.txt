@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python function that makes an HTTP request using `requests.get()`. Write unit tests for the function, using the `unittest.mock` module to mock the API response without making an actual network call.
+
+
+Answer:

@@ -1,0 +1,26 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Rust program that reads a file line by line and prints each line reversed. Handle possible errors using Rust's `Result` and `Option` types.
+
+
+Answer:
+```rust
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::io;
+
+fn main() {
+    let filename = "input.txt";
+    let file = File::open(filename).expect("Unable to open file");
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line.expect("Unable to read line");
+        let reversed = line.chars().rev().collect::<String>();
+        println!("{}", reversed);
+    }
+}
+```<|endoftext|>

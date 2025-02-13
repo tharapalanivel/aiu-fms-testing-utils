@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python program that performs post-training quantization on a neural network and compares the accuracy of the quantized model with the original floating-point model.
+
+
+Answer:
+Here's an example of how you can perform post-training quantization on a neural network using TensorFlow:
+
+```python
+import tensorflow as tf
+
+# Load the original floating-point model
+model = tf.keras.models.load_model('original_model.h5')
+
+# Convert the model to a quantized model
+quantized_model = tf.keras.quantize.quantize_apply(model)
+
+# Evaluate the accuracy of the original model
+original_accuracy = model.evaluate(x_test, y_test)
+
+# Evaluate the accuracy of the quantized model
+quantized_accuracy = quantized_model.evaluate(x_test, y_test)
+
+# Print the accuracy of the original and quantized models
+print('Original model accuracy:', original_accuracy)
+print('Quantized model accuracy:', quantized_accuracy)
+```
+
+In this example, we first load the original floating-point model using `tf.keras.models.load_model`. Then, we use `tf.keras.quantize.quantize_apply` to convert the model to a quantized model. Finally, we evaluate the accuracy of both the original and quantized models using `model.evaluate` and compare the results.<|endoftext|>

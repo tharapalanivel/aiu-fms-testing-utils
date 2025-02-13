@@ -1,0 +1,22 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python function that uses `functools.lru_cache` to memoize the results of the Fibonacci sequence for faster computation of large numbers.
+
+
+Answer:
+Here's how you can implement this:
+
+```python
+import functools
+
+@functools.lru_cache(maxsize=None)
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+```
+
+This implementation uses the `functools.lru_cache` decorator to cache the results of the Fibonacci sequence. The `maxsize` parameter is set to `None` to allow unlimited caching.<|endoftext|>

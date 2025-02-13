@@ -1,0 +1,26 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an Assembly program that multiplies two integers provided as input and stores the result in a register. Use the x86 architecture.
+
+
+Answer:
+```assembly
+section .data
+    ; declare data section
+
+section .bss
+    ; declare uninitialized data section
+
+section .text
+    global _start
+
+_start:
+    ; initialize registers and memory
+    ; read input integers
+    ; perform multiplication
+    ; store result in a register
+    ; exit program
+```<|endoftext|>

@@ -1,0 +1,75 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that fine-tunes a pre-trained BERT model from the HuggingFace library on a text classification dataset, such as the IMDb movie reviews dataset.
+
+
+Answer:
+```python
+import torch
+from transformers import BertForSequenceClassification, BertTokenizer
+
+# Load the pre-trained BERT model
+model = BertForSequenceClassification.from_pretrained("bert-base-uncased")
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
+# Load the IMDb movie reviews dataset
+train_dataset = torch.load("train_dataset.pt")
+val_dataset = torch.load("val_dataset.pt")
+test_dataset = torch.load("test_dataset.pt")
+
+# Fine-tune the pre-trained BERT model on the IMDb movie reviews dataset
+num_epochs = 5
+batch_size = 32
+learning_rate = 1e-5
+
+# Define the optimizer and loss function
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+loss_fn = torch.nn.CrossEntropyLoss()
+
+# Train the model
+for epoch in range(num_epochs):
+    for batch in train_dataset:
+        input_ids = batch["input_ids"]
+        attention_mask = batch["attention_mask"]
+        labels = batch["labels"]
+
+        # Zero out the gradients
+        optimizer.zero_grad()
+
+        # Forward pass
+        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+        loss = outputs.loss
+
+        # Backward pass
+        loss.backward()
+
+        # Update the parameters
+        optimizer.step()
+
+    # Evaluate the model on the validation set
+    val_loss = 0
+    val_accuracy = 0
+    model.eval()
+    with torch.no_grad():
+        for batch in val_dataset:
+            input_ids = batch["input_ids"]
+            attention_mask = batch["attention_mask"]
+            labels = batch["labels"]
+
+            # Forward pass
+            outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+            loss = outputs.loss
+            logits = outputs.logits
+
+            # Calculate the accuracy
+            preds = torch.argmax(logits, dim=1)
+            val_accuracy += (preds == labels).sum().item() / len(labels)
+
+            # Calculate the loss
+            val_loss += loss.item()
+
+    print(f"Epoch {epoch+1}:")
+    print(f"Train Loss: {

@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+In bash, how do I list all directories and sub-directories which contain a .py file.
+
+
+Answer:

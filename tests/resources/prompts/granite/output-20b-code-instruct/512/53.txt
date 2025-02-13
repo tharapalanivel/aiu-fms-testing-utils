@@ -1,0 +1,39 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Java script that connects to a MySQL database using JDBC, retrieves data from a table, and displays the results in a formatted table in the console.
+
+
+Answer:
+```
+import java.sql.*;
+
+public class JDBCExample {
+    public static void main(String[] args) {
+        // Replace the values with your own
+        String host = "localhost";
+        String database = "my_database";
+        String username = "my_username";
+        String password = "my_password";
+
+        // Connect to the database
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://" + host + "/" + database, username, password)) {
+            // Create a statement
+            Statement stmt = conn.createStatement();
+
+            // Execute a query
+            ResultSet rs = stmt.executeQuery("SELECT * FROM my_table");
+
+            // Print the results
+            System.out.println("ID\tName\tAge");
+            while (rs.next()) {
+                System.out.println(rs.getInt("id") + "\t" + rs.getString("name") + "\t" + rs.getInt("age"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```<|endoftext|>

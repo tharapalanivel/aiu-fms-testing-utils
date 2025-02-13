@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Julia function that performs matrix multiplication on two large matrices and utilizes Julia's `@distributed` macro to parallelize the computation across multiple CPU cores.
+
+
+Answer:

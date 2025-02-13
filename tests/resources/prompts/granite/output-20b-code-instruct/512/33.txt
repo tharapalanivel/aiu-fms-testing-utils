@@ -1,0 +1,71 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that defines a PyTorch neural network, trains it on a small dataset, and compares the training speed before and after applying `torch.compile()`.
+
+
+Answer:
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.utils.data as data
+
+# Define a simple neural network
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(2, 10)
+        self.fc2 = nn.Linear(10, 1)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+# Define a training dataset
+class TrainingDataset(data.Dataset):
+    def __init__(self):
+        self.x = torch.randn(1000, 2)
+        self.y = torch.randn(1000, 1)
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, index):
+        return self.x[index], self.y[index]
+
+# Create a training dataset and a data loader
+dataset = TrainingDataset()
+dataloader = data.DataLoader(dataset, batch_size=100, shuffle=True)
+
+# Create a neural network, an optimizer, and a loss function
+net = Net()
+optimizer = optim.Adam(net.parameters())
+loss_function = nn.MSELoss()
+
+# Train the network on the training dataset
+for epoch in range(10):
+    for x, y in dataloader:
+        optimizer.zero_grad()
+        y_pred = net(x)
+        loss = loss_function(y_pred, y)
+        loss.backward()
+        optimizer.step()
+
+# Measure the training speed before applying torch.compile()
+start_time = torch.cuda.Event(enable_timing=True)
+end_time = torch.cuda.Event(enable_timing=True)
+start_time.record()
+for epoch in range(10):
+    for x, y in dataloader:
+        optimizer.zero_grad()
+        y_pred = net(x)
+        loss = loss_function(y_pred, y)
+        loss.backward()
+        optimizer.step()
+end_time.record()
+torch.cuda.synchronize()
+print(f"Training speed before torch.compile(): {start_

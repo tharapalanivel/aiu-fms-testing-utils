@@ -1,0 +1,25 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how to solve a quadratic equation with an example
+
+### Response:
+Of course! A quadratic equation is a polynomial equation of degree two, meaning the highest power of the variable (usually x) is two. To solve a quadratic equation, there are several methods you can use. One common method is factoring, which involves finding two numbers whose product is equal to the coefficient of the x^2 term, and whose sum is equal to the coefficient of the x term. Once you have factored the equation, you can set each factor equal to zero and solve for x.
+
+For example, let's consider the quadratic equation:
+
+x^2 + 5x + 6 = 0
+
+To solve this equation, we can factor it as:
+
+(x + 3)(x + 2) = 0
+
+Now, we can set each factor equal to zero and solve for x:
+
+x + 3 = 0 --> x = -3
+
+x + 2 = 0 --> x = -2
+
+So, the solutions to the equation are x = -3 and x = -2.
+
+I hope this helps! Let me know if you have any questions.

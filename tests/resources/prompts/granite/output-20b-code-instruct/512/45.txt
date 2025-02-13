@@ -1,0 +1,51 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Bash script that monitors a directory for changes (file creation, deletion, or modification) and logs each event with a timestamp into a log file.
+
+
+Answer:
+#!/bin/bash
+
+# Monitor a directory for changes (file creation, deletion, or modification) and log each event with a timestamp into a log file.
+
+# Usage: ./monitor-directory.sh <directory> <log-file>
+
+# Example: ./monitor-directory.sh /home/user/documents /home/user/logs/directory-events.log
+
+# Exit if any command fails
+set -e
+
+# Check if the number of arguments is correct
+if [ $# -ne 2 ]; then
+  echo "Usage: ./monitor-directory.sh <directory> <log-file>"
+  exit 1
+fi
+
+# Check if the directory exists
+if [ ! -d $1 ]; then
+  echo "Directory $1 does not exist."
+  exit 1
+fi
+
+# Check if the log file exists
+if [ ! -f $2 ]; then
+  echo "Log file $2 does not exist."
+  exit 1
+fi
+
+# Monitor the directory for changes
+inotifywait -m -r -e create,delete,modify $1 | while read -r line; do
+  # Get the current timestamp
+  timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+  # Extract the event type and file path from the log line
+  event=$(echo $line | cut -d ' ' -f 2)
+  file_path=$(echo $line | cut -d ' ' -f 3)
+
+  # Log the event with the timestamp
+  echo "$timestamp - $event - $file_path" >> $2
+done
+<|endoftext|>

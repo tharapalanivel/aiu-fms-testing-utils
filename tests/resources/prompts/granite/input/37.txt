@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a unit test unit using the `pytest` framework for a simple Python class that processes a list of numerical data, including tests for edge cases such as empty list and invalid input types.
+
+
+Answer:

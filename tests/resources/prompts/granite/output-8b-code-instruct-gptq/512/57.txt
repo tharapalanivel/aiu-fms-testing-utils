@@ -1,0 +1,57 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Rust program that implements a simple finite state machine (FSM) to control the flow of a traffic light system, transitioning between green, yellow, and red states.
+
+
+Answer:
+```rust
+enum TrafficLight {
+    Green,
+    Yellow,
+    Red,
+}
+
+struct TrafficLightFSM {
+    current_state: TrafficLight,
+}
+
+impl TrafficLightFSM {
+    fn new() -> TrafficLightFSM {
+        TrafficLightFSM {
+            current_state: TrafficLight::Green,
+        }
+    }
+
+    fn next_state(&mut self) {
+        match self.current_state {
+            TrafficLight::Green => {
+                self.current_state = TrafficLight::Yellow;
+            }
+            TrafficLight::Yellow => {
+                self.current_state = TrafficLight::Red;
+            }
+            TrafficLight::Red => {
+                self.current_state = TrafficLight::Green;
+            }
+        }
+    }
+
+    fn get_current_state(&self) -> TrafficLight {
+        self.current_state
+    }
+}
+
+fn main() {
+    let mut fsm = TrafficLightFSM::new();
+
+    println!("Current state: {:?}", fsm.get_current_state());
+
+    for _ in 0..3 {
+        fsm.next_state();
+        println!("Next state: {:?}", fsm.get_current_state());
+    }
+}
+```<|endoftext|>

@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+In bash, how do I list all directories and sub-directories which contain a .py file.
+
+
+Answer:
+To list all directories and sub-directories which contain a .py file in bash, you can use the following command:
+
+```
+find . -name "*.py" -type d
+```
+
+This command will search for all directories with a .py file in the current directory and its sub-directories. The -name option specifies the file name pattern to search for, and the -type option specifies the file type to search for. The .py pattern matches all files with a .py extension, and the d option specifies that only directories should be returned.
+
+Note that this command will only return directories that contain a .py file, not the files themselves. If you want to list all .py files in the current directory and its sub-directories, you can use the following command:
+
+```
+find . -name "*.py"
+```
+
+This command will search for all files with a .py extension in the current directory and its sub-directories, and will return the full path to each file.<|endoftext|>

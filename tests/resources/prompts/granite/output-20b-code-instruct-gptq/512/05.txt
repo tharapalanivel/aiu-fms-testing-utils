@@ -1,0 +1,33 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a context manager in Python that logs the start and end time of any block of code executed within its context.
+
+
+Answer:
+Here's an example of a context manager that logs the start and end time of any block of code executed within its context:
+
+```python
+import time
+
+class Timer:
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        self.start = time.time()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.time()
+        self.elapsed_time = self.end - self.start
+        print(f"{self.name} took {self.elapsed_time:.2f} seconds to complete.")
+
+with Timer("My Timer"):
+    # Code to be timed goes here
+    time.sleep(1)
+```
+
+In this example, the Timer class is a context manager that logs the start and end time of any block of code executed within its context. The __enter__ and __exit__ methods are called automatically by the with statement when the context manager is used. The elapsed time is calculated and printed at the end of the block.<|endoftext|>

@@ -1,0 +1,74 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement batch gradient descent using JAX's automatic differentiation (`jax.grad`) to optimize a linear regression model. Compare the model's performance with stochastic gradient descent (SGD).
+
+
+Answer:
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+from jax import random
+from jax.config import config
+
+config.update("jax_enable_x64", True)
+
+# Generate data
+rng = random.PRNGKey(0)
+X = random.normal(rng, (100, 1))
+y = 2 * X + 1 + random.normal(rng, (100, 1))
+
+# Define model parameters
+w = jnp.array([0.0])
+b = jnp.array([0.0])
+
+# Define loss function
+def loss(params, X, y):
+    w, b = params
+    y_pred = w * X + b
+    return jnp.mean((y_pred - y) ** 2)
+
+# Define gradient function
+grad_loss = jax.grad(loss)
+
+# Define training loop
+def train_model(X, y, num_epochs, learning_rate):
+    losses = []
+    for epoch in range(num_epochs):
+        # Compute gradients
+        grads = grad_loss((w, b), X, y)
+
+        # Update parameters
+        w -= learning_rate * grads[0]
+        b -= learning_rate * grads[1]
+
+        # Compute loss
+        loss = loss((w, b), X, y)
+        losses.append(loss)
+
+    return losses
+
+# Train model using SGD
+losses_sgd = train_model(X, y, num_epochs=100, learning_rate=0.01)
+
+# Train model using batch gradient descent
+losses_bgd = train_model(X, y, num_epochs=100, learning_rate=0.01)
+
+# Plot losses
+plt.plot(losses_sgd, label="SGD")
+plt.plot(losses_bgd, label="BGD")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+# Evaluate model performance
+y_pred_sgd = w * X + b
+y_pred_bgd = w * X + b
+
+print("SGD MSE:", jnp.mean((y_pred_

@@ -1,0 +1,19 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main attractions in Paris ?
+
+### Response:
+Bonjour! Paris, the City of Light, is known for its stunning architecture, historical landmarks, and rich cultural heritage. Some of the main attractions in Paris include:
+
+1. The Eiffel Tower: An iconic symbol of Paris and one of the most recognizable landmarks in the world, the Eiffel Tower offers breathtaking views of the city from its observation decks.
+2. The Louvre Museum: Home to some of the world's most famous artworks, including the Mona Lisa, the Venus de Milo, and the Winged Victory of Samothrace, the Louvre is a must-visit for art lovers and history enthusiasts.
+3. Notre-Dame Cathedral: A beautiful and historic church that was built in the 12th century, Notre-Dame is famous for its Gothic architecture and stunning stained-glass windows.
+4. The Arc de Triomphe: A monumental arch that honors the soldiers who fought and died for France, the Arc de Triomphe offers panoramic views of the city from its rooftop terrace.
+5. The Champs-Élysées: A famous avenue lined with cafés, shops, and theaters, the Champs-Élysées is a great place to stroll and take in the sights and sounds of Paris.
+6. Montmartre: A charming neighborhood known for its bohemian vibe, street artists, and stunning views of the city from the top of the hill, Montmartre is a must-visit for anyone looking to experience the authentic Paris.
+7. The Palace of Versailles: Located just outside of Paris, the Palace of Versailles is a former royal residence that is famous for its opulent decoration, stunning gardens, and Hall of Mirrors.
+
+These are just a few of the many attractions that Paris has to offer. Whether you're interested in history, art, fashion, or cuisine, there's something for everyone in the City of Light.
+
+I hope this helps you plan your trip to Paris! If you have any further questions or need more recommendations, please don't hesitate to ask.

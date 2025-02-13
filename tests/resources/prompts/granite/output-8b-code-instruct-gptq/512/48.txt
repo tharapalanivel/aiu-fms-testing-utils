@@ -1,0 +1,37 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a COBOL program that processes a list of employee records from a flat file, calculates the total payroll (sum of salaries), and generates a report sorted by department.
+
+
+Answer:
+```cobol
+IDENTIFICATION DIVISION.
+PROGRAM-ID. PayrollReport.
+
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 employee-record.
+   05 employee-id PIC 9(4).
+   05 department PIC X(10).
+   05 salary PIC S9(4).
+77 total-payroll PIC S9(6)V9(2).
+
+PROCEDURE DIVISION.
+MAIN-PROCEDURE.
+    PERFORM VARYING employee-record FROM 1 BY 1 UNTIL employee-record > 1000.
+        READ employee-record.
+        COMPUTE total-payroll = total-payroll + salary.
+    END-PERFORM.
+
+    DISPLAY "Total payroll: " total-payroll.
+
+    PERFORM VARYING employee-record FROM 1 BY 1 UNTIL employee-record > 1000.
+        READ employee-record.
+        DISPLAY employee-id " - " department " - " salary.
+    END-PERFORM.
+
+STOP RUN.
+```<|endoftext|>

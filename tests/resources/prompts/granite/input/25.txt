@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a COBOL program that reads a file containing employee records (employee ID, name, salary) and prints all employees with a salary above a given threshold.
+
+
+Answer:

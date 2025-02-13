@@ -1,0 +1,17 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide a list of instructions for preparing chicken soup for a family of four.
+
+### Response:
+Of course! Here are the steps to prepare chicken soup for a family of four:
+
+1. Start by gathering all the necessary ingredients: 1 pound boneless, skinless chicken breast or thighs, 4 cups of water, 1 large onion, 3 cloves of garlic, 2 carrots, 2 celery stalks, 1 teaspoon of dried thyme, 1 bay leaf, salt, and pepper.
+2. Chop the onion, garlic, carrots, and celery into small pieces and sauté them in a large pot over medium heat until they are tender.
+3. Add the chicken to the pot and cook until it is browned on all sides.
+4. Pour in the water and bring the mixture to a boil.
+5. Reduce the heat to low and let the soup simmer for 20-25 minutes or until the chicken is cooked through and the vegetables are tender.
+6. Remove the bay leaf and season the soup with salt and pepper to taste.
+7. Serve hot and enjoy!
+
+I hope this helps you prepare a delicious chicken soup for your family. Let me know if you have any questions or if there's anything else I can help you with.

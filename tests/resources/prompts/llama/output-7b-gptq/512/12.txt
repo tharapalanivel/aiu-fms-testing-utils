@@ -1,0 +1,7 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the water cycle in simple terms for a 10-year old
+
+### Response:
+Hi there! The water cycle is like a big circle that water goes through in nature. It starts high in the sky as clouds, where water droplets get together and form clouds. These clouds float around in the sky until they get too heavy and fall to the ground as rain or snow. Once the rain or snow hits the ground, it flows across the land as runoff, and some of it soaks into the ground to become groundwater. From there, it might flow into streams, rivers, or lakes, and eventually make its way back to the ocean. And the cycle starts all over again! It's like a big, never-ending loop of water moving around our planet. Isn't that cool?

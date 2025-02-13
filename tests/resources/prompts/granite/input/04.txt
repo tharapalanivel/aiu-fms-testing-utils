@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a function in C++ that takes a 2D matrix and returns its transpose without any built-in functions.
+
+
+Answer:

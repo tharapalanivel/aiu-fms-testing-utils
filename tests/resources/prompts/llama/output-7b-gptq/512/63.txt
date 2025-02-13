@@ -1,0 +1,20 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:
+
+The Pythagorean theorem is a fundamental concept in mathematics that describes the relationship between the lengths of the sides of a right triangle. In its most basic form, the theorem states that the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This equation can be written as:
+
+a^2 + b^2 = c^2
+
+For example, let's say we have a right triangle with sides of length 3, 4, and 5. Using the Pythagorean theorem, we can find the length of the hypotenuse (side opposite the right angle) as follows:
+
+c^2 = 3^2 + 4^2 = 9 + 16 = 25
+
+So, the length of the hypotenuse is 5.
+
+The Pythagorean theorem has many real-world applications, such as in architecture, engineering, and physics. For instance, it can be used to determine the height of a building or the length of a bridge based on the length of its supporting pillars. It can also be used to calculate the distance between two points on a map or the trajectory of a projectile.
+
+I hope this helps! Let me know if you have any questions or need further clarification.

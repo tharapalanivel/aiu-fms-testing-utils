@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a JAX program that demonstrates vectorized operations by performing element-wise addition, multiplication, and exponentiation on two large arrays using `jax.numpy`.
+
+
+Answer:
+Here is a JAX program that demonstrates vectorized operations:
+
+```python
+import jax.numpy as jnp
+
+# Define two large arrays
+a = jnp.arange(100000)
+b = jnp.arange(100000)
+
+# Perform element-wise addition
+c = a + b
+
+# Perform element-wise multiplication
+d = a * b
+
+# Perform element-wise exponentiation
+e = jnp.power(a, b)
+
+# Print the results
+print(c)
+print(d)
+print(e)
+```<|endoftext|>

@@ -1,0 +1,20 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main attractions in Paris ?
+
+### Response:
+Bonjour ! Paris, the City of Light, is famous for its stunning architecture, art museums, historical landmarks, and romantic atmosphere. Here are some of the main attractions you won't want to miss:
+
+1. The Eiffel Tower: An iconic symbol of Paris, this iron lady offers breathtaking views of the city from its observation decks.
+2. The Louvre Museum: Home to some of the world's most famous artworks, including the Mona Lisa, Venus de Milo, and the Winged Victory of Samothrace.
+3. Notre-Dame Cathedral: A beautiful Gothic church that survived the French Revolution and is one of the most famous cathedrals in the world.
+4. Arc de Triomphe: A monumental arch honoring the soldiers who fought and died for France, with stunning views of the city from its rooftop terrace.
+5. Montmartre: A charming neighborhood known for its bohemian vibe, street artists, and the famous Sacré-Cœur Basilica.
+6. Palace of Versailles: A former royal palace with opulent interiors, beautiful gardens, and the Hall of Mirrors.
+7. Musée d'Orsay: A museum housing an impressive collection of Impressionist and Post-Impressionist art, including works by Monet, Renoir, and Van Gogh.
+8. Champs-Élysées: A famous avenue lined with cafés, shops, and theaters, leading to the Arc de Triomphe.
+9. Sainte-Chapelle: A stunning Gothic chapel with colorful stained-glass windows and a beautiful organ.
+10. Musée Grévin wax museum: A fun attraction where you can see lifelike wax figures of famous French and international celebrities.
+
+Enjoy your time in Paris, and don't hesitate to ask if you need any more recommendations or assistance!

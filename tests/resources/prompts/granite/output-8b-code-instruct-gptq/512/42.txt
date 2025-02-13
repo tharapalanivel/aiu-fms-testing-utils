@@ -1,0 +1,24 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Julia function that performs matrix multiplication on two large matrices and utilizes Julia's `@distributed` macro to parallelize the computation across multiple CPU cores.
+
+
+Answer:
+```julia
+using Distributed
+
+function matrix_multiplication(A, B)
+    @distributed (+) for i in 1:size(A, 1)
+        row = zeros(size(B, 2))
+        for j in 1:size(B, 2)
+            for k in 1:size(B, 1)
+                row[j] += A[i, k] * B[k, j]
+            end
+        end
+        row
+    end
+end
+```<|endoftext|>

@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a SQL query that retrieves that top 3 most frequently purchased products from a `sales` table, with columns `product_id`, `quantity`, and `sale_date`.
+
+
+Answer:

@@ -1,0 +1,31 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:
+Of course! The Pythagorean theorem is a fundamental concept in geometry that describes the relationship between the lengths of the sides of a right triangle. In its simplest form, the theorem states that the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. This equation can be written as:
+
+a^2 + b^2 = c^2
+
+where a and b are the lengths of the other two sides, and c is the length of the hypotenuse.
+
+One real-world context where the Pythagorean theorem is commonly used is in the construction industry. For example, when building a house, carpenters may need to measure the length of a wall and the length of a roof beam to determine the size of the wall studs and rafters. By using the Pythagorean theorem, they can easily calculate the length of the studs and rafters without having to measure them directly.
+
+Here's an example of how this might work:
+
+Let's say a carpenter is building a wall that is 10 feet long, and the roof beam above it is 15 feet long. To determine the length of the wall studs, the carpenter can use the Pythagorean theorem as follows:
+
+10^2 + 15^2 = c^2
+
+where c is the length of the wall studs.
+
+Solving for c, we get:
+
+100 + 225 = c^2
+
+c = 16.8 feet
+
+So, the length of the wall studs is 16.8 feet.
+
+I hope this helps! Let me know if you have any questions.

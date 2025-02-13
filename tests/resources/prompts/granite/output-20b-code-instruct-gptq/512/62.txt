@@ -1,0 +1,42 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Use JAX to implement a 2D convolution operation manually, without using any deep learning library. Write a function that convolves a 2D image with a given kernel and returns the resulting feature map.
+
+
+Answer:
+import jax.numpy as jnp
+
+def convolve_2d(image, kernel):
+    """Convolves a 2D image with a given kernel and returns the resulting feature map.
+
+    Args:
+        image (jnp.ndarray): The input image, with shape (height, width).
+        kernel (jnp.ndarray): The kernel, with shape (kernel_height, kernel_width).
+
+    Returns:
+        jnp.ndarray: The resulting feature map, with shape (height, width).
+
+    Example:
+        >>> image = jnp.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        >>> kernel = jnp.array([[1, 2], [3, 4]])
+        >>> convolve_2d(image, kernel)
+        DeviceArray([[ 9, 12],
+                     [21, 28]], dtype=int32)
+    """
+    # TODO: Implement the 2D convolution operation manually, without using any deep learning library.
+    # Hint: You can use jnp.convolve() to perform the convolution operation.
+    # Hint: You can use jnp.pad() to pad the image with zeros before convolving.
+    # Hint: You can use jnp.sum() to sum the elements of the resulting feature map.
+    # Hint: You can use jnp.expand_dims() and jnp.squeeze() to reshape the image and kernel.
+    # Hint: You can use jnp.flip() to flip the kernel.
+    # Hint: You can use jnp.rot90() to rotate the kernel.
+    # Hint: You can use jnp.flipud() to flip the image.
+    # Hint: You can use jnp.fliplr() to flip the image.
+    # Hint: You can use jnp.rot90() to rotate the image.
+    # Hint: You can use jnp.rot90() and jnp.flipud() to rotate and flip the image.
+    # Hint: You can use jnp.rot90() and jnp.fliplr() to rotate and flip the image.
+    # Hint: You can use jnp.rot90() and jnp.rot90() to rotate the image.
+    # Hint: You can use jnp.rot90() and jnp.rot

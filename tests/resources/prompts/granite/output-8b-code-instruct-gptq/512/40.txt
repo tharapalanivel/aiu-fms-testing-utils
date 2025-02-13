@@ -1,0 +1,92 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a binary search tree (BST) in C++ with methods for inserting, searching, and deleting nodes, ensuring that the tree remains balanced after deletions.
+
+
+Answer:
+Here is an example implementation of a binary search tree (BST) in C++:
+
+```cpp
+#include <iostream>
+
+struct Node {
+    int key;
+    Node* left;
+    Node* right;
+    Node(int k) : key(k), left(nullptr), right(nullptr) {}
+};
+
+class BST {
+private:
+    Node* root;
+
+    void insert(Node* &node, int k) {
+        if (node == nullptr) {
+            node = new Node(k);
+        } else if (k < node->key) {
+            insert(node->left, k);
+        } else if (k > node->key) {
+            insert(node->right, k);
+        }
+    }
+
+    Node* search(Node* node, int k) {
+        if (node == nullptr || node->key == k) {
+            return node;
+        } else if (k < node->key) {
+            return search(node->left, k);
+        } else {
+            return search(node->right, k);
+        }
+    }
+
+    void deleteNode(Node* &node, int k) {
+        if (node == nullptr) {
+            return;
+        } else if (k < node->key) {
+            deleteNode(node->left, k);
+        } else if (k > node->key) {
+            deleteNode(node->right, k);
+        } else {
+            if (node->left == nullptr) {
+                Node* temp = node->right;
+                delete node;
+                node = temp;
+            } else if (node->right == nullptr) {
+                Node* temp = node->left;
+                delete node;
+                node = temp;
+            } else {
+                Node* temp = node->right;
+                while (temp->left != nullptr) {
+                    temp = temp->left;
+                }
+                node->key = temp->key;
+                deleteNode(node->right, temp->key);
+            }
+        }
+    }
+
+public:
+    BST() : root(nullptr) {}
+
+    void insert(int k) {
+        insert(root, k);
+    }
+
+    Node* search(int k) {
+        return search(root, k);
+    }
+
+    void deleteNode(int k) {
+        deleteNode(root, k);
+    }
+};
+
+int main() {
+    BST bst;
+    bst.insert(5);
+    b

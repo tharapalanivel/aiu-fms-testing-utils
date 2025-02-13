@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an ARM Assembly program to compute the sum of an array of integers and store the result in an register.
+
+
+Answer:

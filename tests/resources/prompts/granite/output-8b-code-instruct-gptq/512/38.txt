@@ -1,0 +1,32 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Create a Python function that makes an HTTP request using `requests.get()`. Write unit tests for the function, using the `unittest.mock` module to mock the API response without making an actual network call.
+
+
+Answer:
+Here's an example of how you can write unit tests for the function:
+
+```python
+import unittest
+from unittest.mock import patch
+import requests
+
+def make_http_request(url):
+    response = requests.get(url)
+    return response.text
+
+class TestMakeHttpRequest(unittest.TestCase):
+    @patch('requests.get')
+    def test_make_http_request(self, mock_get):
+        mock_get.return_value.text = 'Hello, World!'
+        response = make_http_request('https://example.com')
+        self.assertEqual(response, 'Hello, World!')
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+In this example, we use the `unittest.mock` module to mock the `requests.get()` function. We create a test case class that inherits from `unittest.TestCase` and use the `@patch` decorator to mock the `requests.get()` function. We set the return value of the mock to a string and then call the `make_http_request()` function with a URL. Finally, we use the `assertEqual()` method to compare the response with the expected value.<|endoftext|>

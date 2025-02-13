@@ -1,0 +1,51 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write an ARM Assembly program to compute the sum of an array of integers and store the result in an register.
+
+
+Answer:
+```
+.global main
+
+main:
+    ; Initialize the stack pointer
+    mov sp, #0x10000000
+
+    ; Initialize the array pointer
+    mov r0, #0x10000000
+
+    ; Initialize the array length
+    mov r1, #10
+
+    ; Initialize the sum register
+    mov r2, #0
+
+    ; Loop over the array
+    loop:
+        ; Load the current array element
+        ldr r3, [r0]
+
+        ; Add the current array element to the sum
+        add r2, r2, r3
+
+        ; Increment the array pointer
+        add r0, r0, #4
+
+        ; Decrement the array length
+        sub r1, r1, #1
+
+        ; Check if the array length is zero
+        cmp r1, #0
+
+        ; Jump to the loop if the array length is not zero
+        bne loop
+
+    ; Store the sum in the register
+    str r2, [r0]
+
+    ; Return from the main function
+    mov pc, lr
+```<|endoftext|>

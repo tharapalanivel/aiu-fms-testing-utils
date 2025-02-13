@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Go function that reads a JSON file containing an array of numbers and returns the sum of all numbers.
+
+
+Answer:

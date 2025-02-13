@@ -1,0 +1,25 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Implement a Python function that applies dynamic quantization to a pre-trained transformer model (such as BERT or GPT) in PyTorch, and compares the model size and inference speed before and after quantization.
+
+
+Answer:
+Here's how you can implement dynamic quantization in PyTorch:
+
+```python
+import torch
+
+def dynamic_quantization(model):
+    model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+    torch.quantization.prepare(model)
+    model.eval()
+    with torch.no_grad():
+        for _ in range(10):
+            model(torch.randn(1, 32))
+    torch.quantization.convert(model)
+```
+
+This function applies dynamic quantization to a pre-trained transformer model in PyTorch. It sets the quantization configuration to `fbgemm`, prepares the model for quantization, evaluates the model, runs inference for 10 iterations, and converts the model to a quantized version.<|endoftext|>

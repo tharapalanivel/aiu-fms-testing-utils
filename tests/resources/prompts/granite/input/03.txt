@@ -1,0 +1,9 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a simple decorator in python which will modify all string inputs to ints if possible.
+
+
+Answer:

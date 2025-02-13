@@ -1,0 +1,383 @@
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide a list of instructions for preparing chicken soup for a family of four.
+
+### Response:Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What is LLaMa?[/INST]
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain some popular greetings in Spanish.
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe some popular places in Spain.
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main attractions in Paris ?
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the main operas composed by Gioachino Rossini ?
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the most touristic places in the world ?
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+What are the ancient wonders of the world ?
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide a list of instructions for preparing a christmas family dinner
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide travel recommendations for visiting Machu Pichu
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the difference between covalent and ionic bonds, with examples
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the term `Artificial Intelligence` in simple language
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the water cycle in simple terms for a 10-year old
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+List five common ways to reduce stress
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how to solve a quadratic equation with an example
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how inflation affects purchasing power and economic stability
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the greenhouse effect and its impact on climate change
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Translate the following exchange: "Good morning, how are you? I am well, thank you, my plane just landed." into Spanish
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide three reasons why exercise is important for overall health
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the characteristics of Baroque music and name three prominent composers from that period
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Compare nutritional benefits of spinach and kale
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how to access to education is linked to economic inequality
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Summarize the plot of the 2019 movie Parasite by Bong Joon-ho
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+List the pros and cons of working remotely
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe how to make a paper plane in five steps
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Summarize the process of photosynthesis in plants
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Provide a brief biography of Richard Feynman
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Outline the key steps in the scientific method
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the difference between a simile and a metaphore, with examples
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss the role of interest groups and lobbying in shaping public policy
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the role of grassroot movements in advancing civil rights and social justice systems
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the concept of a food chain and its importance in an ecosystem
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Write a formal email requesting a job interview
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the properties and potential uses of graphene
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain Newton's three laws of motion with real-world applications
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss the central themes in Gabriel García Márquez's `One Hundred Years of Solitude`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Briefly compare the narrative styles of `The Divine Comedy` by Dante and `The Odyssey` by Homer
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss the role of natural selection in shaping the biodiversity of life on Earth
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explore the impact of criminal justice reform efforts on marginalized communities
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the life cycle of a star, from formation to supernova or black hole
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Compare the representation of dystopia in George Orwell's `1984`, Aldous Huxley's `Brave New World`, and Yevgeny Zamyatin's `We`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the origin and meaning of the expression "Long time no see"
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the themes of infinity and labyrinths in Borges' story `The Garden of Forking Paths`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the role of ocean's current in regulating the Earth's climate
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss how bacteria develop antibiotic resistance and its implication for healthcare
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the concept of wave-particle duality and its significance in quantum mechanics
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain how seismic waves are used to study the Earth's interior structure
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss the influence of French existentialism on Albert Camus' `The Stranger`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the process of polymerization and its industrial applications
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explore the theme of isolation in Marie Shelley's `Frankenstein`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Discuss how social stratification affects access to education in different societies
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the concept of supply and demand and how it affects market prices
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the difference between procedural programming and object-oriented programming
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Describe the function of blockchain technology and its potential uses beyond cryptocurrency
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze how urbanization has transformed social structures and communities in modern cities
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Summarize the main differences between renewable and non-renewable energy sources
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the impact of social media on interpersonal communication, relationships, and mental health
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the key differences between a parliamentary and a presidential system of government
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the cause and consequences of the French Revolution
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Explain the process of plate tectonic and how it leads to earthquakes
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze how Ursula Le Guin explores the themes of utopia and anarchism in `The Dispossessed`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Analyze the lyrical themes and musical style of Bob Dylan's work in the 1960s
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Compare the portrayal of heroism in `Beowulf` and `The Lord of the Rings`
+
+### Response:
+Below is an instruction that describes a task. Write a response that appropriately completes the request. Be polite in your response to the user.
+
+### Instruction:
+Define the Pythagorean theorem and provide and example of how to use it in a real-world context
+
+### Response:

@@ -1,0 +1,40 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that fine-tunes a pre-trained BERT model from the HuggingFace library on a text classification dataset, such as the IMDb movie reviews dataset.
+
+
+Answer:
+Here's an example of how you can fine-tune a pre-trained BERT model on the IMDb movie reviews dataset using the HuggingFace library:
+
+```python
+import torch
+from transformers import BertForSequenceClassification, BertTokenizer
+
+# Load the pre-trained BERT model
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased')
+
+# Load the IMDb movie reviews dataset
+# You can use the torchtext library to load the dataset
+
+# Tokenize the text using the BERT tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenized_text = tokenizer(text, return_tensors='pt')
+
+# Forward pass through the model
+output = model(**tokenized_text)
+
+# Compute the loss and perform backpropagation
+loss = output.loss
+loss.backward()
+
+# Update the model's parameters
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+optimizer.step()
+```
+
+In this example, we first load the pre-trained BERT model from the HuggingFace library. Then, we load the IMDb movie reviews dataset and tokenize the text using the BERT tokenizer. We then forward pass through the model to compute the loss and perform backpropagation. Finally, we update the model's parameters using an optimizer.
+
+Note that this is just a simplified example, and you may need to modify it to fit your specific use case.<|endoftext|>

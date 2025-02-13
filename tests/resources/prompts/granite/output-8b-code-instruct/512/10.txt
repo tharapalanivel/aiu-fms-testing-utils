@@ -1,0 +1,35 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a C++ template function that swaps the values of two variables, regardless of their data type.
+
+
+Answer:
+```cpp
+#include <iostream>
+
+template <typename T>
+void swap(T& a, T& b) {
+    T temp = a;
+    a = b;
+    b = temp;
+}
+
+int main() {
+    int x = 10;
+    int y = 20;
+    std::cout << "Before swapping: x = " << x << ", y = " << y << std::endl;
+    swap(x, y);
+    std::cout << "After swapping: x = " << x << ", y = " << y << std::endl;
+
+    double a = 3.14;
+    double b = 2.71;
+    std::cout << "Before swapping: a = " << a << ", b = " << b << std::endl;
+    swap(a, b);
+    std::cout << "After swapping: a = " << a << ", b = " << b << std::endl;
+
+    return 0;
+}
+```<|endoftext|>

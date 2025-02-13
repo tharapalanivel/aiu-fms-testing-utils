@@ -1,0 +1,47 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python context manager class using `__enter__()` and `__exit()__` that measures the execution time of the code block within the context and prints the duration when exiting the block.
+
+
+Answer:
+Here's an example of a context manager class that measures the execution time of the code block within the context and prints the duration when exiting the block:
+
+```python
+import time
+
+class Timer:
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        self.start = time.time()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.time()
+        self.duration = self.end - self.start
+        print(f"[{self.name}] Elapsed time: {self.duration:.2f} seconds")
+
+with Timer("My Timer"):
+    # Code block to be measured
+    time.sleep(1)
+```
+
+In this example, the `Timer` class implements the `__enter__()` and `__exit__()` methods, which are called when entering and exiting the context, respectively. The `__enter__()` method sets the start time of the timer and returns the `Timer` instance. The `__exit__()` method sets the end time of the timer and calculates the duration. Finally, the duration is printed when exiting the context.
+
+To use the `Timer` class, you can wrap the code block you want to measure using the `with` statement:
+
+```python
+with Timer("My Timer"):
+    # Code block to be measured
+    time.sleep(1)
+```
+
+This will print the following output:
+
+```
+[My Timer] Elapsed time: 1.00 seconds
+```<|endoftext|>

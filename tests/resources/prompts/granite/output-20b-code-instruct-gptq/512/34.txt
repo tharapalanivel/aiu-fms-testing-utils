@@ -1,0 +1,53 @@
+System:
+Solve the following coding problem. Wrap your code answer using ```
+
+
+Question:
+Write a Python script that loads a pre-trained neural network from PyTorch, converts it to a quantized version using PyTorch's static quantization techniques, and evaluates its performance on a validation set.
+
+
+Answer:
+```python
+import torch
+import torchvision
+import torchvision.transforms as transforms
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.nn as nn
+import torch.backends.quantized as quantized
+import torch.utils.data
+
+# Load the pre-trained model
+model = torchvision.models.resnet18(pretrained=True)
+
+# Convert the model to a quantized version
+model.eval()
+model.fuse_model()
+model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+torch.quantization.prepare(model, inplace=True)
+
+# Load the validation dataset
+val_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+val_dataset = torchvision.datasets.ImageFolder(root='path/to/validation/dataset', transform=val_transform)
+val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+
+# Evaluate the quantized model's performance
+top1_accuracy = 0
+top5_accuracy = 0
+for images, labels in val_loader:
+    images = images.cuda()
+    labels = labels.cuda()
+    with torch.no_grad():
+        output = model(images)
+        top1, top5 = torch.topk(output, 5, dim=1)
+        top1_accuracy += torch.sum(top1.argmax(dim=1) == labels).item() / images.size(0)
+        top5_accuracy += torch.sum(top5.argmax(dim=1) == labels).item() / images.size(0)
+
+print(f'Top-1 accuracy: {top1_accuracy:.3f}')
+print(f'Top-5 accuracy: {top5_accuracy:.3f}')
+```<|endoftext|>
