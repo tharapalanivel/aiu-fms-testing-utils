@@ -2,20 +2,22 @@
 
 ## Setup your environment
 
-In this directory, checkout the Foundation Model Stack (FMS):
+In this directory, checkout the Foundation Model Stack (FMS) and the FMS Model Optimizer:
 ```shell
 git clone https://github.com/foundation-model-stack/foundation-model-stack.git
+git clone https://github.com/foundation-model-stack/fms-model-optimizer.git
 ```
 
 Install both FMS, FMS-Model-Optimizer and aiu-fms-testing-utils:
 ```shell
 cd foundation-model-stack
 pip install -e .
+cd ..
 
 cd fms-model-optimizer
 pip install -e .
+cd ..
 
-cd ../
 pip install -e .
 ```
 
@@ -60,7 +62,7 @@ Verify the AIU discovery has happened by looking for output like the following w
 Inside the container, setup envars to use the FMS:
 ```shell
 export HOME=/tmp
-cd ${HOME}/aiu-app-sw-tracker/foundation-model-stack/
+cd ${HOME}/aiu-fms-testing-utils/foundation-model-stack/
 # Install the FMS stack
 pip install -e .
 ```
@@ -89,7 +91,7 @@ The `--nproc-per-node` command line option controls the number of AIUs to use (n
 The `small-toy.py` is a slimmed down version of the Big Toy model. The purpose of this model is to demostrate how to run a tensor parallel model with the FMS on AIU hardware.
 
 ```bash
-cd ${HOME}/aiu-app-sw-tracker/scripts
+cd ${HOME}/aiu-fms-testing-utils/scripts
 
 # 1 AIU (sequential)
 # Inductor (CPU) backend (default)
@@ -135,7 +137,7 @@ export DISTRIBUTED_STRATEGY_IGNORE_MODULES=WordEmbedding,Embedding
 ```
 
 ```bash
-cd ${HOME}/aiu-app-sw-tracker/scripts
+cd ${HOME}/aiu-fms-testing-utils/scripts
 
 # 1 AIU (sequential)
 # Inductor (CPU) backend (default)
