@@ -23,9 +23,9 @@ class LogitsExtractorHook(Callable[[int, torch.Tensor, torch.Tensor, MutableMapp
 
 class StaticTokenInjectorHook(Callable[[int, torch.Tensor, torch.Tensor, MutableMapping[str, Any]], Tuple[torch.Tensor, MutableMapping[str, Any]],]):
 
-    def __init__(self, static_tokens: List[torch.Tensor]):
+    def __init__(self, static_tokens: List[torch.Tensor], device_type: str="cpu"):
         super().__init__()
-        self.static_tokens = torch.tensor(static_tokens).t() # transposing so batch tokens per token_position
+        self.static_tokens = torch.tensor(static_tokens, device=device_type).t() # transposing so batch tokens per token_position
 
     def __call__(self, token_position: int, logits: torch.Tensor, next_val: torch.Tensor, kwargs):
         next_val.copy_(self.static_tokens[token_position].unsqueeze(1))
@@ -33,11 +33,11 @@ class StaticTokenInjectorHook(Callable[[int, torch.Tensor, torch.Tensor, Mutable
 
 class GoldenTokenHook(Callable[[int, torch.Tensor, torch.Tensor, MutableMapping[str, Any]], Tuple[torch.Tensor, MutableMapping[str, Any]],]):
 
-    def __init__(self, static_tokens: torch.Tensor):
+    def __init__(self, static_tokens: torch.Tensor, device_type: str="cpu"):
         super().__init__()
         self.logits_extractor = LogitsExtractorHook()
         self.extracted_logits = None
-        self.token_injector = StaticTokenInjectorHook(static_tokens)
+        self.token_injector = StaticTokenInjectorHook(static_tokens, device_type=device_type)
 
     def __call__(self, token_position: int, logits: torch.Tensor, next_val: torch.Tensor, kwargs):
         next_val, kwargs = self.logits_extractor(token_position, logits, next_val, kwargs)
@@ -244,8 +244,21 @@ def validate_level_0(aiu_tokens_per_sentence, validation_tokens_per_sentence):
                 failed_cases.append((sentence_idx, token_idx))
     return failed_cases
 
-def validate_level_1(aiu_logits_per_sentence, validation_logits_per_sentence, logits_loss_threshold):
+def top_k_loss_calculator(top_k, loss_f):
+    def loss_func(reference_logits, test_logits):
+        reference_logits_prob = reference_logits.to(dtype=torch.float32)
+        test_logits_prob = test_logits.to(dtype=torch.float32)
+
+        reference_values, reference_indices = torch.topk(reference_logits_prob, top_k, dim=1)
+        test_values = test_logits_prob[:, reference_indices.squeeze(0)]
+
+        return loss_f(reference_values, test_values)
+    return loss_func
+
+
+def validate_level_1(aiu_logits_per_sentence, validation_logits_per_sentence, logits_loss_threshold, loss_calculator=None, capture_loss_metrics: bool = False):
     failed_cases = []
+    loss_metrics = []
 
     for sentence_idx, (aiu_sentence, validation_sentence) in enumerate(
             zip(validation_logits_per_sentence, aiu_logits_per_sentence)
@@ -254,17 +267,27 @@ def validate_level_1(aiu_logits_per_sentence, validation_logits_per_sentence, lo
                 zip(aiu_sentence, validation_sentence)
         ):
             # computing cross entropy loss per token
-            loss_fn = torch.nn.CrossEntropyLoss()
-            loss_value = loss_fn(
-                aiu_logits.to(dtype=torch.float32).softmax(dim=1),
-                validation_logits.to(dtype=torch.float32).softmax(dim=1)
-            )
+            if loss_calculator is None:
+                loss_fn = torch.nn.CrossEntropyLoss()
+                loss_value = loss_fn(
+                    aiu_logits.to(dtype=torch.float32),
+                    validation_logits.softmax(dim=1).to(dtype=torch.float32)
+                )
+            else:
+                loss_value = loss_calculator(aiu_logits, validation_logits)
+
+            if capture_loss_metrics:
+                loss_metrics.append((sentence_idx, token_idx, loss_value))
+
             if loss_value > logits_loss_threshold:
                 print(
-                    f"In sentence {sentence_idx+1}/{len(aiu_logits_per_sentence)}, the mean cross entropy loss for token {token_idx} is {loss_value.item()} > {logits_loss_threshold}"
+                    f"In sentence {sentence_idx+1}/{len(aiu_logits_per_sentence)}, the loss for token {token_idx} is {loss_value.item()} > {logits_loss_threshold}"
                 )
                 failed_cases.append((sentence_idx, token_idx))
-    return failed_cases
+    if capture_loss_metrics:
+        return failed_cases, loss_metrics
+    else:
+        return failed_cases
 
 def print_failed_cases(failed_cases, aiu_tokens, validation_tokens, tokenizer):
     for sentence_index, token_index in failed_cases:
