@@ -244,7 +244,14 @@ def validate_level_0(aiu_tokens_per_sentence, validation_tokens_per_sentence):
                 failed_cases.append((sentence_idx, token_idx))
     return failed_cases
 
-def top_k_loss_calculator(top_k, loss_f):
+def top_k_loss_calculator(top_k: int, loss_f: Callable[[torch.Tensor, torch.Tensor], float]):
+    """
+    Function which will take the top_k logits indexes / values from a reference validation info and retrieve the same indexes from the test validation info logits
+    and perform a loss function over the 2 tensors
+
+    :param top_k: number of values to take from reference
+    :param loss_f: a loss function between the reference and test logits
+    """
     def loss_func(reference_logits, test_logits):
         reference_logits_prob = reference_logits.to(dtype=torch.float32)
         test_logits_prob = test_logits.to(dtype=torch.float32)
@@ -256,38 +263,39 @@ def top_k_loss_calculator(top_k, loss_f):
     return loss_func
 
 
-def validate_level_1(aiu_logits_per_sentence, validation_logits_per_sentence, logits_loss_threshold, loss_calculator=None, capture_loss_metrics: bool = False):
-    failed_cases = []
+def capture_level_1_metrics(reference_logits_per_sentence, test_logits_per_sentence, metrics_calculator=None):
     loss_metrics = []
 
-    for sentence_idx, (aiu_sentence, validation_sentence) in enumerate(
-            zip(validation_logits_per_sentence, aiu_logits_per_sentence)
+    for sentence_idx, (reference_sentence, test_sentence) in enumerate(
+            zip(reference_logits_per_sentence, test_logits_per_sentence)
     ):
-        for token_idx, (aiu_logits, validation_logits) in enumerate(
-                zip(aiu_sentence, validation_sentence)
+        for token_idx, (reference_logits, test_logits) in enumerate(
+                zip(reference_sentence, test_sentence)
         ):
             # computing cross entropy loss per token
-            if loss_calculator is None:
+            if metrics_calculator is None:
                 loss_fn = torch.nn.CrossEntropyLoss()
-                loss_value = loss_fn(
-                    aiu_logits.to(dtype=torch.float32),
-                    validation_logits.softmax(dim=1).to(dtype=torch.float32)
+                metrics_value = loss_fn(
+                    reference_logits.to(dtype=torch.float32),
+                    test_logits.softmax(dim=1).to(dtype=torch.float32)
                 )
             else:
-                loss_value = loss_calculator(aiu_logits, validation_logits)
+                metrics_value = metrics_calculator(reference_logits, test_logits)
 
-            if capture_loss_metrics:
-                loss_metrics.append((sentence_idx, token_idx, loss_value))
+            loss_metrics.append((sentence_idx, token_idx, metrics_value))
 
-            if loss_value > logits_loss_threshold:
-                print(
-                    f"In sentence {sentence_idx+1}/{len(aiu_logits_per_sentence)}, the loss for token {token_idx} is {loss_value.item()} > {logits_loss_threshold}"
-                )
-                failed_cases.append((sentence_idx, token_idx))
-    if capture_loss_metrics:
-        return failed_cases, loss_metrics
-    else:
-        return failed_cases
+    return loss_metrics
+    
+def filter_failed_level_1_cases(level_1_loss_metrics, fail_f):
+    failed_cases = []
+    for (sentence_idx, token_idx, metrics_value) in level_1_loss_metrics:
+        if fail_f(metrics_value):
+            failed_cases.append((sentence_idx, token_idx, metrics_value))
+            print(
+                f"In sentence {sentence_idx+1}, the metric for token {token_idx} is {metrics_value}"
+            )
+    return failed_cases
+
 
 def print_failed_cases(failed_cases, aiu_tokens, validation_tokens, tokenizer):
     for sentence_index, token_index in failed_cases:

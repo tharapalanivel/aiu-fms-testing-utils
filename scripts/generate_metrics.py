@@ -6,8 +6,8 @@ from typing import List, Optional, Tuple
 
 import torch
 
-from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, print_failed_cases, \
-    validate_level_0, GoldenTokenHook, validate_level_1, top_k_loss_calculator
+from aiu_fms_testing_utils.testing.validation import capture_level_1_metrics, extract_validation_information, LogitsExtractorHook, print_failed_cases, \
+    validate_level_0, GoldenTokenHook, top_k_loss_calculator
 from aiu_fms_testing_utils.utils import ids_for_prompt
 from fms.models import get_model
 from fms.utils import tokenizers
@@ -85,6 +85,12 @@ parser.add_argument(
     default=20
 )
 args = parser.parse_args()
+
+
+prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
+if os.path.exists(os.path.join(args.output_dir, f"{prefix}.mean.csv")):
+    print("skipping metric generation as it has already been done")
+    exit(0)
 
 default_dtype = None
 dtypes_map = {
@@ -238,8 +244,9 @@ cuda_validation_info = extract_validation_information(
 print("extracted cuda validation information level 1")
 
 cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
-prob_avg = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
+prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
 prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
+diff_avg = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
 
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
@@ -249,32 +256,38 @@ def write_csv(l, path, metric):
         f.close()
 
 prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
-failed_responses, loss_metrics = validate_level_1(
-    cpu_validation_info.get_info("logits"),
-    cuda_validation_info.get_info("logits"),
-    1000.0, # this will make every response return
-    top_k_loss_calculator(args.topk_per_token, prob_avg),
-    True
-)
-loss_metrics = filter_before_eos(loss_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.mean.csv"), "mean")
 
-failed_responses, loss_metrics = validate_level_1(
+cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_output_logits.out"))
+cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_output_logits.out"))
+
+level_1_metrics = capture_level_1_metrics(
     cpu_validation_info.get_info("logits"),
     cuda_validation_info.get_info("logits"),
-    1000.0, # this will make every response return
+    top_k_loss_calculator(args.topk_per_token, prob_mean),
+)
+loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
+write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.prob_mean.csv"), "prob_mean")
+
+level_1_metrics = capture_level_1_metrics(
+    cpu_validation_info.get_info("logits"),
+    cuda_validation_info.get_info("logits"),
     top_k_loss_calculator(args.topk_per_token, prob_std),
-    True
 )
-loss_metrics = filter_before_eos(loss_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.std.csv"), "std")
+loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
+write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.prob_std.csv"), "prob_std")
 
-failed_responses, loss_metrics = validate_level_1(
+level_1_metrics = capture_level_1_metrics(
     cpu_validation_info.get_info("logits"),
     cuda_validation_info.get_info("logits"),
-    1000.0, # this will make every response return
     top_k_loss_calculator(args.topk_per_token, cross_entropy),
-    True
 )
-loss_metrics = filter_before_eos(loss_metrics, eos_indexes)
+loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
 write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
+
+level_1_metrics = capture_level_1_metrics(
+    cpu_validation_info.get_info("logits"),
+    cuda_validation_info.get_info("logits"),
+    top_k_loss_calculator(args.topk_per_token, diff_avg),
+)
+loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
+write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
