@@ -88,7 +88,7 @@ args = parser.parse_args()
 
 
 prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
-if os.path.exists(os.path.join(args.output_dir, f"{prefix}.mean.csv")):
+if os.path.exists(os.path.join(args.output_dir, f"{prefix}.prob_mean.csv")):
     print("skipping metric generation as it has already been done")
     exit(0)
 
@@ -246,7 +246,7 @@ print("extracted cuda validation information level 1")
 cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
 prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
 prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
-diff_avg = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
 
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
@@ -287,7 +287,7 @@ write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
 level_1_metrics = capture_level_1_metrics(
     cpu_validation_info.get_info("logits"),
     cuda_validation_info.get_info("logits"),
-    top_k_loss_calculator(args.topk_per_token, diff_avg),
+    top_k_loss_calculator(args.topk_per_token, diff_mean),
 )
 loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
 write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
