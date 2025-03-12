@@ -24,3 +24,30 @@ def pytest_sessionstart(session):
     os.environ.setdefault("DTLOG_LEVEL", "error")
     os.environ.setdefault("DT_DEEPRT_VERBOSE", "-1")
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+    parser.addoption(
+        "--capture_expectation",
+        action="store_true",
+        default=False,
+        help="capture the output expectation for a given test",
+    )
+    parser.addoption(
+        "--autogptq",
+        action="store_true",
+        default=False,
+        help="run tests requiring AutoGPTQ package (with GPU support)",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "capture expectation: expectation was captured")
+
+
+def pytest_generate_tests(metafunc):
+    option_value = metafunc.config.option.capture_expectation
+    if "capture_expectation" in metafunc.fixturenames and option_value is not None:
+        metafunc.parametrize("capture_expectation", [option_value])
+
