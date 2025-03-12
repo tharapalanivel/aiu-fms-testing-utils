@@ -292,8 +292,8 @@ elif is_aiu_backend:
         if "AIU_WORLD_RANK_0" not in os.environ:
             print("must set AIU_WORLD_RANK_0")
             exit()
-        os.environ["FLEX_COMPUTE"] = "SENTIENT"
-        os.environ["FLEX_DEVICE"] = "VFIO"
+        os.environ.setdefault("FLEX_COMPUTE", "SENTIENT")
+        os.environ.setdefault("FLEX_DEVICE", "VFIO")
 
     device = torch.device("cpu")
 else:
