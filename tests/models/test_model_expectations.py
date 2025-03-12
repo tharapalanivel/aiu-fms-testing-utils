@@ -29,7 +29,7 @@ class TestAIUModels(
     def uninitialized_model(self, request):
         model_id = request.param
         # FIXME: better way to do this without environment variable
-        os.environ['FMS_MODEL_CONSISTENCY_MODEL_NAME'] = model_id.replace("/", "--")
+        os.environ['FMS_MODEL_CONSISTENCY_MODEL_NAME'] = os.path.basename(model_id)
         aiu_model = get_model(
             "hf_configured",
             model_id,
