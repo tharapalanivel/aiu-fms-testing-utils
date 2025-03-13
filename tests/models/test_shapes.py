@@ -37,7 +37,7 @@ fail_thresholds = {
 
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
-failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.1)
+failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.01)
 
 common_batch_sizes = [1, 2, 4, 8]
 common_seq_lengths = [64, 2048]
