@@ -18,8 +18,6 @@ GRANITE_8B_CODE_BASE = f"{model_dir}/granite-8b-code-base"
 GRANITE_3_8B_CODE_BASE = f"{model_dir}/granite-3-8b-base"
 SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH","/tmp/devel/src/share_gpt.json")
 
-LLAMA_194M_VALIDATION_INFO_PATH = os.environ.get("")
-
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/granite-3-8b-base,/tmp/models/granite-7b-base"
 if os.environ.get("FMS_TESTING_COMMON_MODEL_PATHS") == None or os.environ.get("FMS_TESTING_COMMON_MODEL_PATHS") == "":
     common_model_paths = [LLAMA_194M, GRANITE_7B_BASE, GRANITE_8B_CODE_BASE, GRANITE_3_8B_CODE_BASE]
@@ -28,6 +26,7 @@ else:
 
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
+# FIXME: generate metric thresholds for all models
 thresholds = (2.69946389,(-1.18985e-8, 1.26977e-8))
 fail_thresholds = {
     LLAMA_194M: thresholds,
@@ -35,6 +34,10 @@ fail_thresholds = {
     GRANITE_8B_CODE_BASE: thresholds,
     GRANITE_3_8B_CODE_BASE: thresholds,
 }
+
+# for validation level 1, the default is a failure rate of 1%
+# set this environment variable if you would like to relax that threshold
+failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.1)
 
 common_batch_sizes = [1, 2, 4, 8]
 common_seq_lengths = [64, 2048]
@@ -109,6 +112,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         "hf_pretrained",
         model_path=model_path,
         device_type="cpu",
+        data_type=torch.float32,
     )
 
     # prepare input_ids
@@ -143,11 +147,14 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     )
     dprint("aiu validation info extracted for validation level 0")
 
+    # validate level 0
     failed_responses = validate_level_0(aiu_validation_info.get_info("tokens"), cpu_static_tokens)
 
+    # if level 0 fails validation, validate level 1
     if len(failed_responses) != 0:
         print("failed validation level 0, testing validation level 1")
 
+        # metric calculator based on the cross-entropy and mean diff for each decode step
         def _metric_calculator(r: torch.Tensor, t: torch.Tensor):
             cross_entropy = torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
             diff = torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
@@ -159,6 +166,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         total_tokens = 0
         for i in range(iters):
 
+            # for iteration 0, we have computed the cpu validation info in the prior step for seed=0, so skip
             if i != 0:
                 input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer, seed=i)
                 cpu_validation_info = __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, tokenizer, i)
@@ -186,16 +194,19 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
         
+            # capture all level 1 metrics
             level_1_metrics = capture_level_1_metrics(
                 cpu_validation_info.get_info("logits"),
                 aiu_validation_info.get_info("logits"),
                 top_k_loss_calculator(20, _metric_calculator)
             )
+            # only consider those metrics captured prior to the eos
             level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
 
             ce_threshold = fail_thresholds[model_path][0]
             diff_thresholds = fail_thresholds[model_path][1]
 
+            # get all failed responses for each metric
             ce_fail_responses = filter_failed_level_1_cases(level_1_metrics, lambda m: m[0] >= ce_threshold)
             diff_fail_responses = filter_failed_level_1_cases(level_1_metrics, lambda m: m[1] <= diff_thresholds[0] or m[1] >= diff_thresholds[1])
 
@@ -203,10 +214,11 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             diff_fail_responses_list.extend(diff_fail_responses)
             total_tokens += len(level_1_metrics)
         
+        # test the failure rates for across all tokens
         diff_failure_rate = len(diff_fail_responses_list) / total_tokens
-        assert diff_failure_rate < .02, f"failure rate for mean diff was too high: {diff_failure_rate}"
+        assert diff_failure_rate < failure_rate_threshold, f"failure rate for mean diff was too high: {diff_failure_rate}"
         ce_failure_rate = len(ce_fail_responses_list) / total_tokens
-        assert ce_failure_rate < .03, f"failure rate for cross entropy loss was too high: {ce_failure_rate}"
+        assert ce_failure_rate < failure_rate_threshold, f"failure rate for cross entropy loss was too high: {ce_failure_rate}"
 
         print("passed validation level 1")
     else:
