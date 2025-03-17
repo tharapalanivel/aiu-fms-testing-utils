@@ -1,7 +1,6 @@
 from fms.models import get_model
 import pytest
 import torch
-from typing import List
 
 from fms.testing._internal.model_test_suite import (
     ModelConsistencyTestSuite,
@@ -19,11 +18,8 @@ models = [LLAMA_194M, GRANITE_7B_BASE, GRANITE_8B_CODE_BASE, GRANITE_3_8B_CODE_B
 
 class AIUModelFixtureMixin(ModelFixtureMixin):
 
-    @pytest.fixture(scope="class", autouse=True, params=models)
-    def uninitialized_model(self, request):
-        model_id = request.param
-        # FIXME: better way to do this without environment variable
-        os.environ['FMS_MODEL_CONSISTENCY_MODEL_NAME'] = os.path.basename(model_id)
+    @pytest.fixture(scope="class", autouse=True)
+    def uninitialized_model(self, model_id):
         aiu_model = get_model(
             "hf_configured",
             model_id,
@@ -34,10 +30,9 @@ class AIUModelFixtureMixin(ModelFixtureMixin):
         torch.compile(aiu_model, backend="sendnn")
         return aiu_model
     
-    @pytest.fixture(scope="class", autouse=True)
-    def signature(self, uninitialized_model) -> List[float]:
-        """include this fixture to get a models signature (defaults to what is in tests/resources/expectations)"""
-        return self._signature()
+    @pytest.fixture(scope="class", autouse=True, params=models)
+    def model_id(self, request):
+        return request.param
 
 class TestAIUModels(
     ModelConsistencyTestSuite,
