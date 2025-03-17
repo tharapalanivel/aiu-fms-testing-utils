@@ -47,8 +47,8 @@ fail_thresholds = {
     GRANITE_3p2_8B_INSTRUCT: (2.996668996810913, (-8.911825961632757e-09, 8.75443184611413e-09)),
 }
 
-common_batch_sizes = [1]#, 2]#, 4, 8]
-common_seq_lengths = [64]#, 2048]
+common_batch_sizes = [1, 2, 4, 8]
+common_seq_lengths = [64, 2048]
 common_max_new_tokens = [128]
 
 common_shapes = list(itertools.product(common_model_paths, common_batch_sizes, common_seq_lengths, common_max_new_tokens))
