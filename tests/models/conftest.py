@@ -34,12 +34,6 @@ def pytest_addoption(parser):
         default=False,
         help="capture the output expectation for a given test",
     )
-    parser.addoption(
-        "--autogptq",
-        action="store_true",
-        default=False,
-        help="run tests requiring AutoGPTQ package (with GPU support)",
-    )
 
 
 def pytest_configure(config):
