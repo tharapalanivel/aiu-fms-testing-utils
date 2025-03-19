@@ -83,7 +83,7 @@ def sample_sharegpt_requests(
         
         prompt_len = len(prompt_token_ids)
         if prompt_len < prompt_length_min or prompt_len > prompt_length_max:
-            # Prune too short sequences.
+            # Prune too short or too long sequences.
             continue
         filtered_dataset.append((prompt, prompt_len))
     

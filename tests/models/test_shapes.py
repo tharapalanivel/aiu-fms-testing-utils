@@ -1,7 +1,7 @@
 from fms.utils import tokenizers
 import pytest
 from fms.models import get_model
-from fms.utils.generation import generate, pad_input_ids
+from fms.utils.generation import pad_input_ids
 import itertools
 import torch
 from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, GoldenTokenHook, capture_level_1_metrics, filter_failed_level_1_cases, load_validation_information, validate_level_0, top_k_loss_calculator
@@ -16,13 +16,15 @@ GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH","/tmp/devel/src/share_gpt.json")
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 validation_info_dir = os.environ.get("FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info")
-common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [LLAMA_3p1_8B_INSTRUCT])#, GRANITE_3p2_8B_INSTRUCT])
+common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT])
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
 failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.01)
-# should be specified in ce loss, diff_mean min, diff_mean max order (comma separated)
 default_metrics_threshold = os.environ.get("FMS_TEST_SHAPES_METRICS_THRESHOLD",(2.0, (-1.0e-8,1.0e-8)))
 save_validation_info_outputs = os.environ.get("FMS_TEST_SHAPES_SAVE_VALIDATION_INFO_OUTPUTS", "0") == "1"
+common_batch_sizes = os.environ.get("FMS_TEST_SHAPES_COMMON_BATCH_SIZES", [1, 2, 4, 8])
+common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64, 2048])
+common_max_new_tokens = os.environ.get("FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS", [128])
 
 if USE_MICRO_MODELS:
     validation_info_dir = os.path.join(validation_info_dir, "tiny_models")
@@ -31,27 +33,36 @@ if USE_MICRO_MODELS:
 if isinstance(common_model_paths, str):
     common_model_paths = common_model_paths.split(",")
 
+# pass custom failure rate threshold as float
 if isinstance(failure_rate_threshold, str):
     failure_rate_threshold = float(failure_rate_threshold)
 
+# pass custom default metrics threshold as a comma separated str of floats <cross-entropy threshold>,<mean diff min threshold>,<mean diff max threshold>
 if isinstance(default_metrics_threshold, str):
     m_list = [float(m) for m in default_metrics_threshold.split(",")]
     default_metrics_threshold = (m_list[0], (m_list[1], m_list[2]))
 
+# pass custom common batch sizes as a comma separated str of ints
+if isinstance(common_batch_sizes, str):
+    common_batch_sizes = [int(bs) for bs in common_batch_sizes.split(",")]
+
+# pass custom common seq lengths as a comma separated str of ints
+if isinstance(common_seq_lengths, str):
+    common_seq_lengths = [int(sl) for sl in common_seq_lengths.split(",")]
+
+# pass custom common max new tokens as a comma separated str of ints
+if isinstance(common_max_new_tokens, str):
+    common_max_new_tokens = [int(mnt) for mnt in common_max_new_tokens.split(",")]
+
+common_shapes = list(itertools.product(common_model_paths, common_batch_sizes, common_seq_lengths, common_max_new_tokens))
 
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
-# if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold
+# if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold defined above
 fail_thresholds = {
     LLAMA_3p1_8B_INSTRUCT: (3.7392955756187423, (-1.0430812658057675e-08, 1.0401941685778344e-08)),
     GRANITE_3p2_8B_INSTRUCT: (2.996668996810913, (-8.911825961632757e-09, 8.75443184611413e-09)),
 }
-
-common_batch_sizes = [1, 2, 4, 8]
-common_seq_lengths = [64, 2048]
-common_max_new_tokens = [128]
-
-common_shapes = list(itertools.product(common_model_paths, common_batch_sizes, common_seq_lengths, common_max_new_tokens))
 
 @pytest.fixture(autouse=True)
 def reset_compiler():

@@ -107,7 +107,8 @@ for a in args.extra_get_model_kwargs:
      except ValueError:
         extra_get_model_kwargs[a_split[0]] = a_split[1]
 
-prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
+# this follows the same pattern of naming in test_shapes. This way we can save and re-use for quicker shape testing.
+prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length-{args.min_pad_length}_dtype-{args.default_dtype}"
 if os.path.exists(os.path.join(args.output_dir, f"{prefix}.prob_mean.csv")):
     print("skipping metric generation as it has already been done")
     exit(0)
@@ -263,8 +264,8 @@ for i in range(num_test_tokens_per_sequence // args.max_new_tokens):
 
     print("extracted cuda validation information level 1")
 
-    cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_output_logits.{i}.out"))
-    cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_output_logits.{i}.out"))
+    cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out"))
+    cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out"))
 
     level_1_metrics = capture_level_1_metrics(
         cpu_validation_info.get_info("logits"),
