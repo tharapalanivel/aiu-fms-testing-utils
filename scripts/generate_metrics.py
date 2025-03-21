@@ -1,4 +1,5 @@
 import argparse
+import ast
 import json
 import os
 import random
@@ -8,7 +9,7 @@ import torch
 
 from aiu_fms_testing_utils.testing.validation import capture_level_1_metrics, extract_validation_information, LogitsExtractorHook, print_failed_cases, \
     validate_level_0, GoldenTokenHook, top_k_loss_calculator
-from aiu_fms_testing_utils.utils import ids_for_prompt
+from aiu_fms_testing_utils.utils import ids_for_prompt, sample_sharegpt_requests
 from fms.models import get_model
 from fms.utils import tokenizers
 from fms.utils.generation import pad_input_ids
@@ -84,10 +85,30 @@ parser.add_argument(
     help="top k values per token to generate loss on",
     default=20
 )
+parser.add_argument(
+    "--num_test_tokens_per_sequence",
+    type=int,
+    help="number of tokens in test. For instance, if max_new_tokens=128 and num_test_tokens_per_sequence=256, this means we will generate data over 2 sample prompts. If not set, will be set to max_new_tokens",
+    default=None
+)
+parser.add_argument(
+    "--extra_get_model_kwargs",
+    nargs='*',
+    default={},
+    help="Use this to override model configuration values to get model. Example: --extra_get_model_kwargs nlayers=2,..."
+)
 args = parser.parse_args()
 
+extra_get_model_kwargs = {}
+for a in args.extra_get_model_kwargs:
+     a_split = a.split("=")
+     try:
+        extra_get_model_kwargs[a_split[0]] = ast.literal_eval(a_split[1])
+     except ValueError:
+        extra_get_model_kwargs[a_split[0]] = a_split[1]
 
-prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
+# this follows the same pattern of naming in test_shapes. This way we can save and re-use for quicker shape testing.
+prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length-{args.min_pad_length}_dtype-{args.default_dtype}"
 if os.path.exists(os.path.join(args.output_dir, f"{prefix}.prob_mean.csv")):
     print("skipping metric generation as it has already been done")
     exit(0)
@@ -115,11 +136,11 @@ cuda_model = get_model(
     model_path=args.model_path,
     device_type="cuda",
     data_type=default_dtype,
+    **extra_get_model_kwargs,
 )
 
-print("loaded cuda model")
-
 cuda_model.eval()
+print("loaded cuda model")
 
 # prepare the cpu model (this is the reference)
 cpu_model = get_model(
@@ -128,44 +149,10 @@ cpu_model = get_model(
     model_path=args.model_path,
     device_type="cpu",
     data_type=torch.float32,
+    **extra_get_model_kwargs,
 )
 cpu_model.eval()
 print("loaded cpu model")
-
-def sample_sharegpt_requests(
-    dataset_path: str,
-    num_requests: int,
-    tokenizer,
-) -> List[Tuple[str, int, int, None]]:
-    # Load the dataset.
-    with open(dataset_path, encoding='utf-8') as f:
-        dataset = json.load(f)
-    # Filter out the conversations with less than 2 turns.
-    dataset = [data for data in dataset if len(data["conversations"]) >= 2]
-    # Only keep the first two turns of each conversation.
-    dataset = [(data["conversations"][0]["value"],
-                data["conversations"][1]["value"]) for data in dataset]
-
-    # Shuffle the dataset.
-    random.Random(42).shuffle(dataset)
-
-    # Filter out sequences that are too long or too short
-    filtered_dataset: List[Tuple[str, int, int]] = []
-    for i in range(len(dataset)):
-        if len(filtered_dataset) == num_requests:
-            break
-
-        # Tokenize the prompts and completions.
-        prompt = dataset[i][0]
-        prompt_token_ids = ids_for_prompt(prompt, tokenizer)
-        
-        prompt_len = len(prompt_token_ids)
-        if prompt_len < 32 or prompt_len > args.min_pad_length:
-            # Prune too short sequences.
-            continue
-        filtered_dataset.append((prompt, prompt_len))
-
-    return filtered_dataset
 
 def find_eos_index(reference_tokens, eos_token_id):
     result = []
@@ -184,21 +171,17 @@ def filter_before_eos(l, filter_indexes):
     from itertools import groupby
     filtered_results = [list(g)[:filter_indexes[k]] for k, g in groupby(l, key=lambda x: x[0])]
     return [item for sublist in filtered_results for item in sublist]
-            
-prompts_and_lens = sample_sharegpt_requests(args.sharegpt_path, args.batch_size, tokenizer)
-print(f"prompt_lengths: {[pl[1] for pl in prompts_and_lens]}")
-prompts = [ids_for_prompt(pl[0], tokenizer) for pl in prompts_and_lens]
 
-padding_length = args.min_pad_length
+def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
+    prompts_and_sizes = sample_sharegpt_requests(args.sharegpt_path, batch_size, tokenizer, seq_length // 2, seq_length, seed)
+    prompt_list = []
+    for prompt, _ in prompts_and_sizes:
+        prompt_list.append(ids_for_prompt(prompt, tokenizer))
 
-has_padding = args.batch_size > 1 or padding_length != 0
-max_len = max([len(prompt) for prompt in prompts])
+    input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
+    return input_ids, padding_kwargs
 
-if has_padding:
-    ids, padding_kwargs = pad_input_ids(prompts, min_pad_length=padding_length)
-else:
-    ids = prompts
-    padding_kwargs = {}
+ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer)
 
 # first test validation level 0
 cpu_validation_info = extract_validation_information(
@@ -231,23 +214,6 @@ print("extracted cuda validation information level 0")
 if len(failed_responses) != 0:    
     print_failed_cases(failed_responses, cpu_static_tokens, cuda_static_tokens, tokenizer)
 
-# generate aiu validation info
-cuda_validation_info = extract_validation_information(
-    cuda_model,
-    ids.to("cuda"),
-    args.max_new_tokens,
-    GoldenTokenHook(cpu_static_tokens, "cuda"),
-    only_last_token=True,
-    **{k: v.to("cuda") for k,v in padding_kwargs.items()}
-)
-
-print("extracted cuda validation information level 1")
-
-cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
-prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
-prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
-diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
-
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
         f.write(f'{metric}\n')
@@ -255,39 +221,81 @@ def write_csv(l, path, metric):
             f.write(f"{t[2].item()}\n") 
         f.close()
 
+num_test_tokens_per_sequence = args.num_test_tokens_per_sequence
+if num_test_tokens_per_sequence is None:
+    num_test_tokens_per_sequence = args.max_new_tokens
+
+cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
+prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
+prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
+diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+
+prob_mean_metrics = []
+prob_std_metrics = []
+prob_diff_metrics = []
+prob_ce_loss_metrics = []
+
 prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
 
-cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_output_logits.out"))
-cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_output_logits.out"))
+for i in range(num_test_tokens_per_sequence // args.max_new_tokens):
+    ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer, i)
 
-level_1_metrics = capture_level_1_metrics(
-    cpu_validation_info.get_info("logits"),
-    cuda_validation_info.get_info("logits"),
-    top_k_loss_calculator(args.topk_per_token, prob_mean),
-)
-loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.prob_mean.csv"), "prob_mean")
+    # only need to compute this once if we aren't generating more test data
+    if num_test_tokens_per_sequence > args.max_new_tokens:
+        cpu_validation_info = extract_validation_information(
+            cpu_model,
+            ids,
+            args.max_new_tokens,
+            LogitsExtractorHook(),
+            attn_algorithm="math",
+            **padding_kwargs
+        )
+        eos_indexes = find_eos_index(cpu_validation_info.get_info("tokens"), tokenizer.eos_token_id)
 
-level_1_metrics = capture_level_1_metrics(
-    cpu_validation_info.get_info("logits"),
-    cuda_validation_info.get_info("logits"),
-    top_k_loss_calculator(args.topk_per_token, prob_std),
-)
-loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.prob_std.csv"), "prob_std")
+    # generate aiu validation info
+    cuda_validation_info = extract_validation_information(
+        cuda_model,
+        ids.to("cuda"),
+        args.max_new_tokens,
+        GoldenTokenHook(cpu_validation_info.get_info("tokens"), "cuda"),
+        only_last_token=True,
+        **{k: v.to("cuda") for k,v in padding_kwargs.items()}
+    )
 
-level_1_metrics = capture_level_1_metrics(
-    cpu_validation_info.get_info("logits"),
-    cuda_validation_info.get_info("logits"),
-    top_k_loss_calculator(args.topk_per_token, cross_entropy),
-)
-loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
+    print("extracted cuda validation information level 1")
 
-level_1_metrics = capture_level_1_metrics(
-    cpu_validation_info.get_info("logits"),
-    cuda_validation_info.get_info("logits"),
-    top_k_loss_calculator(args.topk_per_token, diff_mean),
-)
-loss_metrics = filter_before_eos(level_1_metrics, eos_indexes)
-write_csv(loss_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
+    cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out"))
+    cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out"))
+
+    level_1_metrics = capture_level_1_metrics(
+        cpu_validation_info.get_info("logits"),
+        cuda_validation_info.get_info("logits"),
+        top_k_loss_calculator(args.topk_per_token, prob_mean),
+    )
+    prob_mean_metrics.extend(filter_before_eos(level_1_metrics, eos_indexes))
+
+    level_1_metrics = capture_level_1_metrics(
+        cpu_validation_info.get_info("logits"),
+        cuda_validation_info.get_info("logits"),
+        top_k_loss_calculator(args.topk_per_token, prob_std),
+    )
+    prob_std_metrics.extend(filter_before_eos(level_1_metrics, eos_indexes))
+
+    level_1_metrics = capture_level_1_metrics(
+        cpu_validation_info.get_info("logits"),
+        cuda_validation_info.get_info("logits"),
+        top_k_loss_calculator(args.topk_per_token, cross_entropy),
+    )
+    prob_ce_loss_metrics.extend(filter_before_eos(level_1_metrics, eos_indexes))
+
+    level_1_metrics = capture_level_1_metrics(
+        cpu_validation_info.get_info("logits"),
+        cuda_validation_info.get_info("logits"),
+        top_k_loss_calculator(args.topk_per_token, diff_mean),
+    )
+    prob_diff_metrics.extend(filter_before_eos(level_1_metrics, eos_indexes))
+
+write_csv(prob_mean_metrics, os.path.join(args.output_dir, f"{prefix}.prob_mean.csv"), "prob_mean")
+write_csv(prob_std_metrics, os.path.join(args.output_dir, f"{prefix}.prob_std.csv"), "prob_std")
+write_csv(prob_ce_loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
+write_csv(prob_diff_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
