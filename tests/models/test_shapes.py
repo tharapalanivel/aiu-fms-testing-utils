@@ -9,6 +9,9 @@ from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, 
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
 
+if "HF_HOME" not in os.environ:
+    os.environ["HF_HOME"] = "/tmp/models/hf_cache"
+
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
