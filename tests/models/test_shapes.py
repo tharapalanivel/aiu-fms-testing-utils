@@ -16,7 +16,7 @@ if "HF_HOME" not in os.environ:
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 
-SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH","/tmp/devel/src/share_gpt.json")
+SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json"))
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 validation_info_dir = os.environ.get("FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info")
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT])
