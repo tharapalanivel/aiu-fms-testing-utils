@@ -118,15 +118,15 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     dprint(f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}")
 
-    if os.path.exists(model_path):
-        model_path_kwargs = {"model_path": model_path}
-    else:
-        model_path_kwargs = {"variant": model_path}
-
     if USE_MICRO_MODELS:
         micro_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
     else:
         micro_model_kwargs  = {"architecture": "hf_pretrained"}
+    
+    if not USE_MICRO_MODELS and os.path.exists(model_path):
+        model_path_kwargs = {"model_path": model_path}
+    else:
+        model_path_kwargs = {"variant": model_path}
     
     get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs}
 
