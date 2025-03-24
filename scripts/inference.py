@@ -589,6 +589,7 @@ def infer(use_cache, do_sample, warmup):
         max_seq_len=max_seq_len,
         timing=args.timing,
         eos_token_id=eos_token_id,
+        contiguous_cache=True,
         extra_kwargs=extra_generation_kwargs,
     )
     if args.timing != "":
