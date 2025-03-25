@@ -113,9 +113,9 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
     else:
         return None
 
-
 @pytest.mark.parametrize("model_path,batch_size,seq_length,max_new_tokens", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+    os.environ["COMPILATION_MODE"] = "offline_decoder"
     dprint(f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}")
 
     if USE_MICRO_MODELS:
@@ -141,7 +141,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     model.eval()
     torch.set_grad_enabled(False)
-    model.compile(backend="sendnn_decoder")
+    model.compile(backend="sendnn")
 
     # prepare the cpu model
     validation_model = get_model(
