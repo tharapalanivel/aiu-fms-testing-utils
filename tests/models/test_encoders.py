@@ -18,7 +18,7 @@ ROBERTA_SQUAD_V2 = "deepset/roberta-base-squad2"
 SQUAD_V2_DATASET_PATH = os.environ.get("SQUAD_V2_DATASET_PATH", os.path.expanduser("~/squad_v2"))
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [ROBERTA_SQUAD_V2])
 common_batch_sizes = os.environ.get("FMS_TEST_SHAPES_COMMON_BATCH_SIZES", [1, 2, 4, 8])
-common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64])
+common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64, 512])
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/roberta,/tmp/models/roberta-base-squad2"
 if isinstance(common_model_paths, str):

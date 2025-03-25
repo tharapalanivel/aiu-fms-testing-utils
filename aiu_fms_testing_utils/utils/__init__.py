@@ -47,7 +47,7 @@ def __download_file(url, filename):
         print(f"An error occurred: {e}")
 
 def __sample_requests(
-    prompt_list, 
+    prompt_list: List[str], 
     num_requests: int,
     tokenizer: BaseTokenizer,
     prompt_length_min: int = 32,
