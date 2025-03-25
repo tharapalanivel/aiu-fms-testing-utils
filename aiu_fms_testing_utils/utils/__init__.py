@@ -46,10 +46,6 @@ def __download_file(url, filename):
     except requests.exceptions.RequestException as e:
         print(f"An error occurred: {e}")
 
-def __get_dataset_as_prompt_list(dataset_path, dataset_getter, data_to_str):
-    ds = dataset_getter(dataset_path)
-    return data_to_str(ds)
-
 def __sample_requests(
     prompt_list, 
     num_requests: int,
