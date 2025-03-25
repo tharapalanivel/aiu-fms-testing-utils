@@ -1,13 +1,9 @@
 import argparse
-import itertools
 import json
 import os
 import random
-import sys
 import time
 from pathlib import Path
-from typing import Any, Callable, MutableMapping, Optional, Tuple
-import sys
 import ast
 
 import numpy as np
@@ -15,8 +11,8 @@ import torch
 import torch._inductor.config
 from fms.models import get_model, register_model
 from fms.models.llama import LLaMAConfig, _llama_factory_factory
-from fms.utils import fusion, generation, tokenizers
-from fms.utils.generation import generate, pad_input_ids
+from fms.utils import generation, tokenizers
+from fms.utils.generation import pad_input_ids
 from torch import distributed as dist
 from aiu_fms_testing_utils.utils import warmup_model
 from aiu_fms_testing_utils.testing.validation import LogitsExtractorHook, capture_level_1_metrics, extract_validation_information, StaticTokenInjectorHook, GoldenTokenHook, filter_failed_level_1_cases, validate_level_0, load_validation_information, print_failed_cases
