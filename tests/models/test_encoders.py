@@ -9,8 +9,7 @@ from aiu_fms_testing_utils.utils import ids_for_prompt, sample_squad_v2_qa_reque
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
 
-if "HF_HOME" not in os.environ:
-    os.environ["HF_HOME"] = "/tmp/models/hf_cache"
+ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
 # Add models to test here
 ROBERTA_SQUAD_V2 = "deepset/roberta-base-squad2"
@@ -49,6 +48,11 @@ def reset_compiler():
     yield # run the test
     torch.compiler.reset()
     torch._dynamo.reset()
+    os.environ.pop('COMPILATION_MODE', None)
+    if ORIGINAL_HF_HOME is None:
+        os.environ.pop('HF_HOME', None)
+    else:
+        os.environ['HF_HOME'] = ORIGINAL_HF_HOME
 
 encoder_paths = ["deepset/roberta-base-squad2"]
 common_encoder_shapes = list(itertools.product(encoder_paths, common_batch_sizes, common_seq_lengths))
@@ -56,6 +60,9 @@ common_encoder_shapes = list(itertools.product(encoder_paths, common_batch_sizes
 @pytest.mark.parametrize("model_path,batch_size,seq_length", common_encoder_shapes)
 def test_common_shapes(model_path, batch_size, seq_length):
     os.environ["COMPILATION_MODE"] = "offline"
+
+    if "HF_HOME" not in os.environ:
+        os.environ["HF_HOME"] = "/tmp/models/hf_cache"
     
     dprint(f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}")
 
