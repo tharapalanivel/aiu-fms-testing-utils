@@ -46,6 +46,38 @@ def __download_file(url, filename):
     except requests.exceptions.RequestException as e:
         print(f"An error occurred: {e}")
 
+def __sample_requests(
+    prompt_list: List[str], 
+    num_requests: int,
+    tokenizer: BaseTokenizer,
+    prompt_length_min: int = 32,
+    prompt_length_max: int = 64,
+    seed: Optional[int] = None
+):
+    # Shuffle the dataset.
+    if seed is not None:
+        random.Random(seed).shuffle(prompt_list)
+
+    # Filter out sequences that are too long or too short
+    filtered_dataset: List[Tuple[str, int, int]] = []
+    for i in range(len(prompt_list)):
+        if len(filtered_dataset) == num_requests:
+            break
+
+        # Tokenize the prompts and completions.
+        prompt = prompt_list[i]
+        prompt_token_ids = ids_for_prompt(prompt, tokenizer)
+        
+        prompt_len = len(prompt_token_ids)
+        if prompt_len < prompt_length_min or prompt_len > prompt_length_max:
+            # Prune too short or too long sequences.
+            continue
+        filtered_dataset.append((prompt, prompt_len))
+    
+    return filtered_dataset
+    
+
+
 def sample_sharegpt_requests(
     dataset_path: str,
     num_requests: int,
@@ -63,28 +95,28 @@ def sample_sharegpt_requests(
         dataset = json.load(f)
     # Filter out the conversations with less than 2 turns.
     dataset = [data for data in dataset if len(data["conversations"]) >= 2]
-    # Only keep the first two turns of each conversation.
-    dataset = [(data["conversations"][0]["value"],
-                data["conversations"][1]["value"]) for data in dataset]
-
-    # Shuffle the dataset.
-    if seed is not None:
-        random.Random(seed).shuffle(dataset)
-
-    # Filter out sequences that are too long or too short
-    filtered_dataset: List[Tuple[str, int, int]] = []
-    for i in range(len(dataset)):
-        if len(filtered_dataset) == num_requests:
-            break
-
-        # Tokenize the prompts and completions.
-        prompt = dataset[i][0]
-        prompt_token_ids = ids_for_prompt(prompt, tokenizer)
-        
-        prompt_len = len(prompt_token_ids)
-        if prompt_len < prompt_length_min or prompt_len > prompt_length_max:
-            # Prune too short or too long sequences.
-            continue
-        filtered_dataset.append((prompt, prompt_len))
+    dataset = [data["conversations"][0]["value"] for data in dataset]
     
-    return filtered_dataset
+    return __sample_requests(dataset, num_requests, tokenizer, prompt_length_min, prompt_length_max, seed)
+
+def sample_squad_v2_qa_requests(
+    dataset_path: str,
+    num_requests: int, 
+    tokenizer: BaseTokenizer, 
+    prompt_length_min: int = 32, 
+    prompt_length_max: int = 64, 
+    seed: Optional[int] = None
+) -> List[Tuple[str, int]]:
+    from datasets import load_dataset
+
+    if os.path.exists(dataset_path):
+        ds = load_dataset(dataset_path)['train']
+    else:
+        ds = load_dataset("rajpurkar/squad_v2", cache_dir=dataset_path)['train']
+        
+    
+    ds = [f"{data['context']}\n{data['question']}" for data in ds]
+
+    return __sample_requests(ds, num_requests, tokenizer, prompt_length_min, prompt_length_max, seed)
+    
+

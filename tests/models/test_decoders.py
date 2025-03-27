@@ -9,8 +9,7 @@ from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, 
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
 
-if "HF_HOME" not in os.environ:
-    os.environ["HF_HOME"] = "/tmp/models/hf_cache"
+ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
@@ -72,6 +71,11 @@ def reset_compiler():
     yield # run the test
     torch.compiler.reset()
     torch._dynamo.reset()
+    os.environ.pop('COMPILATION_MODE', None)
+    if ORIGINAL_HF_HOME is None:
+        os.environ.pop('HF_HOME', None)
+    else:
+        os.environ['HF_HOME'] = ORIGINAL_HF_HOME
 
 def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     prompts_and_sizes = sample_sharegpt_requests(SHARE_GPT_DATASET_PATH, batch_size, tokenizer, int(seq_length / 2), seq_length, seed)
@@ -113,9 +117,13 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
     else:
         return None
 
-
 @pytest.mark.parametrize("model_path,batch_size,seq_length,max_new_tokens", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+    os.environ["COMPILATION_MODE"] = "offline_decoder"
+    
+    if "HF_HOME" not in os.environ:
+        os.environ["HF_HOME"] = "/tmp/models/hf_cache"
+
     dprint(f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}")
 
     if USE_MICRO_MODELS:
