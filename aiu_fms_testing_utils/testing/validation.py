@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import List, Tuple, Callable, MutableMapping, Any, Optional
 
 import torch
-import torch.nn as nn
 from fms.utils.generation import generate
 from aiu_fms_testing_utils.utils import ids_for_prompt
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
@@ -205,6 +204,7 @@ def extract_validation_information(model, input_ids, max_new_tokens, post_iterat
         post_iteration_hook=post_iteration_hook,
         eos_token_id=eos_token_id,
         timing=timing,
+        contiguous_cache=True,
         extra_kwargs=extra_generation_kwargs,
     )
 
