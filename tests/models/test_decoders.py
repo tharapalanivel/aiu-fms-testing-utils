@@ -5,7 +5,7 @@ from fms.utils.generation import pad_input_ids
 import itertools
 import torch
 from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, GoldenTokenHook, capture_level_1_metrics, filter_failed_level_1_cases, load_validation_information, validate_level_0, top_k_loss_calculator
-from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt
+from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt, _prepare_model_inputs_hook
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
 
@@ -275,5 +275,73 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     else:
         print("passed validation level 0")
 
+def test_warmup_multiple_shapes():
+    shapes = [
+        (1, 64, 8),
+        (2, 64, 8),
+        (1, 128, 24),
+    ]
 
+    reference_model = get_model(
+        architecture="hf_configured",
+        variant=GRANITE_3p2_8B_INSTRUCT,
+        device_type="cpu",
+        fused_weights=False,
+        nlayers=3
+    )
 
+    model = get_model(
+        architecture="hf_configured",
+        variant=GRANITE_3p2_8B_INSTRUCT,
+        device_type="cpu",
+        fused_weights=False,
+        nlayers=3
+    )
+
+    reference_model.load_state_dict(model.state_dict())
+
+    model.eval()
+    reference_model.eval()
+
+    torch.set_grad_enabled(False)
+    model.compile(backend="sendnn_decoder")
+    for bs, sl, mnt in shapes:
+        # prepare input_ids
+        prompt_list = []
+        for i in range(bs):
+            prompt_list.append(torch.randint(0, model.config.src_vocab_size, (sl - 2 * i,), dtype=torch.long))
+
+        input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=sl)
+        # warmup aiu model
+        warmup_model(model, input_ids, mnt, **padding_kwargs)
+    
+    # perform 3 inference, making sure ordering does not affect things
+    for _ in range(3):
+        shapes.reverse()
+        for bs, sl, mnt in shapes:
+            prompt_list = []
+            for i in range(bs):
+                prompt_list.append(torch.randint(0, model.config.src_vocab_size, (sl - 2 * i,), dtype=torch.long))
+            input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=sl)
+
+            cpu_validation_info = extract_validation_information(
+                reference_model,
+                input_ids,
+                mnt,
+                LogitsExtractorHook(),
+                attn_algorithm="math",
+                **padding_kwargs
+            )
+
+            aiu_validation_info = extract_validation_information(
+                model,
+                input_ids,
+                mnt,
+                None,
+                only_last_token=True,
+                **padding_kwargs
+            )
+
+            failed_responses = validate_level_0(aiu_validation_info.get_info("tokens"), cpu_validation_info.get_info("tokens"))
+
+            assert len(failed_responses) == 0
