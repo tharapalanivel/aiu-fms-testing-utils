@@ -275,12 +275,15 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     else:
         print("passed validation level 0")
 
-def test_warmup_multiple_shapes():
+@pytest.mark.parametrize("use_static_shapes", [False, True], ids=["dynamic_shapes", "static_shapes"])
+def test_warmup_multiple_shapes(use_static_shapes):
     shapes = [
-        (1, 64, 8),
-        (2, 64, 8),
-        (1, 128, 24),
+        (1, 64, 4),
+        (2, 64, 4),
+        (1, 128, 8),
     ]
+
+    tokenizer = tokenizers.get_tokenizer(GRANITE_3p2_8B_INSTRUCT)
 
     reference_model = get_model(
         architecture="hf_configured",
@@ -305,43 +308,79 @@ def test_warmup_multiple_shapes():
 
     torch.set_grad_enabled(False)
     model.compile(backend="sendnn_decoder")
-    for bs, sl, mnt in shapes:
-        # prepare input_ids
-        prompt_list = []
-        for i in range(bs):
-            prompt_list.append(torch.randint(0, model.config.src_vocab_size, (sl - 2 * i,), dtype=torch.long))
 
-        input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=sl)
-        # warmup aiu model
-        warmup_model(model, input_ids, mnt, **padding_kwargs)
+    if use_static_shapes:
+        ctx = torch._dynamo.config.patch(
+            assume_static_by_default=True,
+            dynamic_shapes=False,
+            automatic_dynamic_shapes=False,
+            cache_size_limit=1000,
+        )
+    else:
+        ctx = torch._dynamo.config.patch(
+            dynamic_shapes=True,
+        )
+
+    # metric calculator based on the cross-entropy and mean diff for each decode step
+    def _metric_calculator(r: torch.Tensor, t: torch.Tensor):
+        cross_entropy = torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
+        diff = torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+        return (cross_entropy, diff)
     
-    # perform 3 inference, making sure ordering does not affect things
-    for _ in range(3):
-        shapes.reverse()
+    with ctx:
+
         for bs, sl, mnt in shapes:
+            # prepare input_ids
             prompt_list = []
             for i in range(bs):
                 prompt_list.append(torch.randint(0, model.config.src_vocab_size, (sl - 2 * i,), dtype=torch.long))
+
             input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=sl)
+            # warmup aiu model
+            warmup_model(model, input_ids, mnt, **padding_kwargs)
+    
+        # perform 3 inference, making sure ordering does not affect things
+        for _ in range(3):
+            shapes.reverse()
+            for bs, sl, mnt in shapes:
+                prompt_list = []
+                for i in range(bs):
+                    prompt_list.append(torch.randint(0, model.config.src_vocab_size, (sl - 2 * i,), dtype=torch.long))
+                input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=sl)
 
-            cpu_validation_info = extract_validation_information(
-                reference_model,
-                input_ids,
-                mnt,
-                LogitsExtractorHook(),
-                attn_algorithm="math",
-                **padding_kwargs
-            )
+                cpu_validation_info = extract_validation_information(
+                    reference_model,
+                    input_ids,
+                    mnt,
+                    LogitsExtractorHook(),
+                    attn_algorithm="math",
+                    **padding_kwargs
+                )
+                cpu_static_tokens = cpu_validation_info.get_info("tokens")
+                eos_indexes = __find_eos_index(cpu_static_tokens, tokenizer.eos_token_id, sl, mnt)
 
-            aiu_validation_info = extract_validation_information(
-                model,
-                input_ids,
-                mnt,
-                None,
-                only_last_token=True,
-                **padding_kwargs
-            )
+                aiu_validation_info = extract_validation_information(
+                    model,
+                    input_ids,
+                    mnt,
+                    GoldenTokenHook(cpu_static_tokens),
+                    only_last_token=True,
+                    **padding_kwargs
+                )
 
-            failed_responses = validate_level_0(aiu_validation_info.get_info("tokens"), cpu_validation_info.get_info("tokens"))
+                level_1_metrics = capture_level_1_metrics(
+                    cpu_validation_info.get_info("logits"),
+                    aiu_validation_info.get_info("logits"),
+                    top_k_loss_calculator(20, _metric_calculator)
+                )
 
-            assert len(failed_responses) == 0
+                # only consider those metrics captured prior to the eos
+                level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
+
+                ce_threshold, diff_thresholds = fail_thresholds.get(GRANITE_3p2_8B_INSTRUCT, default_metrics_threshold)
+
+                # get all failed responses for each metric
+                ce_fail_responses = filter_failed_level_1_cases(level_1_metrics, lambda m: m[0] >= ce_threshold)
+                diff_fail_responses = filter_failed_level_1_cases(level_1_metrics, lambda m: m[1] <= diff_thresholds[0] or m[1] >= diff_thresholds[1])
+                assert len(ce_fail_responses) == 0
+                assert len(diff_fail_responses) == 0

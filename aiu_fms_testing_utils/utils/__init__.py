@@ -23,9 +23,10 @@ def _prepare_model_inputs_hook(i, input_ids, kwargs):
         torch._dynamo.mark_static(kwargs["position_ids"], 1)
     else:
         # we always want the decode to be dynamic on sequence
-        torch._dynamo.mark_dynamic(input_ids, 1)
-        torch._dynamo.mark_dynamic(kwargs["mask"], 1)
-        torch._dynamo.mark_dynamic(kwargs["mask"], 2)
+        if torch._dynamo.config.dynamic_shapes:
+            torch._dynamo.mark_dynamic(input_ids, 1)
+            torch._dynamo.mark_dynamic(kwargs["mask"], 1)
+            torch._dynamo.mark_dynamic(kwargs["mask"], 2)
         
         for layer in kwargs["past_key_value_states"]:
             for tensor in layer:
