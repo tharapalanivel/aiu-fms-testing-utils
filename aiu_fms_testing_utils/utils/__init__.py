@@ -10,30 +10,6 @@ import requests
 import json
 import random
 
-def _prepare_model_inputs_hook(i, input_ids, kwargs):
-    """To produce like graphs during pre-fill, we mark the prefill batch x seq as static, but relax this for decode for the seq"""
-    if i == 0:
-        # we always want prefill to be static to produce same-like graph
-        torch._dynamo.mark_static(input_ids, 0)
-        torch._dynamo.mark_static(input_ids, 1)
-        torch._dynamo.mark_static(kwargs["mask"], 0)
-        torch._dynamo.mark_static(kwargs["mask"], 1)
-        torch._dynamo.mark_static(kwargs["mask"], 2)
-        torch._dynamo.mark_static(kwargs["position_ids"], 0)
-        torch._dynamo.mark_static(kwargs["position_ids"], 1)
-    else:
-        # we always want the decode to be dynamic on sequence
-        torch._dynamo.mark_dynamic(input_ids, 1)
-        torch._dynamo.mark_dynamic(kwargs["mask"], 1)
-        torch._dynamo.mark_dynamic(kwargs["mask"], 2)
-        
-        for layer in kwargs["past_key_value_states"]:
-            for tensor in layer:
-                torch._dynamo.mark_static(tensor, 0)
-
-    return input_ids, kwargs
-
-
 def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, **padding_kwargs):
     from torch_sendnn import torch_sendnn
     dprint("AIU warmup")
