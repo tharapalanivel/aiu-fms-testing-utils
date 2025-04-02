@@ -4,12 +4,11 @@ from fms.models import get_model
 from fms.utils.generation import pad_input_ids
 import itertools
 import torch
+from torch import distributed as dist
 from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, GoldenTokenHook, capture_level_1_metrics, filter_failed_level_1_cases, load_validation_information, validate_level_0, top_k_loss_calculator
 from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, aiu_dist_setup
 import os
-
-from torch import dist
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
@@ -19,7 +18,7 @@ GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 
 SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json"))
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
-USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == 1
+USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
 validation_info_dir = os.environ.get("FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info")
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT])
 # for validation level 1, the default is a failure rate of 1%
