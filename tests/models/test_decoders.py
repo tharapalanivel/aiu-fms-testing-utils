@@ -5,7 +5,7 @@ from fms.utils.generation import pad_input_ids
 import itertools
 import torch
 from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, GoldenTokenHook, capture_level_1_metrics, filter_failed_level_1_cases, load_validation_information, validate_level_0, top_k_loss_calculator
-from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt, _prepare_model_inputs_hook
+from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, aiu_dist_setup
 import os
 
