@@ -89,9 +89,24 @@ def __maybe_get_gptq_kwargs(model_path):
         if hasattr(config, "quantization_config"):
             group_size = config.quantization_config["group_size"]
             desc_act = config.quantization_config["desc_act"]
-            gptq_kwargs = {"group_size": group_size, "desc_act": desc_act}
-            return gptq_kwargs
-    return None
+            linear_config = {"group_size": group_size, "desc_act": desc_act}
+            gptq_kwargs_aiu = {
+                "linear_config": {"linear_type": "gptq_aiu", **linear_config},
+                "architecture": "hf_configured",
+                "variant": model_path, 
+                "model_path": model_path, 
+                "source": "hf_gptq_aiu"
+            }
+            gptq_kwargs_cpu = {
+                "linear_config": {"linear_type": "gptq_cpu", **linear_config},
+                "architecture": "hf_configured",
+                "variant": model_path, 
+                "model_path": model_path, 
+                "source": "hf"
+            }
+
+            return gptq_kwargs_aiu, gptq_kwargs_cpu
+    return {}, {}
 
 def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     prompts_and_sizes = sample_sharegpt_requests(SHARE_GPT_DATASET_PATH, batch_size, tokenizer, int(seq_length / 2), seq_length, seed)
@@ -142,6 +157,9 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     dprint(f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}")
 
+    # we don't currently support inferring gptq from get_model, so we must use an adapter with hf_configured
+    gptq_kwargs_aiu, gptq_kwargs_cpu = __maybe_get_gptq_kwargs(model_path)
+
     if USE_MICRO_MODELS:
         micro_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
     else:
@@ -152,17 +170,18 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     else:
         model_path_kwargs = {"variant": model_path}
     
-    gptq_kwargs = __maybe_get_gptq_kwargs(model_path)
-    
-    get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs}
+    get_model_kwargs = {}
+    if len(gptq_kwargs_aiu) == 0:
+        get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs}
 
     tokenizer = tokenizers.get_tokenizer(model_path)
     
+    print("preparing AIU model")
     # prepare the AIU model
     model = get_model(
         device_type="cpu",
         fused_weights=False,
-        linear_config={**gptq_kwargs, "linear_type": "gptq_aiu"} if gptq_kwargs else None,
+        **gptq_kwargs_aiu,
         **get_model_kwargs,
     )
 
@@ -170,12 +189,13 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     torch.set_grad_enabled(False)
     model.compile(backend="sendnn_decoder")
 
+    print("preparing CPU model")
     # prepare the cpu model
     validation_model = get_model(
         device_type="cpu",
-        data_type=torch.float32,
+        data_type=torch.float32 if len(gptq_kwargs_aiu) == 0 else None,
         fused_weights=False,
-        linear_config={**gptq_kwargs, "linear_type": "gptq_cpu"} if gptq_kwargs else None,
+        **gptq_kwargs_cpu,
         **get_model_kwargs
     )
 
@@ -294,3 +314,6 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         print("passed validation level 1")
     else:
         print("passed validation level 0")
+
+
+
