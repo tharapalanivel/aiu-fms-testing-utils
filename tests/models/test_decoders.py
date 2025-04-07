@@ -200,7 +200,14 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     )
 
     if USE_MICRO_MODELS:
-        validation_model.load_state_dict(model.state_dict())
+        if len(gptq_kwargs_aiu) == 0:
+            validation_model.load_state_dict(model.state_dict())
+        # FIXME: We need a better way of using hf_configuered with nlayers but given both gptq models require weights in different formats
+        #  that would require a special adapter be made. For now we will just require loading the weights with the proper adapter and
+        #  remove layers for mini model
+        else:
+            model.layers = torch.nn.ModuleList(model.layers[0:3])
+            validation_model.layers = torch.nn.ModuleList(validation_model.layers[0:3])
 
     # prepare input_ids
     input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
