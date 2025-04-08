@@ -127,6 +127,7 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
 
 @pytest.mark.parametrize("model_path,batch_size,seq_length,max_new_tokens", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+    torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
     
     if "HF_HOME" not in os.environ:
