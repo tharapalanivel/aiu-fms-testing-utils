@@ -32,8 +32,6 @@ common_max_new_tokens = os.environ.get("FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS", 
 
 if USE_DISTRIBUTED:
     dist.init_process_group()
-    # Fix until PT 2.3
-    torch._C._distributed_c10d._register_process_group("default", dist.group.WORLD)
     aiu_dist_setup(dist.get_rank(), dist.get_world_size())
 
 if USE_MICRO_MODELS:
