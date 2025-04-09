@@ -4,9 +4,10 @@ from fms.models import get_model
 from fms.utils.generation import pad_input_ids
 import itertools
 import torch
+from torch import distributed as dist
 from aiu_fms_testing_utils.testing.validation import extract_validation_information, LogitsExtractorHook, GoldenTokenHook, capture_level_1_metrics, filter_failed_level_1_cases, load_validation_information, validate_level_0, top_k_loss_calculator
 from aiu_fms_testing_utils.utils import warmup_model, sample_sharegpt_requests, ids_for_prompt
-from aiu_fms_testing_utils.utils.aiu_setup import dprint
+from aiu_fms_testing_utils.utils.aiu_setup import dprint, aiu_dist_setup
 import os
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
@@ -17,6 +18,7 @@ GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 
 SHARE_GPT_DATASET_PATH = os.environ.get("SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json"))
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
+USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
 validation_info_dir = os.environ.get("FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info")
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT])
 # for validation level 1, the default is a failure rate of 1%
@@ -27,6 +29,10 @@ save_validation_info_outputs = os.environ.get("FMS_TEST_SHAPES_SAVE_VALIDATION_I
 common_batch_sizes = os.environ.get("FMS_TEST_SHAPES_COMMON_BATCH_SIZES", [1, 2, 4, 8])
 common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64, 2048])
 common_max_new_tokens = os.environ.get("FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS", [128])
+
+if USE_DISTRIBUTED:
+    dist.init_process_group()
+    aiu_dist_setup(dist.get_rank(), dist.get_world_size())
 
 if USE_MICRO_MODELS:
     validation_info_dir = os.path.join(validation_info_dir, "tiny_models")
@@ -122,6 +128,7 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
 
 @pytest.mark.parametrize("model_path,batch_size,seq_length,max_new_tokens", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+    torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
     
     if "HF_HOME" not in os.environ:
@@ -138,8 +145,13 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         model_path_kwargs = {"model_path": model_path}
     else:
         model_path_kwargs = {"variant": model_path}
+
+    distributed_kwargs = {}
+    if USE_DISTRIBUTED:
+        distributed_kwargs["distr_param"] = "tp"
+        distributed_kwargs["group"] = dist.group.WORLD
     
-    get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs}
+    get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs, **distributed_kwargs}
 
     tokenizer = tokenizers.get_tokenizer(model_path)
     
