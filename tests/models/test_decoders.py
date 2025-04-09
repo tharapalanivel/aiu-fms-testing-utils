@@ -1,5 +1,5 @@
 from fms.models.hf.utils import AutoConfig
-from fms.utils import tokenizers
+from fms.utils import serialization, tokenizers
 import pytest
 from fms.models import get_model
 from fms.utils.generation import pad_input_ids
@@ -71,6 +71,9 @@ fail_thresholds = {
     LLAMA_3p1_8B_INSTRUCT: (3.7392955756187423, (-1.0430812658057675e-08, 1.0401941685778344e-08)),
     GRANITE_3p2_8B_INSTRUCT: (2.996668996810913, (-8.911825961632757e-09, 8.75443184611413e-09)),
 }
+# custom weight adaptation to be used in future 
+# llama already has many adapters for aiu and they are the same for all models, so just use llama
+__custom_adapter = {"architecture": "llama", "source": "fms_aiu"}
 
 @pytest.fixture(autouse=True)
 def reset_compiler():
@@ -84,29 +87,40 @@ def reset_compiler():
         os.environ['HF_HOME'] = ORIGINAL_HF_HOME
 
 def __maybe_get_gptq_kwargs(model_path):
+    gptq_adapter_step = []
+    gptq_kwargs_aiu = {}
+    gptq_kwargs_cpu = {}
     if GPTQ_ENABLED:
         config = AutoConfig.from_pretrained(model_path)
         if hasattr(config, "quantization_config"):
+            gptq_adapter_step.append("gptq_qweights_transpose_aiu")
             group_size = config.quantization_config["group_size"]
             desc_act = config.quantization_config["desc_act"]
             linear_config = {"group_size": group_size, "desc_act": desc_act}
+            if USE_MICRO_MODELS:
+                micro_aiu_kwargs = {"nlayers": 3}
+                micro_cpu_kwargs = {"nlayers": 3}
+            else:
+                micro_aiu_kwargs = {"model_path": model_path, "source": "hf_gptq_aiu"}
+                micro_cpu_kwargs = {"model_path": model_path, "source": "hf"}
             gptq_kwargs_aiu = {
                 "linear_config": {"linear_type": "gptq_aiu", **linear_config},
                 "architecture": "hf_configured",
-                "variant": model_path, 
-                "model_path": model_path, 
-                "source": "hf_gptq_aiu"
+                "variant": model_path,
+                **micro_aiu_kwargs
             }
             gptq_kwargs_cpu = {
                 "linear_config": {"linear_type": "gptq_cpu", **linear_config},
                 "architecture": "hf_configured",
                 "variant": model_path, 
-                "model_path": model_path, 
-                "source": "hf"
+                **micro_cpu_kwargs
             }
-
-            return gptq_kwargs_aiu, gptq_kwargs_cpu
-    return {}, {}
+    try:
+        # llama already has this adapter and it is the same for all models, so just use llama
+        serialization.register_adapter(**__custom_adapter, adapter_steps=gptq_adapter_step)
+    except KeyError:
+        pass
+    return gptq_kwargs_aiu, gptq_kwargs_cpu
 
 def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     prompts_and_sizes = sample_sharegpt_requests(SHARE_GPT_DATASET_PATH, batch_size, tokenizer, int(seq_length / 2), seq_length, seed)
@@ -148,8 +162,32 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
     else:
         return None
 
+def __maybe_reset_model(model, is_gptq):
+    if USE_MICRO_MODELS and is_gptq:
+        sd = model.state_dict()
+        for key, param in sd.items():
+            if "qweight" in key:
+                res = torch.randint(
+                    low=0,
+                    high=torch.iinfo(torch.int32).max,
+                    size=param.shape,
+                    dtype=torch.int32,
+                )
+                sd[key].copy_(res)
+            elif "qzeros" in key:
+                res = torch.ones(param.shape, dtype=torch.int32) * 8
+            elif "g_idx" in key:
+                res = param
+            else:
+                res = torch.randn_like(param)
+                res -= 0.5
+                res /= 20.0
+            param.copy_(res)
+        
+
 @pytest.mark.parametrize("model_path,batch_size,seq_length,max_new_tokens", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+    torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
     
     if "HF_HOME" not in os.environ:
@@ -159,6 +197,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     # we don't currently support inferring gptq from get_model, so we must use an adapter with hf_configured
     gptq_kwargs_aiu, gptq_kwargs_cpu = __maybe_get_gptq_kwargs(model_path)
+    is_gptq = len(gptq_kwargs_aiu) != 0
 
     if USE_MICRO_MODELS:
         micro_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
@@ -171,12 +210,11 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         model_path_kwargs = {"variant": model_path}
     
     get_model_kwargs = {}
-    if len(gptq_kwargs_aiu) == 0:
+    if not is_gptq:
         get_model_kwargs = {**model_path_kwargs, **micro_model_kwargs}
 
     tokenizer = tokenizers.get_tokenizer(model_path)
     
-    print("preparing AIU model")
     # prepare the AIU model
     model = get_model(
         device_type="cpu",
@@ -184,30 +222,23 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         **gptq_kwargs_aiu,
         **get_model_kwargs,
     )
+    __maybe_reset_model(model, is_gptq)
 
     model.eval()
     torch.set_grad_enabled(False)
     model.compile(backend="sendnn_decoder")
 
-    print("preparing CPU model")
     # prepare the cpu model
     validation_model = get_model(
         device_type="cpu",
-        data_type=torch.float32 if len(gptq_kwargs_aiu) == 0 else None,
+        data_type=None if is_gptq else torch.float32,
         fused_weights=False,
         **gptq_kwargs_cpu,
         **get_model_kwargs
     )
 
     if USE_MICRO_MODELS:
-        if len(gptq_kwargs_aiu) == 0:
-            validation_model.load_state_dict(model.state_dict())
-        # FIXME: We need a better way of using hf_configuered with nlayers but given both gptq models require weights in different formats
-        #  that would require a special adapter be made. For now we will just require loading the weights with the proper adapter and
-        #  remove layers for mini model
-        else:
-            model.layers = torch.nn.ModuleList(model.layers[0:3])
-            validation_model.layers = torch.nn.ModuleList(validation_model.layers[0:3])
+        serialization.load_state_dict_into_model(validation_model, model.state_dict(), **__custom_adapter)
 
     # prepare input_ids
     input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
