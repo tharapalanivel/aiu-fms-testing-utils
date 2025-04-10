@@ -108,14 +108,23 @@ common_shapes = list(
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
 # if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold defined above
+# threshold key is (model_id, is_tiny_model)
 fail_thresholds = {
-    LLAMA_3p1_8B_INSTRUCT: (
+    (LLAMA_3p1_8B_INSTRUCT, True): (
         3.7392955756187423,
         (-1.0430812658057675e-08, 1.0401941685778344e-08),
     ),
-    GRANITE_3p2_8B_INSTRUCT: (
+    (GRANITE_3p2_8B_INSTRUCT, True): (
         2.996668996810913,
         (-8.911825961632757e-09, 8.75443184611413e-09),
+    ),
+    (LLAMA_3p1_8B_INSTRUCT, False): (
+        2.6994638133048965,
+        (-1.20589349217326e-08, 1.2828708784162848e-08),
+    ),
+    (GRANITE_3p2_8B_INSTRUCT, False): (
+        2.3919514417648315,
+        (-1.1937345778534336e-08, 1.2636651502972995e-08),
     ),
 }
 # custom weight adaptation to be used in future. For instance if we would like to add some other adaptation, we can register it with this custom adapter
@@ -458,7 +467,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
 
             ce_threshold, diff_thresholds = fail_thresholds.get(
-                model_path, default_metrics_threshold
+                (model_path, USE_MICRO_MODELS), default_metrics_threshold
             )
 
             # get all failed responses for each metric
