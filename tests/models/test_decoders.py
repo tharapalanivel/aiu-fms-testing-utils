@@ -486,8 +486,8 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         # test the failure rates for across all tokens
         diff_failure_rate = len(diff_fail_responses_list) / total_tokens
         ce_failure_rate = len(ce_fail_responses_list) / total_tokens
-        print(f"mean diff failure rate: {diff_failure_rate}")
-        print(f"cross entropy loss failure rate: {ce_failure_rate}")
+        dprint(f"mean diff failure rate: {diff_failure_rate}")
+        dprint(f"cross entropy loss failure rate: {ce_failure_rate}")
         assert diff_failure_rate < failure_rate_threshold, (
             f"failure rate for mean diff was too high: {diff_failure_rate}"
         )
