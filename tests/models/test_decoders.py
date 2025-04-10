@@ -80,8 +80,10 @@ fail_thresholds = {
     LLAMA_3p1_8B_INSTRUCT: (3.7392955756187423, (-1.0430812658057675e-08, 1.0401941685778344e-08)),
     GRANITE_3p2_8B_INSTRUCT: (2.996668996810913, (-8.911825961632757e-09, 8.75443184611413e-09)),
 }
-# custom weight adaptation to be used in future 
-# llama already has many adapters for aiu and they are the same for all models, so just use llama
+# custom weight adaptation to be used in future. For instance if we would like to add some other adaptation, we can register it with this custom adapter
+# and provide it when converting from an aiu fms model's weights to a cpu fms model's weights. Currently this is only done for gptq, but may be done for other
+# formats in the future
+# note: llama already has many adapters for aiu and they are the same for all models, so just use llama. This way we don't need to re-register a new architecture / adapter step (we can just re-use)
 __custom_adapter = {"architecture": "llama", "source": "fms_aiu"}
 
 @pytest.fixture(autouse=True)
@@ -95,11 +97,14 @@ def reset_compiler():
     else:
         os.environ['HF_HOME'] = ORIGINAL_HF_HOME
 
+# TODO: Currently, gptq does not have the same level of support as non-gptq models for get_model. This method provides the extra requirements for gptq for get_model,
+#  however ideally, these fixes should be done in foundation-model-stack.
 def __maybe_get_gptq_kwargs(model_path):
     gptq_adapter_step = []
     gptq_kwargs_aiu = {}
     gptq_kwargs_cpu = {}
     if GPTQ_ENABLED:
+        # TODO: hf_configured/hf_pretrained options in get_model should be inferring the linear_config based on the hf quantization_config attribute
         config = AutoConfig.from_pretrained(model_path)
         if hasattr(config, "quantization_config"):
             gptq_adapter_step.append("gptq_qweights_transpose_aiu")
@@ -110,8 +115,11 @@ def __maybe_get_gptq_kwargs(model_path):
                 micro_aiu_kwargs = {"nlayers": 3}
                 micro_cpu_kwargs = {"nlayers": 3}
             else:
+                # TODO: infer the source based on the device for get_model when using gptq
                 micro_aiu_kwargs = {"model_path": model_path, "source": "hf_gptq_aiu"}
                 micro_cpu_kwargs = {"model_path": model_path, "source": "hf"}
+            
+            # TODO: infer the linear_type based on the device for get_model when using gptq
             gptq_kwargs_aiu = {
                 "linear_config": {"linear_type": "gptq_aiu", **linear_config},
                 "architecture": "hf_configured",
@@ -171,6 +179,8 @@ def __load_validation_info(model_path, batch_size, seq_length, max_new_tokens, t
     else:
         return None
 
+# TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
+#  however the gptq modules are yet to support this
 def __maybe_reset_model(model, is_gptq):
     if USE_MICRO_MODELS and is_gptq:
         sd = model.state_dict()
