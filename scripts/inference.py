@@ -66,19 +66,19 @@ parser.add_argument(
     help="Type of quantization of the model checkpoint",
 )
 parser.add_argument(
-    "--weight_per_channel",
+    "--int8_weight_per_channel",
     action="store_true",
     help="Enable per-channel weight quantization in INT8 quantized model",
 )
 parser.add_argument(
-    "--activ_quant_type",
+    "--int8_activ_quant_type",
     default="per_token",
     choices=["per_token", "per_tensor_symm", "per_tensor_asymm"],
     type=str,
     help="Define strategy for activation quantization in INT8 quantized model",
 )
 parser.add_argument(
-    "--smoothquant",
+    "--int8_smoothquant",
     action="store_true",
     help="Enable smoothquant in INT8 quantized model",
 )
@@ -392,7 +392,7 @@ elif args.quantization == "int8":
         use_smoothquant = smoothquant and smoothquant_on_module
         return "int8_smoothquant_aiu" if use_smoothquant else "int8_aiu"
 
-    if args.smoothquant:
+    if args.int8_smoothquant:
         if any("granite" in p for p in [args.model_path, args.architecture]):
             smoothquant_layers = ["key", "value", "w1", "wg"]
         elif any("roberta" in p for p in [args.model_path, args.architecture]):
@@ -405,11 +405,11 @@ elif args.quantization == "int8":
     linear_config = {
         "linear_type": partial(
             select_int8_module,
-            smoothquant = args.smoothquant,
+            smoothquant = args.int8_smoothquant,
             smoothquant_layers = smoothquant_layers,
         ),
-        "weight_per_channel": args.weight_per_channel,
-        "activ_quant_type": args.activ_quant_type,
+        "weight_per_channel": args.int8_weight_per_channel,
+        "activ_quant_type": args.int8_activ_quant_type,
     }
     if fused_weights and is_aiu_backend:
         raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
