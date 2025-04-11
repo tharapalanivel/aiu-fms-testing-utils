@@ -323,6 +323,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     # prepare the AIU model
     model = get_model(
         device_type="cpu",
+        data_type=None if is_gptq else torch.float16,
         fused_weights=False,
         **gptq_kwargs_aiu,
         **get_model_kwargs,
