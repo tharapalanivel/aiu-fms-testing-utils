@@ -413,7 +413,10 @@ elif args.quantization == "int8":
     }
     if fused_weights and is_aiu_backend:
         raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
-    default_dtype = None  # INT8 dtype always comes from ckpt
+    if default_dtype is not None:
+        raise ValueError(
+            "INT8 default_dtype must be None to preserve the checkpoint data types."
+        )
 else:
     linear_config = {"linear_type": "torch_linear"}
 
