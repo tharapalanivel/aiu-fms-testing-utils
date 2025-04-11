@@ -580,10 +580,15 @@ def infer(use_cache, do_sample, warmup):
     else:
         eos_token_id = None
 
+    max_new_tokens = args.max_new_tokens
+    if warmup:
+        max_new_tokens = 2
+
     result = generate(
         model,
         ids,
-        max_new_tokens=args.max_new_tokens,
+       #max_new_tokens=args.max_new_tokens,
+        max_new_tokens=max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,
         max_seq_len=max_seq_len,
