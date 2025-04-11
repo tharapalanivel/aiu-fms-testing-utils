@@ -393,12 +393,15 @@ elif args.quantization == "int8":
         return "int8_smoothquant_aiu" if use_smoothquant else "int8_aiu"
 
     if args.int8_smoothquant:
+        # TODO: consider saving this info into config during quantization
         if any("granite" in p for p in [args.model_path, args.architecture]):
             smoothquant_layers = ["key", "value", "w1", "wg"]
         elif any("roberta" in p for p in [args.model_path, args.architecture]):
             smoothquant_layers = ["query", "key", "value", "w1"]
         else:
-            raise NotImplementedError("INT8 architecture not supported.")
+            raise NotImplementedError(
+                "INT8 architecture does not support smoothquant."
+            )
     else:
         smoothquant_layers = []
 
