@@ -584,6 +584,8 @@ if has_padding:
     ids, extra_generation_kwargs = pad_input_ids(prompts, min_pad_length=padding_length)
 else:
     ids = prompts
+    if isinstance(ids, list) and len(ids) == 1:
+        ids = ids[0].unsqueeze(0)
     extra_generation_kwargs = None
 
 
