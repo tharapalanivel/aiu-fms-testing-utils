@@ -313,6 +313,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     get_model_kwargs = {}
     if not is_gptq:
         get_model_kwargs = {
+            "data_type": torch.float16,
             **model_path_kwargs,
             **micro_model_kwargs,
             **distributed_kwargs,
