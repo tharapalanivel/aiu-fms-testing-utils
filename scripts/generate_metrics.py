@@ -6,7 +6,7 @@ import random
 from typing import List, Optional, Tuple
 
 import torch
-
+from torch import distributed as dist
 from aiu_fms_testing_utils.testing.validation import capture_level_1_metrics, extract_validation_information, LogitsExtractorHook, print_failed_cases, \
     validate_level_0, GoldenTokenHook, top_k_loss_calculator
 from aiu_fms_testing_utils.utils import ids_for_prompt, sample_sharegpt_requests
@@ -97,7 +97,21 @@ parser.add_argument(
     default={},
     help="Use this to override model configuration values to get model. Example: --extra_get_model_kwargs nlayers=2,..."
 )
+parser.add_argument(
+    "--distributed",
+    action="store_true",
+    help="This is a distributed job (multiple instances run with RANK+WORLD_SIZE)",
+)
+local_rank = int(os.getenv("LOCAL_RANK", 0))
+world_size = int(os.getenv("WORLD_SIZE", 1))
 args = parser.parse_args()
+
+if args.distributed:
+    dist.init_process_group()
+    distr_param = "tp"
+    torch.cuda.set_device(local_rank)
+else:
+    distr_param = None
 
 extra_get_model_kwargs = {}
 for a in args.extra_get_model_kwargs:
@@ -136,6 +150,8 @@ cuda_model = get_model(
     model_path=args.model_path,
     device_type="cuda",
     data_type=default_dtype,
+    distributed_strategy=distr_param,
+    group=dist.group.WORLD,
     **extra_get_model_kwargs,
 )
 
@@ -149,6 +165,8 @@ cpu_model = get_model(
     model_path=args.model_path,
     device_type="cpu",
     data_type=torch.float32,
+    distributed_strategy=distr_param,
+    group=dist.group.WORLD,
     **extra_get_model_kwargs,
 )
 cpu_model.eval()
@@ -211,8 +229,9 @@ cuda_static_tokens = cuda_validation_info.get_info("tokens")
 failed_responses = validate_level_0(cpu_static_tokens, cuda_static_tokens)
 
 print("extracted cuda validation information level 0")
-if len(failed_responses) != 0:    
-    print_failed_cases(failed_responses, cpu_static_tokens, cuda_static_tokens, tokenizer)
+if local_rank == 0:
+    if len(failed_responses) != 0:    
+        print_failed_cases(failed_responses, cpu_static_tokens, cuda_static_tokens, tokenizer)
 
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
@@ -264,8 +283,9 @@ for i in range(num_test_tokens_per_sequence // args.max_new_tokens):
 
     print("extracted cuda validation information level 1")
 
-    cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out"))
-    cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out"))
+    if local_rank == 0:
+        cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out"))
+        cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out"))
 
     level_1_metrics = capture_level_1_metrics(
         cpu_validation_info.get_info("logits"),
@@ -295,7 +315,8 @@ for i in range(num_test_tokens_per_sequence // args.max_new_tokens):
     )
     prob_diff_metrics.extend(filter_before_eos(level_1_metrics, eos_indexes))
 
-write_csv(prob_mean_metrics, os.path.join(args.output_dir, f"{prefix}.prob_mean.csv"), "prob_mean")
-write_csv(prob_std_metrics, os.path.join(args.output_dir, f"{prefix}.prob_std.csv"), "prob_std")
-write_csv(prob_ce_loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
-write_csv(prob_diff_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
+if local_rank == 0:
+    write_csv(prob_mean_metrics, os.path.join(args.output_dir, f"{prefix}.prob_mean.csv"), "prob_mean")
+    write_csv(prob_std_metrics, os.path.join(args.output_dir, f"{prefix}.prob_std.csv"), "prob_std")
+    write_csv(prob_ce_loss_metrics, os.path.join(args.output_dir, f"{prefix}.ce.csv"), "ce")
+    write_csv(prob_diff_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
