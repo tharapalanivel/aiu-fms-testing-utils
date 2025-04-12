@@ -247,6 +247,7 @@ def __load_validation_info(
     )
 
     if os.path.exists(full_path):
+        dprint(f"cpu validation info found for seed={seed} -- loading it")
         return load_validation_information(full_path, "logits", batch_size, tokenizer)
     else:
         return None
@@ -368,12 +369,12 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             **padding_kwargs,
         )
 
-    if save_validation_info_outputs:
-        cpu_validation_info.save(
-            __get_validation_info_full_path(
-                model_path, batch_size, seq_length, max_new_tokens, 0
+        if save_validation_info_outputs:
+            cpu_validation_info.save(
+                __get_validation_info_full_path(
+                    model_path, batch_size, seq_length, max_new_tokens, 0
+                )
             )
-        )
     cpu_static_tokens = cpu_validation_info.get_info("tokens")
     eos_indexes = __find_eos_index(
         cpu_static_tokens, tokenizer.eos_token_id, seq_length, max_new_tokens
@@ -430,15 +431,15 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                         attn_algorithm="math",
                         **padding_kwargs,
                     )
-                dprint(
-                    f"cpu validation info extracted for validation level 1 - iter={i}"
-                )
-                if save_validation_info_outputs:
-                    cpu_validation_info.save(
-                        __get_validation_info_full_path(
-                            model_path, batch_size, seq_length, max_new_tokens, i
-                        )
+                    dprint(
+                        f"cpu validation info extracted for validation level 1 - iter={i}"
                     )
+                    if save_validation_info_outputs:
+                        cpu_validation_info.save(
+                            __get_validation_info_full_path(
+                                model_path, batch_size, seq_length, max_new_tokens, i
+                            )
+                        )
                 cpu_static_tokens = cpu_validation_info.get_info("tokens")
                 eos_indexes = __find_eos_index(
                     cpu_static_tokens,
