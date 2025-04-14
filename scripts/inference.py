@@ -337,6 +337,13 @@ else:
 
 fused_weights = not args.unfuse_weights
 if args.quantization == "gptq":
+    if fused_weights and is_aiu_backend:
+        raise ValueError("GPTQ checkpoints on AIU must always run with --unfuse_weights")
+    if default_dtype is not None:
+        raise ValueError(
+            "GPTQ default_dtype must be None to preserve the checkpoint data types."
+        )
+
     if "aiu" in args.device_type:
         linear_type = "gptq_aiu"
     elif args.device_type == "cpu":
@@ -370,13 +377,14 @@ if args.quantization == "gptq":
         "group_size": group_size,
         "desc_act": desc_act,
     }
-    # [ATTENTION] for GPTQ on AIU, we must always instantiate an unfused
-    # model, the adapter will take care of converting key/values from
-    # ckpt into the appropriate form for the model
-    if fused_weights and is_aiu_backend:
-        raise ValueError("GPTQ checkpoints on AIU must always run with --unfuse_weights")
-    default_dtype = None  # GPTQ dtype always comes from ckpt, can't be enforced
 elif args.quantization == "int8":
+    if fused_weights and is_aiu_backend:
+        raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
+    if default_dtype is not None:
+        raise ValueError(
+            "INT8 default_dtype must be None to preserve the checkpoint data types."
+        )
+
     def select_int8_module(
         module_name: str | None = None,
         smoothquant: bool = True,
@@ -414,12 +422,6 @@ elif args.quantization == "int8":
         "weight_per_channel": args.int8_weight_per_channel,
         "activ_quant_type": args.int8_activ_quant_type,
     }
-    if fused_weights and is_aiu_backend:
-        raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
-    if default_dtype is not None:
-        raise ValueError(
-            "INT8 default_dtype must be None to preserve the checkpoint data types."
-        )
 else:
     linear_config = {"linear_type": "torch_linear"}
 
