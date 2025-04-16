@@ -38,6 +38,8 @@ ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
+GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
+LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
 
 SHARE_GPT_DATASET_PATH = os.environ.get(
     "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
@@ -49,7 +51,7 @@ validation_info_dir = os.environ.get(
 )
 common_model_paths = os.environ.get(
     "FMS_TEST_SHAPES_COMMON_MODEL_PATHS",
-    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT],
+    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
 )
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
@@ -118,6 +120,14 @@ fail_thresholds = {
         2.996668996810913,
         (-8.911825961632757e-09, 8.75443184611413e-09),
     ),
+    (GRANITE_20B_CODE_INSTRUCT_8K, True): (
+        3.7392955756187423, # FIXME: compute
+        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute
+    ),
+    (LLAMA_3p1_70B_INSTRUCT, True): (
+        3.7392955756187423, # FIXME: compute
+        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute
+    ),
     (LLAMA_3p1_8B_INSTRUCT, False): (
         2.6994638133048965,
         (-1.20589349217326e-08, 1.2828708784162848e-08),
@@ -125,6 +135,14 @@ fail_thresholds = {
     (GRANITE_3p2_8B_INSTRUCT, False): (
         2.3919514417648315,
         (-1.1937345778534336e-08, 1.2636651502972995e-08),
+    ),
+    (GRANITE_20B_CODE_INSTRUCT_8K, False): (
+        2.640706129074097,
+        (-1.2043538113459817e-08, 1.2320776594521004e-08)
+    ),
+    (LLAMA_3p1_70B_INSTRUCT, False): (
+        2.6994638133048965, # FIXME: compute
+        (-1.20589349217326e-08, 1.2828708784162848e-08), # FIXME: compute
     ),
 }
 # custom weight adaptation to be used in future. For instance if we would like to add some other adaptation, we can register it with this custom adapter
