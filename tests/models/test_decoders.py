@@ -141,8 +141,8 @@ fail_thresholds = {
         (-1.2043538113459817e-08, 1.2320776594521004e-08)
     ),
     (LLAMA_3p1_70B_INSTRUCT, False): (
-        2.6994638133048965, # FIXME: compute
-        (-1.20589349217326e-08, 1.2828708784162848e-08), # FIXME: compute
+        2.841279556751251,
+        (-1.1949923468534963e-08, 1.184238206164423e-08),
     ),
 }
 # custom weight adaptation to be used in future. For instance if we would like to add some other adaptation, we can register it with this custom adapter
