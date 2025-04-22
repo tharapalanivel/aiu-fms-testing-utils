@@ -462,7 +462,8 @@ if not args.compile_dynamic:
     torch._dynamo.config.assume_static_by_default = True
     torch._dynamo.config.dynamic_shapes = False
     torch._dynamo.config.automatic_dynamic_shapes = False
-model.compile(backend="sendnn_decoder")
+
+model.compile(backend="sendnn")
 
 if needs_validation_run and args.validation_compile:
     dprint("compiling validation model")

@@ -464,7 +464,7 @@ dprint(f"loading complete, took {loading_model_time:.3f}s")
 if args.compile:
     dprint("compiling model")
     if is_aiu_backend:
-        model.compile(backend="sendnn_decoder")
+        model.compile(backend="sendnn")
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
@@ -645,6 +645,9 @@ def infer(use_cache, do_sample, warmup):
         eos_token_id = tokenizer.eos_token_id
     else:
         eos_token_id = None
+        
+    if warmup:
+        torch_sendnn.warmup_mode()
 
     result = generate(
         model,

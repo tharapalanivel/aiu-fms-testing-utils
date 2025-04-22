@@ -12,6 +12,9 @@ import random
 
 def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, **padding_kwargs):
     from torch_sendnn import torch_sendnn
+    import torch_sendnn
+
+    torch_sendnn.warmup_mode()
     dprint("AIU warmup")
     pt_compile_model_time = time.time()
     extra_kwargs = {**padding_kwargs, "only_last_token": True}

@@ -334,7 +334,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     model.eval()
     torch.set_grad_enabled(False)
-    model.compile(backend="sendnn_decoder")
+    model.compile(backend="sendnn")
 
     # prepare the cpu model
     validation_model = get_model(
