@@ -11,7 +11,6 @@ import json
 import random
 
 def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, **padding_kwargs):
-    from torch_sendnn import torch_sendnn
     import torch_sendnn
 
     dprint("AIU warmup")
