@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import random
 import time
+import contextlib
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup
@@ -645,9 +646,6 @@ def infer(use_cache, do_sample, warmup):
         eos_token_id = tokenizer.eos_token_id
     else:
         eos_token_id = None
-        
-    if warmup:
-        torch_sendnn.warmup_mode()
 
     result = generate(
         model,
@@ -691,17 +689,12 @@ use_cache = [
 if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
-    for sample, cache in itertools.product(do_sample, use_cache):
-        infer(cache, sample, True)
+    warmup_context = torch_sendnn.warmup_mode() if is_aiu_backend else contextlib.nullcontext()
+    with warmup_context:
+        for sample, cache in itertools.product(do_sample, use_cache):
+            infer(cache, sample, True)
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
-
-    if is_aiu_backend:
-        dprint("executing update_lazyhandle and compiling for AIU")
-        update_lh_time = time.time()
-        torch_sendnn.update_lazyhandle()
-        update_lh_time = time.time() - update_lh_time
-        dprint(f"update_lazyhandle complete, took {update_lh_time:.3f}s")
 
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
         aiu_warmup_time = time.time()
