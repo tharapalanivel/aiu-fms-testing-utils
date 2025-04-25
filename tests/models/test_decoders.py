@@ -122,12 +122,12 @@ fail_thresholds = {
         (-8.911825961632757e-09, 8.75443184611413e-09),
     ),
     (GRANITE_20B_CODE_INSTRUCT_8K, True): (
-        3.7392955756187423, # FIXME: compute
-        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute
+        3.7392955756187423, # FIXME: compute -- setting to micro llama 3.1 8b instruct
+        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute -- setting to micro llama 3.1 8b instruct
     ),
     (LLAMA_3p1_70B_INSTRUCT, True): (
-        3.7392955756187423, # FIXME: compute
-        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute
+        3.8235735702514626,
+        (-1.1175870895385742e-08, 1.0803342220810919e-08),
     ),
     (LLAMA_3p1_8B_INSTRUCT, False): (
         2.6994638133048965,
