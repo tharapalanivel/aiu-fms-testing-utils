@@ -23,51 +23,44 @@ model_dir = os.environ.get("FMS_TESTING_MODEL_DIR", "/tmp/models")
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 ROBERTA_SQUAD_v2 = "deepset/roberta-base-squad2"
+torch.manual_seed(42)
 
-
-class AIUMicroModelFixtureMixin(ModelFixtureMixin):
-    @pytest.fixture(scope="class", autouse=True)
-    def uninitialized_model(self, model_id):
-        aiu_model = get_model(
-            architecture="hf_configured",
-            variant=model_id,
-            device_type="cpu",
-            fused_weights=False,
-            data_type=torch.float16,
-            nlayers=3,
-        )
-        aiu_model.eval()
-        torch.set_grad_enabled(False)
-        aiu_model.compile(backend="sendnn")
-        return aiu_model
+micro_models = {LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT}
 
 
 class AIUModelFixtureMixin(ModelFixtureMixin):
     @pytest.fixture(scope="class", autouse=True)
     def uninitialized_model(self, model_id):
-        return None
+        if model_id in micro_models:
+            get_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
+        else:
+            get_model_kwargs = {"architecture": "hf_pretrained"}
 
-    @pytest.fixture(scope="class", autouse=True)
-    def model(self, uninitialized_model, model_id):
         aiu_model = get_model(
-            architecture="hf_pretrained",
             variant=model_id,
             device_type="cpu",
             fused_weights=False,
             data_type=torch.float16,
+            **get_model_kwargs,
         )
-        aiu_model.eval()
-        torch.set_grad_enabled(False)
-        aiu_model.compile(backend="sendnn")
+
         return aiu_model
 
+    @pytest.fixture(scope="class", autouse=True)
+    def model(self, uninitialized_model):
+        # we want to use reset parameter initialization here rather than the default random initialization
+        uninitialized_model.eval()
+        torch.set_grad_enabled(False)
+        uninitialized_model.compile(backend="sendnn")
+        return uninitialized_model
 
-micro_decoder_models = [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT]
+
+decoder_models = [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT]
 
 
-class TestAIUMicroDecoderModels(
+class TestAIUDecoderModels(
     ModelConsistencyTestSuite,
-    AIUMicroModelFixtureMixin,
+    AIUModelFixtureMixin,
 ):
     # x is the main parameter for this model which is the input tensor
     _get_signature_params = ["x"]
@@ -75,7 +68,7 @@ class TestAIUMicroDecoderModels(
         [torch.arange(start=5, end=65, dtype=torch.int64)], min_pad_length=64
     )
 
-    @pytest.fixture(scope="class", autouse=True, params=micro_decoder_models)
+    @pytest.fixture(scope="class", autouse=True, params=decoder_models)
     def model_id(self, request):
         return request.param
 
