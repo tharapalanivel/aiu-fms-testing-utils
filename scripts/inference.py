@@ -617,6 +617,10 @@ def print_result(result, result_idx: int):
     dprint(output_str)
     print()
 
+is_dynamic = True
+is_dynamic_value = os.getenv("TORCH_SENDNN_DYNAMIC")
+if is_dynamic_value is None or is_dynamic_value.lower() in {"0", "false"}:
+    is_dynamic = False
 
 def infer(use_cache, do_sample, warmup):
     # With greedy generation (do_sample=False) we _should_ always get the same results.
@@ -646,10 +650,14 @@ def infer(use_cache, do_sample, warmup):
     else:
         eos_token_id = None
 
+    max_new_tokens = args.max_new_tokens
+    if warmup and is_dynamic:
+        max_new_tokens = 2
+
     result = generate(
         model,
         ids,
-        max_new_tokens=args.max_new_tokens,
+        max_new_tokens=max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,
         max_seq_len=max_seq_len,
