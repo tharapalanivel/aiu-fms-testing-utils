@@ -9,7 +9,7 @@ import random
 import time
 
 # Third Party
-from aiu_fms_testing_utils.utils import aiu_setup
+from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
 import numpy as np
 import torch
@@ -617,10 +617,6 @@ def print_result(result, result_idx: int):
     dprint(output_str)
     print()
 
-is_dynamic = True
-is_dynamic_value = os.getenv("TORCH_SENDNN_DYNAMIC")
-if is_dynamic_value is None or is_dynamic_value.lower() in {"0", "false"}:
-    is_dynamic = False
 
 def infer(use_cache, do_sample, warmup):
     # With greedy generation (do_sample=False) we _should_ always get the same results.
@@ -650,14 +646,10 @@ def infer(use_cache, do_sample, warmup):
     else:
         eos_token_id = None
 
-    max_new_tokens = args.max_new_tokens
-    if warmup and is_dynamic:
-        max_new_tokens = 2
-
     result = generate(
         model,
         ids,
-        max_new_tokens=max_new_tokens,
+        max_new_tokens=args.max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,
         max_seq_len=max_seq_len,
@@ -694,19 +686,7 @@ use_cache = [
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
 
 if args.compile:
-    dprint(f"compilation warmup")
-    pt_compile_model_time = time.time()
-    for sample, cache in itertools.product(do_sample, use_cache):
-        infer(cache, sample, True)
-    pt_compile_model_time = time.time() - pt_compile_model_time
-    dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
-
-    if is_aiu_backend:
-        dprint("executing update_lazyhandle and compiling for AIU")
-        update_lh_time = time.time()
-        torch_sendnn.update_lazyhandle()
-        update_lh_time = time.time() - update_lh_time
-        dprint(f"update_lazyhandle complete, took {update_lh_time:.3f}s")
+    warmup_model(model, ids, args.max_new_tokens, **extra_generation_kwargs)
 
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
         aiu_warmup_time = time.time()

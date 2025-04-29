@@ -15,7 +15,11 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     dprint("AIU warmup")
     pt_compile_model_time = time.time()
     extra_kwargs = {**padding_kwargs, "only_last_token": True}
-    generate(model, input_ids, max_new_tokens=max_new_tokens, max_seq_len=model.config.max_expected_seq_len, use_cache=True, do_sample=False, contiguous_cache=True, extra_kwargs=extra_kwargs)
+    max_new_tokens_warmup = 2
+    is_dynamic_value = os.getenv("TORCH_SENDNN_DYNAMIC")
+    if is_dynamic_value is None or is_dynamic_value.lower() in {"0", "false"}:
+        max_new_tokens_warmup = max_new_tokens
+    generate(model, input_ids, max_new_tokens=max_new_tokens_warmup, max_seq_len=model.config.max_expected_seq_len, use_cache=True, do_sample=False, contiguous_cache=True, extra_kwargs=extra_kwargs)
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
