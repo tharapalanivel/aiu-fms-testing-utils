@@ -10,7 +10,7 @@ import time
 import contextlib
 
 # Third Party
-from aiu_fms_testing_utils.utils import aiu_setup
+from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
 import numpy as np
 import torch
@@ -691,17 +691,16 @@ if args.compile:
     pt_compile_model_time = time.time()
     warmup_context = torch_sendnn.warmup_mode() if is_aiu_backend else contextlib.nullcontext()
     with warmup_context:
-        for sample, cache in itertools.product(do_sample, use_cache):
-            infer(cache, sample, True)
+        if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
+            aiu_warmup_time = time.time()
+            warmup_model(model=model, input_ids=ids, max_new_tokens=args.max_new_tokens)
+            aiu_warmup_time = time.time() - aiu_warmup_time
+            dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
+        else:
+            for sample, cache in itertools.product(do_sample, use_cache):
+                infer(cache, sample, True)
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
-
-    if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
-        aiu_warmup_time = time.time()
-        for sample, cache in itertools.product(do_sample, use_cache):
-            infer(cache, sample, True)
-        aiu_warmup_time = time.time() - aiu_warmup_time
-        dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
 
 dprint(f"generating output")
 
