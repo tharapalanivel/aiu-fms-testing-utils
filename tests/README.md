@@ -1,9 +1,16 @@
 # Model Tests
 How to run the pytest test suites at [aiu-fms-testing-utils](https://github.com/aiu-fms-testing-utils/tree/main/tests/models).
 
+1. [Generate metrics in GPU](README.md#1-run-first-on-gpu)
+2. [Get Thresholds](README.md#2-get-thresholds)
+3. [Apply thresholds into test_decoders](README.md#3-apply-thresholds-in-aiu-test_decoders)
+4. [Run test_model_expectations](README.md#4-run-test_model_expectations)
+
+![diagram](./resources/assets/aiu-fms-testing.png)
+
 ## The test scripts
 
-**test_decoders** - this will test the decoder models (text-generation) with certain shapes. Most of this is configurable (model, batch_size, prompt_length, max_new_tokens, metrics_thresholds, failure_rate_thresholds, mini models, etc.)
+- **test_decoders** - this will test the decoder models (text-generation) with certain shapes. Most of this is configurable (model, batch_size, prompt_length, max_new_tokens, metrics_thresholds, failure_rate_thresholds, mini models, etc.)
 Example:
 ```bash
 # Note: you might need an hf_token if the model requires it (this will download)
@@ -39,7 +46,7 @@ More at [pytorch.org](https://pytorch.org/docs/stable/generated/torch.nn.CrossEn
 
 This metrics will be set at the [fail thresholds](./models/test_decoders.py#L146), so **cross_entropy** and **diff_mean** can be used to compare between the GPU generated text output by the same model in AIU. 
 
-## Run first on GPU
+## 1. Run first on GPU
 
 Set shapes:
 ```bash
@@ -58,6 +65,7 @@ python generate_metrics.py --architecture=hf_pretrained --model_path=$MODEL_PATH
 
 This will generate csv files with the results of the metrics calulation. Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
 
+## 2. Get Thresholds
 Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
 ```bash
 python get_thresholds.py --models ibm-granite--granite-20b-code-cobol-v1 --metrics diff_mean ce --file_base=/path
@@ -78,7 +86,7 @@ ibm_dmf_lakehouse--models--watsonx--shared--granite-20b-code-cobol-v1 prob_std 0
 
 These can now be used for the model testing scripts at AIU.
 
-## Apply thresholds in AIU testing
+## 3. Apply thresholds in AIU `test_decoders`
 
 These are the variables set at the deployment:
 
@@ -129,7 +137,7 @@ pytest tests/models/test_decoders.py -vv
 ```
 Add the `-vv` for verbose output.
 
-## Test Results Samples
+### Test Results Samples
 
 Here is a result sample of the test outputs:
 
@@ -256,11 +264,11 @@ assert 0.28515625 < 0.01
 ================== 1 failed, 1 warning in 6293.21s (1:44:53) ===================
 Finished running pytests
 ```
-### Results samples for `test_model_expectations`
+## 4. Run `test_model_expectations`
 
-1. First add the model desired to [decoder_models](./models/test_model_expectations.py#L55) variable and to [tuple_output_models](./models/test_model_expectations.py#L76);
-2. Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights;
-3. Run `pytest tests/models/test_model_expectations.py::TestAIUModelsTupleOutput --capture_expectation` to save the model weights;
+- First add the model desired to [decoder_models](./models/test_model_expectations.py#L55) variable and to [tuple_output_models](./models/test_model_expectations.py#L76);
+- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights;
+- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModelsTupleOutput --capture_expectation` to save the model weights;
 After that you will get an output like this:
 ```bash
 FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
@@ -269,7 +277,7 @@ FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_m
 FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
 ```
 This will tell that the weights and signature have been saved, so you can run the complete suit again to get the tests results.
-4. Then running the complete suit:
+- 4.2 Then running the complete suit:
 
 ```bash
 [1000780000@e2e-vllm-dt2-5f8474666c-6zwzb aiu-fms-testing-utils]$ pytest tests/models/test_model_expectations.py -vv
