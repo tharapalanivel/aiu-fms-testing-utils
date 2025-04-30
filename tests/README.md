@@ -289,4 +289,4 @@ total          name                                        num avg            mi
 0:00:00.000512                                 grand total   6 0:00:00.000066 0:00:00.000032
 =========================================================== 4 passed, 2 skipped, 1 warning in 219.85s (0:03:39) ============================================================
 ```
-Check this example of the code changes required to run the testes [here](https://github.com/flaviabeo/aiu-fms-testing-utils/tree/granite_20b_metrics/tests/models).
+Check this example of the code changes required to run the testes [here](https://github.com/foundation-model-stack/aiu-fms-testing-utils/pull/33/files).
