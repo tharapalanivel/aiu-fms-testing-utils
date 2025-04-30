@@ -1,5 +1,5 @@
 # Model Tests
-How to run the pytest test suits at [aiu-fms-testing-utils](https://github.com/aiu-fms-testing-utils/tree/main/tests/models).
+How to run the pytest test suites at [aiu-fms-testing-utils](https://github.com/aiu-fms-testing-utils/tree/main/tests/models).
 
 ## The test scripts
 
@@ -13,13 +13,33 @@ export FMS_TEST_SHAPES_COMMON_MODEL_PATHS=/ibm-dmf/models/watsonx/shared/granite
 export FMS_TEST_SHAPES_USE_MICRO_MODELS=1
 pytest tests/models/test_decoders.py
 ```
-The above will test shapes batch_size 1 and 8, with seq length 64 for micro model version of Llama-3.1-8B-Instruct and granite-3.2-8b-instruct (resulting in 4 test cases)
+The above will test shapes batch_size 1, with sequence length 128 for micro model version of granite-20b-code-cobol-v1 (resulting in 1 test case). We can set `FMS_TEST_SHAPES_USE_MICRO_MODELS=0` for not using micro models.
 
-- **test_model_expectations** - this test will capture the a snapshot in time of what a randomly initialized model would produce on the AIU. To add a model to this, you simply add it to either the models list or tuple_output_models list which will generate 2 expectation tests. The first time you run this test, you run it with --capture_expectation which will create a resource file with the expected output. The next time you run it, you run without the --capture_expectation and all should pass.
+- **test_model_expectations** - this test will capture a snapshot in time of what a randomly initialized model would produce on the AIU. To add a model to this, you simply add it to either the models list or tuple_output_models list which will generate 2 expectation tests. The first time you run this test, you run it with --capture_expectation which will create a resource file with the expected output. The next time you run it, you run without the --capture_expectation and all should pass.
 
-> Two quick notes: the model path can accept one of an absolute path or a huggingface model id. In the case of huggingface model id, it will download it if not already in the cache. In the case of micro models, it will only download the configuration and tokenizer; we will need to add multi-aiu to the tests as well as gptq support (which should be as simple as adding the param to get_model, will let you know when that is ready)
+### Thresholds
 
-## Run first on CPU
+Four different metrics are generated as base lines for these tests:
+
+- **cross_entropy**: Cross entropy is a measure from information theory that quantifies the difference between two probability distributions. Cross entropy serves as a measure of the differences when comparing expected generated tokens and the actual output of the model. Quantifying the distance between the ground-truth distribution and the predicted distribution.
+A lower cross entropy indicates a closer match in expected versus generated. 
+- **prob_mean**: Probability Mean typically refers to the average probability assigned by the model to a sequence of words or tokens. It's a measure of how well the model understands and predicts language, with lower mean probabilities often indicating a poorer model that struggles to generate coherent or plausible text. 
+- **prob_std**: Probability standard deviation assess how spread out or consistent the model's predictions are when it assigns probabilities to different possible outcomes. A high standard deviation indicates wide variation in the model's certainty, while a low standard deviation suggests more consistent and confident prediction
+- **diff_mean**:  The difference of the average or central tendency of a set of data points, often used to measure the model's performance. It can also refer to the intended purpose or interpretation of a text or sentence produced by the model. 
+
+They are calculated in lines [228 - 231 at generate_metrics.py](../scripts/generate_metrics.py#L228) script.
+```python
+cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
+prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
+prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
+diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+```
+More at [pytorch.org](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html), [Yiren,Wang](https://courses.grainger.illinois.edu/ece598pv/fa2017/Lecture13_LM_YirenWang.pdf), [Li, Wang, Shang Et al.](https://arxiv.org/abs/2412.12177#:~:text=%5B2412.12177%5D%20Model%2Ddiff:,%3E%20cs%20%3E%20arXiv:2412.12177) and [Wu,Hilton](https://arxiv.org/html/2410.13211v1).
+</br>
+
+This metrics will be set at the [fail thresholds](./models/test_decoders.py#L146), so **cross_entropy** and **diff_mean** can be used to compare between the GPU generated text output by the same model in AIU. 
+
+## Run first on GPU
 
 Set shapes:
 ```bash
@@ -35,6 +55,8 @@ Then run the command for the metrics script:
 ```bash
 python generate_metrics.py --architecture=hf_pretrained --model_path=$MODEL_PATH --tokenizer=$MODEL_PATH --unfuse_weights --output_path=/tmp/aiu-fms-testing-utils/output/ --compile_dynamic --max_new_tokens=$MAX_NEW_TOKENS --min_pad_length=$SEQ_LENS --batch_size=$BATCH_SIZES --default_dtype=$DEFAULT_TYPES --sharegpt_path=$DS_PATH --num_test_tokens_per_sequence=1024
 ```
+
+This will generate csv files with the results of the metrics calulation. Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
 
 Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
 ```bash
@@ -68,7 +90,9 @@ These are the variables set at the deployment:
 | FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS      | 64
 | FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS      | 16
 | FMS_TEST_SHAPES_USE_MICRO_MODELS  | 0
+| FMS_TEST_SHAPES_METRICS_THRESHOLD | {(GRANITE_CODE_20B, False): (2.8087631964683535, (-1.3142825898704302e-08, 1.3142825898704302e-08))}
 
+> Set `FMS_TEST_SHAPES_METRICS_THRESHOLD` in case there is no need to add the model to the default ones. No code changes needed, just this environment variable set with the metrics values.
 
 Add the new numbers at the end of the [dictionary](./models/test_decoders.py#L146):
 ```python
