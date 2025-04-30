@@ -36,7 +36,7 @@ Then run the command for the metrics script:
 python generate_metrics.py --architecture=hf_pretrained --model_path=$MODEL_PATH --tokenizer=$MODEL_PATH --unfuse_weights --output_path=/tmp/aiu-fms-testing-utils/output/ --compile_dynamic --max_new_tokens=$MAX_NEW_TOKENS --min_pad_length=$SEQ_LENS --batch_size=$BATCH_SIZES --default_dtype=$DEFAULT_TYPES --sharegpt_path=$DS_PATH --num_test_tokens_per_sequence=1024
 ```
 
-Get the thresholds by running:
+Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
 ```bash
 python get_thresholds.py --models ibm-granite--granite-20b-code-cobol-v1 --metrics diff_mean ce --file_base=/path
 ```
@@ -70,7 +70,7 @@ These are the variables set at the deployment:
 | FMS_TEST_SHAPES_USE_MICRO_MODELS  | 0
 
 
-Add the new numbers at the end of the [dictionary](https://github.com/flaviabeo/aiu-fms-testing-utils/blob/main/tests/models/test_decoders.py#L126):
+Add the new numbers at the end of the [dictionary](./models/test_decoders.py#L146):
 ```python
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
@@ -93,15 +93,19 @@ fail_thresholds = {
         2.3919514417648315,
         (-1.1937345778534336e-08, 1.2636651502972995e-08),
     ),
+     (GRANITE_CODE_20B, False): (
+        2.8087631964683535, 
+        (-1.3142825898704302e-08, 1.3142825898704302e-08))
 }
 ```
 
 The command to run is:
 ```bash
-pytest tests/models/test_decoders.py
+pytest tests/models/test_decoders.py -vv
 ```
+Add the `-vv` for verbose output.
 
-## Results
+## Test Results Samples
 
 Here is a result sample of the test outputs:
 
@@ -228,13 +232,20 @@ assert 0.28515625 < 0.01
 ================== 1 failed, 1 warning in 6293.21s (1:44:53) ===================
 Finished running pytests
 ```
-Results for `test_model_expectations`
+### Results samples for `test_model_expectations`
 
-1. First add the model desired to `line 20: models` variable and to `line 58: tuple_output_models`;
+1. First add the model desired to [decoder_models](./models/test_model_expectations.py#L55) variable and to [tuple_output_models](./models/test_model_expectations.py#L76);
 2. Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights;
 3. Run `pytest tests/models/test_model_expectations.py::TestAIUModelsTupleOutput --capture_expectation` to save the model weights;
-
-Then running the complete suit:
+After that you will get an output like this:
+```bash
+FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
+```
+This will tell that the weights and signature have been saved, so you can run the complete suit again to get the tests results.
+4. Then running the complete suit:
 
 ```bash
 [1000780000@e2e-vllm-dt2-5f8474666c-6zwzb aiu-fms-testing-utils]$ pytest tests/models/test_model_expectations.py -vv
@@ -278,3 +289,4 @@ total          name                                        num avg            mi
 0:00:00.000512                                 grand total   6 0:00:00.000066 0:00:00.000032
 =========================================================== 4 passed, 2 skipped, 1 warning in 219.85s (0:03:39) ============================================================
 ```
+Check this example of the code changes required to run the testes [here](https://github.com/flaviabeo/aiu-fms-testing-utils/tree/granite_20b_metrics/tests/models).
