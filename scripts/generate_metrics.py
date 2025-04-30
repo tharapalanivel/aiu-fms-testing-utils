@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 
 import torch
 from torch import distributed as dist
-from aiu_fms_testing_utils.testing.validation import capture_level_1_metrics, extract_validation_information, LogitsExtractorHook, print_failed_cases, \
+from aiu_fms_testing_utils.testing.validation import capture_level_1_metrics, extract_validation_information, LogitsExtractorHook, get_default_validation_prefix, load_validation_information, print_failed_cases, \
     validate_level_0, GoldenTokenHook, top_k_loss_calculator
 from aiu_fms_testing_utils.utils import ids_for_prompt, sample_sharegpt_requests
 from fms.models import get_model
@@ -102,6 +102,11 @@ parser.add_argument(
     action="store_true",
     help="This is a distributed job (multiple instances run with RANK+WORLD_SIZE)",
 )
+parser.add_argument(
+    "--skip_computation",
+    action="store_true",
+    help="Set this if the output is already assumed to be computed and would like to regenerate metrics without model loading or computation"
+)
 local_rank = int(os.getenv("LOCAL_RANK", 0))
 world_size = int(os.getenv("WORLD_SIZE", 1))
 args = parser.parse_args()
@@ -122,7 +127,7 @@ for a in args.extra_get_model_kwargs:
         extra_get_model_kwargs[a_split[0]] = a_split[1]
 
 # this follows the same pattern of naming in test_shapes. This way we can save and re-use for quicker shape testing.
-prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length-{args.min_pad_length}_dtype-{args.default_dtype}"
+prefix = get_default_validation_prefix(args.variant, args.max_new_tokens, args.batch_size, args.min_pad_length, args.default_dtype)
 if os.path.exists(os.path.join(args.output_dir, f"{prefix}.prob_mean.csv")):
     print("skipping metric generation as it has already been done")
     exit(0)
@@ -142,35 +147,6 @@ if default_dtype is not None:
 tokenizer = tokenizers.get_tokenizer(args.tokenizer)
 
 torch.set_grad_enabled(False)
-
-# prepare the cuda model
-cuda_model = get_model(
-    architecture=args.architecture,
-    variant=args.variant,
-    model_path=args.model_path,
-    device_type="cuda",
-    data_type=default_dtype,
-    distributed_strategy=distr_param,
-    group=dist.group.WORLD,
-    **extra_get_model_kwargs,
-)
-
-cuda_model.eval()
-print("loaded cuda model")
-
-# prepare the cpu model (this is the reference)
-cpu_model = get_model(
-    architecture=args.architecture,
-    variant=args.variant,
-    model_path=args.model_path,
-    device_type="cpu",
-    data_type=torch.float32,
-    distributed_strategy=distr_param,
-    group=dist.group.WORLD,
-    **extra_get_model_kwargs,
-)
-cpu_model.eval()
-print("loaded cpu model")
 
 def find_eos_index(reference_tokens, eos_token_id):
     result = []
@@ -199,46 +175,76 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
     return input_ids, padding_kwargs
 
-ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer)
-
-# first test validation level 0
-cpu_validation_info = extract_validation_information(
-    cpu_model,
-    ids,
-    args.max_new_tokens,
-    LogitsExtractorHook(),
-    attn_algorithm="math",
-    **padding_kwargs
-)
-cpu_static_tokens = cpu_validation_info.get_info("tokens")
-print("extracted cpu validation information")
-
-eos_indexes = find_eos_index(cpu_static_tokens, tokenizer.eos_token_id)
-print(f"valid testing tokens per sequence: {eos_indexes}")
-
-# generate cpu validation info
-cuda_validation_info = extract_validation_information(
-    cuda_model,
-    ids.to("cuda"),
-    args.max_new_tokens,
-    None,
-    only_last_token=True,
-    **{k: v.to("cuda") for k,v in padding_kwargs.items()}
-)
-cuda_static_tokens = cuda_validation_info.get_info("tokens")
-failed_responses = validate_level_0(cpu_static_tokens, cuda_static_tokens)
-
-print("extracted cuda validation information level 0")
-if local_rank == 0:
-    if len(failed_responses) != 0:    
-        print_failed_cases(failed_responses, cpu_static_tokens, cuda_static_tokens, tokenizer)
-
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
         f.write(f'{metric}\n')
         for t in l:
             f.write(f"{t[2].item()}\n") 
         f.close()
+
+# prepare the cuda model
+if not args.skip_computation:
+    cuda_model = get_model(
+        architecture=args.architecture,
+        variant=args.variant,
+        model_path=args.model_path,
+        device_type="cuda",
+        data_type=default_dtype,
+        distributed_strategy=distr_param,
+        group=dist.group.WORLD,
+        **extra_get_model_kwargs,
+    )
+
+    cuda_model.eval()
+    print("loaded cuda model")
+
+    # prepare the cpu model (this is the reference)
+    cpu_model = get_model(
+        architecture=args.architecture,
+        variant=args.variant,
+        model_path=args.model_path,
+        device_type="cpu",
+        data_type=torch.float32,
+        distributed_strategy=distr_param,
+        group=dist.group.WORLD,
+        **extra_get_model_kwargs,
+    )
+    cpu_model.eval()
+    print("loaded cpu model")
+
+    ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer)
+
+    # first test validation level 0
+    cpu_validation_info = extract_validation_information(
+        cpu_model,
+        ids,
+        args.max_new_tokens,
+        LogitsExtractorHook(),
+        attn_algorithm="math",
+        **padding_kwargs
+    )
+    cpu_static_tokens = cpu_validation_info.get_info("tokens")
+    print("extracted cpu validation information")
+
+    eos_indexes = find_eos_index(cpu_static_tokens, tokenizer.eos_token_id)
+    print(f"valid testing tokens per sequence: {eos_indexes}")
+
+    # generate cpu validation info
+    cuda_validation_info = extract_validation_information(
+        cuda_model,
+        ids.to("cuda"),
+        args.max_new_tokens,
+        None,
+        only_last_token=True,
+        **{k: v.to("cuda") for k,v in padding_kwargs.items()}
+    )
+    cuda_static_tokens = cuda_validation_info.get_info("tokens")
+    failed_responses = validate_level_0(cpu_static_tokens, cuda_static_tokens)
+
+    print("extracted cuda validation information level 0")
+    if local_rank == 0:
+        if len(failed_responses) != 0:    
+            print_failed_cases(failed_responses, cpu_static_tokens, cuda_static_tokens, tokenizer)
 
 num_test_tokens_per_sequence = args.num_test_tokens_per_sequence
 if num_test_tokens_per_sequence is None:
@@ -247,46 +253,51 @@ if num_test_tokens_per_sequence is None:
 cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
 prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
 prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
-diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+diff_mean = lambda r, t: torch.mean(torch.abs(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32)))
 
 prob_mean_metrics = []
 prob_std_metrics = []
 prob_diff_metrics = []
 prob_ce_loss_metrics = []
 
-prefix = f"{args.variant.replace('/', '--')}_max-new-tokens-{args.max_new_tokens}_batch-size-{args.batch_size}_seq-length{args.min_pad_length}_dtype-{args.default_dtype}"
-
 for i in range(num_test_tokens_per_sequence // args.max_new_tokens):
-    ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer, i)
+    cpu_path = os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out")
+    cuda_path = os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out")
+    if os.path.exists(cpu_path) and os.path.exists(cuda_path):
+        print(f"found the logits at {cpu_path}, reusing")
+        cpu_validation_info = load_validation_information(cpu_path, "logits", args.batch_size, tokenizer)
+        cuda_validation_info = load_validation_information(cuda_path, "logits", args.batch_size, tokenizer)
+    elif not args.skip_computation:
+        ids, padding_kwargs = __prepare_inputs(args.batch_size, args.min_pad_length, tokenizer, i)
 
-    # only need to compute this once if we aren't generating more test data
-    if num_test_tokens_per_sequence > args.max_new_tokens:
-        cpu_validation_info = extract_validation_information(
-            cpu_model,
-            ids,
+        # only need to compute this once if we aren't generating more test data
+        if num_test_tokens_per_sequence > args.max_new_tokens:
+            cpu_validation_info = extract_validation_information(
+                cpu_model,
+                ids,
+                args.max_new_tokens,
+                LogitsExtractorHook(),
+                attn_algorithm="math",
+                **padding_kwargs
+            )
+
+        # generate aiu validation info
+        cuda_validation_info = extract_validation_information(
+            cuda_model,
+            ids.to("cuda"),
             args.max_new_tokens,
-            LogitsExtractorHook(),
-            attn_algorithm="math",
-            **padding_kwargs
+            GoldenTokenHook(cpu_validation_info.get_info("tokens"), "cuda"),
+            only_last_token=True,
+            **{k: v.to("cuda") for k,v in padding_kwargs.items()}
         )
-        eos_indexes = find_eos_index(cpu_validation_info.get_info("tokens"), tokenizer.eos_token_id)
 
-    # generate aiu validation info
-    cuda_validation_info = extract_validation_information(
-        cuda_model,
-        ids.to("cuda"),
-        args.max_new_tokens,
-        GoldenTokenHook(cpu_validation_info.get_info("tokens"), "cuda"),
-        only_last_token=True,
-        **{k: v.to("cuda") for k,v in padding_kwargs.items()}
-    )
+        print("extracted cuda validation information level 1")
 
-    print("extracted cuda validation information level 1")
-
-    if local_rank == 0:
-        cpu_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cpu_validation_info.{i}.out"))
-        cuda_validation_info.save(os.path.join(args.output_dir, f"{prefix}.cuda_validation_info.{i}.out"))
-
+        if local_rank == 0:
+            cpu_validation_info.save(cpu_path)
+            cuda_validation_info.save(cuda_path)
+    
+    eos_indexes = find_eos_index(cpu_validation_info.get_info("tokens"), tokenizer.eos_token_id)
     level_1_metrics = capture_level_1_metrics(
         cpu_validation_info.get_info("logits"),
         cuda_validation_info.get_info("logits"),

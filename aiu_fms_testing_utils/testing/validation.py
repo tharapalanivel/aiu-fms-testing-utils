@@ -88,6 +88,9 @@ class ValidationInfo:
 
     def __len__(self):
         return len(self._validation_info_list)
+    
+def get_default_validation_prefix(model_id: str, max_new_tokens: int, batch_size: int, seq_length: int, dtype: str):
+    return f"{model_id.replace('/', '--')}_max-new-tokens-{max_new_tokens}_batch-size-{batch_size}_seq-length-{seq_length}_dtype-{dtype}"
 
 
 def load_validation_information(validation_path, validation_files_type, batch_size, tokenizer=None):
