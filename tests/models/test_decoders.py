@@ -253,7 +253,7 @@ def __filter_before_eos(l, filter_indexes):
 def __get_validation_info_full_path(
     model_path, batch_size, seq_length, max_new_tokens, seed
 ):
-    validation_file_name = f"{get_default_validation_prefix(model_path, max_new_tokens, batch_size, seq_length, "fp16")}.cpu_validation_info.{seed}.out"
+    validation_file_name = f"{get_default_validation_prefix(model_path, max_new_tokens, batch_size, seq_length, 'fp16')}.cpu_validation_info.{seed}.out"
     full_path = os.path.join(validation_info_dir, validation_file_name)
     return full_path
 
