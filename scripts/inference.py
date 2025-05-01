@@ -130,6 +130,11 @@ parser.add_argument(
     help="Use dynamic shapes with torch.compile",
 )
 parser.add_argument(
+    "--compile_dynamic_sendnn",
+    action="store_true",
+    help="Use dynamic shapes with aiu compile",
+)
+parser.add_argument(
     "--deterministic",
     action="store_true",
     help="Set torch.use_deterministic_algorithms? Requires env variable `CUBLAS_WORKSPACE_CONFIG=:4096:8`",
@@ -464,7 +469,7 @@ dprint(f"loading complete, took {loading_model_time:.3f}s")
 if args.compile:
     dprint("compiling model")
     if is_aiu_backend:
-        model.compile(backend="sendnn_decoder")
+        model.compile(backend="sendnn_decoder", options={'sendnn.dynamic': args.compile_dynamic_sendnn})
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
@@ -686,7 +691,7 @@ use_cache = [
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
 
 if args.compile:
-    warmup_model(model, ids, args.max_new_tokens, **extra_generation_kwargs)
+    warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
 
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
         aiu_warmup_time = time.time()
