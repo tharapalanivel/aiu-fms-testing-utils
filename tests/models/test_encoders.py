@@ -19,6 +19,7 @@ SQUAD_V2_DATASET_PATH = os.environ.get("SQUAD_V2_DATASET_PATH", os.path.expandus
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [ROBERTA_SQUAD_V2])
 common_batch_sizes = os.environ.get("FMS_TEST_SHAPES_COMMON_BATCH_SIZES", [1, 2, 4, 8])
 common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64, 512])
+validation_diff_threshold = os.environ.get("FMS_TEST_SHAPES_VALIDATION_DIFF_THRESHOLD", .01)
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/roberta,/tmp/models/roberta-base-squad2"
 if isinstance(common_model_paths, str):
@@ -31,6 +32,11 @@ if isinstance(common_batch_sizes, str):
 # pass custom common seq lengths as a comma separated str of ints
 if isinstance(common_seq_lengths, str):
     common_seq_lengths = [int(sl) for sl in common_seq_lengths.split(",")]
+
+# FIXME: compare with GPU diffs for default value
+# pass custom validation diff threshold (if average of absolute mean diff of all samples < validation_diff_threshold, pass test)
+if isinstance(validation_diff_threshold, str):
+    validation_diff_threshold = float(validation_diff_threshold)
 
 common_shapes = list(itertools.product(common_model_paths, common_batch_sizes, common_seq_lengths))
 
@@ -144,5 +150,7 @@ def test_common_shapes(model_path, batch_size, seq_length):
         cpu_msp = ModelSignatureParams(validation_model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
         diffs.append(__generate_diffs(aiu_msp, cpu_msp))
 
-    # FIXME: compare with GPU diffs
-    assert (sum(diffs) / len(diffs)) < 0.1
+    abs_mean_diff = sum(diffs) / len(diffs)
+    print(f"absolute mean diff: {abs_mean_diff}")
+
+    assert abs_mean_diff < validation_diff_threshold
