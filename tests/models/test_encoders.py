@@ -8,6 +8,7 @@ import torch
 from aiu_fms_testing_utils.utils import ids_for_prompt, sample_squad_v2_qa_requests
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
+import numpy as np
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
@@ -42,6 +43,31 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
 
     input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length, is_causal_mask=False)
     return input_ids, padding_kwargs
+
+def __generate_diffs(model_params_1, model_params_2):
+    model_params_1.model.eval()
+    model_params_2.model.eval()
+    signature = get_signature(
+        model_params_1.model,
+        params=model_params_1.params,
+        optional_params=model_params_1.other_params,
+        logits_getter_fn=model_params_1.logits_getter_fn,
+        inp=model_params_1.inp,
+        device=model_params_1.inp.device
+    )
+    signature2 = get_signature(
+        model_params_2.model,
+        params=model_params_2.params,
+        optional_params=model_params_2.other_params,
+        logits_getter_fn=model_params_2.logits_getter_fn,
+        inp=model_params_2.inp,
+        device=model_params_2.inp.device
+    )
+
+    signature = np.array(signature)
+    signature2 = np.array(signature2)
+
+    return np.mean(np.abs(signature2 - signature))
 
 @pytest.fixture(autouse=True)
 def reset_compiler():
@@ -102,6 +128,21 @@ def test_common_shapes(model_path, batch_size, seq_length):
     aiu_msp = ModelSignatureParams(model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
     get_signature(aiu_msp.model, aiu_msp.params, aiu_msp.inp, aiu_msp.other_params, aiu_msp.logits_getter_fn)
 
-    cpu_msp = ModelSignatureParams(validation_model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
-    # FIXME: Compute GPU atol/rtol
-    compare_model_signatures(cpu_msp, aiu_msp, atol=0.1, rtol=.05)
+    # get the average diff over multiple samples
+    diffs = []
+    for i in range(20):
+        # prepare input_ids
+        input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer, seed=i)
+
+        aiu_msp = ModelSignatureParams(
+            model, 
+            ["x"], 
+            logits_getter_fn=logits_getter_fn, 
+            inp=input_ids, 
+            other_params=padding_kwargs
+        )
+        cpu_msp = ModelSignatureParams(validation_model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
+        diffs.append(__generate_diffs(aiu_msp, cpu_msp))
+
+    # FIXME: compare with GPU diffs
+    assert (sum(diffs) / len(diffs)) < 0.1
