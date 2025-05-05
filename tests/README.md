@@ -24,9 +24,9 @@ The above will test shapes batch_size 1, with sequence length 128 for micro mode
 
 - **test_model_expectations** - this test will capture a snapshot in time of what a randomly initialized model would produce on the AIU. To add a model to this, you simply add it to either the models list or tuple_output_models list which will generate 2 expectation tests. The first time you run this test, you run it with --capture_expectation which will create a resource file with the expected output. The next time you run it, you run without the --capture_expectation and all should pass.
 
-### Thresholds
+### Thresholds for the tests baselines for `test_decoders`
 
-Four different metrics are generated as base lines for these tests:
+The `test_decorers.py` file contains tests written for models that have **decoder** architecture. For each model to be tested, specific metrics baselines need to be created by following the next steps in this documentation. Four different metrics are generated with top k per token as base lines for these tests; Cross entropy loss per token, probability mean, probability standard deviation and absolute diff mean.
 
 - **cross_entropy**: Cross entropy is a measure from information theory that quantifies the difference between two probability distributions. Cross entropy serves as a measure of the differences when comparing expected generated tokens and the actual output of the model. Quantifying the distance between the ground-truth distribution and the predicted distribution.
 A lower cross entropy indicates a closer match in expected versus generated. 
@@ -98,7 +98,7 @@ These are the variables set at the deployment:
 | FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS      | 64
 | FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS      | 16
 | FMS_TEST_SHAPES_USE_MICRO_MODELS  | 0
-| FMS_TEST_SHAPES_METRICS_THRESHOLD | {(GRANITE_CODE_20B, False): (2.8087631964683535, (-1.3142825898704302e-08, 1.3142825898704302e-08))}
+| FMS_TEST_SHAPES_METRICS_THRESHOLD | 2.8087631964683535, -1.3142825898704302e-08, 1.3142825898704302e-08
 
 > Set `FMS_TEST_SHAPES_METRICS_THRESHOLD` in case there is no need to add the model to the default ones. No code changes needed, just this environment variable set with the metrics values.
 
@@ -266,15 +266,12 @@ Finished running pytests
 ```
 ## 4. Run `test_model_expectations`
 
-- First add the model desired to [decoder_models](./models/test_model_expectations.py#L55) variable and to [tuple_output_models](./models/test_model_expectations.py#L76);
+- First add the desired model to the [decoder_models](./models/test_model_expectations.py#L55) variable;
 - 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights;
-- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModelsTupleOutput --capture_expectation` to save the model weights;
 After that you will get an output like this:
 ```bash
 FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
 FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
-FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
-FAILED tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
 ```
 This will tell that the weights and signature have been saved, so you can run the complete suit again to get the tests results.
 - 4.2 Then running the complete suit:
@@ -321,4 +318,20 @@ total          name                                        num avg            mi
 0:00:00.000512                                 grand total   6 0:00:00.000066 0:00:00.000032
 =========================================================== 4 passed, 2 skipped, 1 warning in 219.85s (0:03:39) ============================================================
 ```
+
+In this case, the model tested was a decoder model with a single output, the TestAIUModels is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multpile-output---testaiumodelstupleoutput) cases.
+
+#### Case of multpile output - TestAIUModelsTupleOutput
+
+The case **TestAIUModelsTupleOutput** is applicable if the model being tested has output of more than one tensor. Like the model in the example default [tuple_output_models](./models/test_model_expectations.py#L76), is a RoBERTa model that can output in this different format.
+
+- Add the model also to [tuple_output_models](./models/test_model_expectations.py#L76).
+- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModelsTupleOutput --capture_expectation` to save the model weights;
+
+```bash 
+tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 66%]
+tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 83%]
+tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_unfused[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603] SKIPPED     [100%]
+```
+
 Check this example of the code changes required to run the testes [here](https://github.com/foundation-model-stack/aiu-fms-testing-utils/pull/33/files).
