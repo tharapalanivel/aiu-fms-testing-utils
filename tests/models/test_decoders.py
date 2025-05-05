@@ -85,7 +85,7 @@ if isinstance(failure_rate_threshold, str):
 
 # pass custom default metrics threshold as a comma separated str of floats <cross-entropy threshold>,<mean diff threshold>
 if isinstance(default_metrics_threshold, str):
-    default_metrics_threshold = (float(m) for m in default_metrics_threshold.split(","))
+    default_metrics_threshold = tuple([float(m) for m in default_metrics_threshold.split(",")])
 
 # pass custom common batch sizes as a comma separated str of ints
 if isinstance(common_batch_sizes, str):
@@ -251,9 +251,9 @@ def __filter_before_eos(l, filter_indexes):
 
 
 def __get_validation_info_full_path(
-    model_path, batch_size, seq_length, max_new_tokens, seed
+    model_path, batch_size, seq_length, max_new_tokens, seed, device_type="cpu"
 ):
-    validation_file_name = f"{get_default_validation_prefix(model_path, max_new_tokens, batch_size, seq_length, 'fp16')}.cpu_validation_info.{seed}.out"
+    validation_file_name = f"{get_default_validation_prefix(model_path, max_new_tokens, batch_size, seq_length, 'fp16')}.{device_type}_validation_info.{seed}.out"
     full_path = os.path.join(validation_info_dir, validation_file_name)
     return full_path
 
@@ -483,6 +483,12 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                 **padding_kwargs,
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
+            if save_validation_info_outputs:
+                aiu_validation_info.save(
+                    __get_validation_info_full_path(
+                        model_path, batch_size, seq_length, max_new_tokens, i, "aiu"
+                    )
+                )
 
             # capture all level 1 metrics
             level_1_metrics = capture_level_1_metrics(
