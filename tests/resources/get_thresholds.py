@@ -12,33 +12,32 @@ parser.add_argument(
     "--models",
     type=str,
     default=[],
-    nargs='+', 
+    nargs='+',
     required=True,
-    help="List of models prefix separated by space. Eg.: ibm-granite/granite-20b-code-instruct-8k ibm-granite/granite-20b-code-cobol-v1"
+    help="List of models id separated by space. Eg.: granite-20b-code-instruct-8k granite-20b-code-cobol-v1"
 )
 parser.add_argument(
     "--metrics",
-    type=list,
+    type=str,
     default=[],
-    nargs='+', 
+    nargs='+',
     required=True,
     help="List of metrics separated by space. Eg.: diff_mean ce",
 )
 parser.add_argument(
     "--file_base",
     type=str,
-    default="/tmp",
+    default="/tmp/aiu-fms-testing-utils/output",
     required=True,
     help="Path where the thresholds output from the generate_metrics.py script were stored.",
 )
 args = parser.parse_args()
-models = args.models
-metrics = args.metrics
+models = [model.replace("/", "--") for model in args.models]
+metrics = [metric for metric in args.metrics]
 file_base = args.file_base
 
 for model in models:
     for metric in metrics:
-         
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
 

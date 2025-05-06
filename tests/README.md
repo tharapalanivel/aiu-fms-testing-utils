@@ -68,7 +68,7 @@ This will generate csv files with the results of the metrics calulation. Then, w
 ## 2. Get Thresholds
 Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
 ```bash
-python get_thresholds.py --models ibm-granite--granite-20b-code-cobol-v1 --metrics diff_mean ce --file_base=/path
+python3 get_thresholds.py --models /tmp/aiu-fms-testing-utils/models/model-name-version-v1 --metrics diff_mean ce --file_base /tmp/aiu-fms-testing-utils/output
 ```
 After running these scripts in namespace with 1 GPU, these were the thresholds generated:
 
@@ -78,10 +78,6 @@ found 3 metric files
 ibm_dmf_lakehouse--models--watsonx--shared--granite-20b-code-cobol-v1 diff_mean -1.3142825898704302e-08 1.3197620960525575e-08
 found 3 metric files
 ibm_dmf_lakehouse--models--watsonx--shared--granite-20b-code-cobol-v1 ce 2.8087631964683535
-found 3 metric files
-ibm_dmf_lakehouse--models--watsonx--shared--granite-20b-code-cobol-v1 prob_mean 0.018428430296480672
-found 3 metric files
-ibm_dmf_lakehouse--models--watsonx--shared--granite-20b-code-cobol-v1 prob_std 0.02062853077426555
 ```
 
 These can now be used for the model testing scripts at AIU.
@@ -98,7 +94,7 @@ These are the variables set at the deployment:
 | FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS      | 64
 | FMS_TEST_SHAPES_COMMON_MAX_NEW_TOKENS      | 16
 | FMS_TEST_SHAPES_USE_MICRO_MODELS  | 0
-| FMS_TEST_SHAPES_METRICS_THRESHOLD | 2.8087631964683535, -1.3142825898704302e-08, 1.3142825898704302e-08
+| FMS_TEST_SHAPES_METRICS_THRESHOLD | 2.8087631964683535,-1.3142825898704302e-08,1.3142825898704302e-08
 
 > Set `FMS_TEST_SHAPES_METRICS_THRESHOLD` in case there is no need to add the model to the default ones. No code changes needed, just this environment variable set with the metrics values.
 
