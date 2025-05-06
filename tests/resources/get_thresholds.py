@@ -14,7 +14,7 @@ parser.add_argument(
     default=[],
     nargs='+',
     required=True,
-    help="List of models id separated by space. Eg.: granite-20b-code-instruct-8k granite-20b-code-cobol-v1"
+    help="List of models id separated by space. Eg.: ibm-granite/granite-20b-code-instruct-8k /tmp/models/granite-20b-code-cobol-v1"
 )
 parser.add_argument(
     "--metrics",
