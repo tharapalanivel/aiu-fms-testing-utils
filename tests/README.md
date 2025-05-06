@@ -17,10 +17,10 @@ Example:
 export FMS_TEST_SHAPES_COMMON_BATCH_SIZES=1
 export FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS=128
 export FMS_TEST_SHAPES_COMMON_MODEL_PATHS=/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603/
-export FMS_TEST_SHAPES_USE_MICRO_MODELS=1
+export FMS_TEST_SHAPES_USE_MICRO_MODELS=0
 pytest tests/models/test_decoders.py
 ```
-The above will test shapes batch_size 1, with sequence length 128 for micro model version of granite-20b-code-cobol-v1 (resulting in 1 test case). We can set `FMS_TEST_SHAPES_USE_MICRO_MODELS=0` for not using micro models.
+The above will test shapes batch_size 1, with sequence length 128 of granite-20b-code-cobol-v1. We can set `FMS_TEST_SHAPES_USE_MICRO_MODELS=0` for not using micro models. Or set it to `FMS_TEST_SHAPES_USE_MICRO_MODELS=1` and add the micro models version to the model paths.
 
 - **test_model_expectations** - this test will capture a snapshot in time of what a randomly initialized model would produce on the AIU. To add a model to this, you simply add it to either the models list or tuple_output_models list which will generate 2 expectation tests. The first time you run this test, you run it with --capture_expectation which will create a resource file with the expected output. The next time you run it, you run without the --capture_expectation and all should pass.
 
