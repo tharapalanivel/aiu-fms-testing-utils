@@ -12,6 +12,7 @@ from aiu_fms_testing_utils.testing.validation import (
     GoldenTokenHook,
     capture_level_1_metrics,
     filter_failed_level_1_cases,
+    get_default_validation_prefix,
     load_validation_information,
     validate_level_0,
     top_k_loss_calculator,
@@ -58,7 +59,7 @@ common_model_paths = os.environ.get(
 # set this environment variable if you would like to relax that threshold
 failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.01)
 default_metrics_threshold = os.environ.get(
-    "FMS_TEST_SHAPES_METRICS_THRESHOLD", (2.0, (-1.0e-8, 1.0e-8))
+    "FMS_TEST_SHAPES_METRICS_THRESHOLD", (3.0, .001)
 )
 save_validation_info_outputs = (
     os.environ.get("FMS_TEST_SHAPES_SAVE_VALIDATION_INFO_OUTPUTS", "0") == "1"
@@ -82,10 +83,9 @@ if isinstance(common_model_paths, str):
 if isinstance(failure_rate_threshold, str):
     failure_rate_threshold = float(failure_rate_threshold)
 
-# pass custom default metrics threshold as a comma separated str of floats <cross-entropy threshold>,<mean diff min threshold>,<mean diff max threshold>
+# pass custom default metrics threshold as a comma separated str of floats <cross-entropy threshold>,<mean diff threshold>
 if isinstance(default_metrics_threshold, str):
-    m_list = [float(m) for m in default_metrics_threshold.split(",")]
-    default_metrics_threshold = (m_list[0], (m_list[1], m_list[2]))
+    default_metrics_threshold = tuple([float(m) for m in default_metrics_threshold.split(",")])
 
 # pass custom common batch sizes as a comma separated str of ints
 if isinstance(common_batch_sizes, str):
@@ -115,35 +115,35 @@ common_shapes = list(
 fail_thresholds = {
     (LLAMA_3p1_8B_INSTRUCT, True): (
         3.7392955756187423,
-        (-1.0430812658057675e-08, 1.0401941685778344e-08),
+        .001, # FIXME: compute
     ),
     (GRANITE_3p2_8B_INSTRUCT, True): (
         2.996668996810913,
-        (-8.911825961632757e-09, 8.75443184611413e-09),
+        .001, # FIXME: compute
     ),
     (GRANITE_20B_CODE_INSTRUCT_8K, True): (
         3.7392955756187423, # FIXME: compute -- setting to micro llama 3.1 8b instruct
-        (-1.0430812658057675e-08, 1.0401941685778344e-08), # FIXME: compute -- setting to micro llama 3.1 8b instruct
+        .001, # FIXME: compute
     ),
     (LLAMA_3p1_70B_INSTRUCT, True): (
         3.8235735702514626,
-        (-1.1175870895385742e-08, 1.0803342220810919e-08),
+        .001, # FIXME: compute
     ),
     (LLAMA_3p1_8B_INSTRUCT, False): (
         2.6994638133048965,
-        (-1.20589349217326e-08, 1.2828708784162848e-08),
+        0.00047589250549208347,
     ),
     (GRANITE_3p2_8B_INSTRUCT, False): (
         2.3919514417648315,
-        (-1.1937345778534336e-08, 1.2636651502972995e-08),
+        0.0005767398688476533,
     ),
     (GRANITE_20B_CODE_INSTRUCT_8K, False): (
         2.640706129074097,
-        (-1.2043538113459817e-08, 1.2320776594521004e-08)
+        0.00034344267623964697,
     ),
     (LLAMA_3p1_70B_INSTRUCT, False): (
         2.841279556751251,
-        (-1.1949923468534963e-08, 1.184238206164423e-08),
+        0.0044301633024588115,
     ),
 }
 # custom weight adaptation to be used in future. For instance if we would like to add some other adaptation, we can register it with this custom adapter
@@ -251,9 +251,9 @@ def __filter_before_eos(l, filter_indexes):
 
 
 def __get_validation_info_full_path(
-    model_path, batch_size, seq_length, max_new_tokens, seed
+    model_path, batch_size, seq_length, max_new_tokens, seed, device_type="cpu"
 ):
-    validation_file_name = f"{model_path.replace('/', '--')}_max-new-tokens-{max_new_tokens}_batch-size-{batch_size}_seq-length-{seq_length}_dtype-fp16.cpu_validation_info.{seed}.out"
+    validation_file_name = f"{get_default_validation_prefix(model_path, max_new_tokens, batch_size, seq_length, 'fp16')}.{device_type}_validation_info.{seed}.out"
     full_path = os.path.join(validation_info_dir, validation_file_name)
     return full_path
 
@@ -428,10 +428,10 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             cross_entropy = torch.nn.CrossEntropyLoss()(
                 r, t.softmax(dim=1).to(dtype=torch.float32)
             )
-            diff = torch.mean(
+            diff = torch.mean(torch.abs(
                 r.softmax(dim=1).to(dtype=torch.float32)
                 - t.softmax(dim=1).to(dtype=torch.float32)
-            )
+            ))
             return (cross_entropy, diff)
 
         iters = 1024 // max_new_tokens
@@ -483,6 +483,12 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                 **padding_kwargs,
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
+            if save_validation_info_outputs:
+                aiu_validation_info.save(
+                    __get_validation_info_full_path(
+                        model_path, batch_size, seq_length, max_new_tokens, i, "aiu"
+                    )
+                )
 
             # capture all level 1 metrics
             level_1_metrics = capture_level_1_metrics(
@@ -493,7 +499,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             # only consider those metrics captured prior to the eos
             level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
 
-            ce_threshold, diff_thresholds = fail_thresholds.get(
+            ce_threshold, diff_threshold = fail_thresholds.get(
                 (model_path, USE_MICRO_MODELS), default_metrics_threshold
             )
 
@@ -503,7 +509,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             )
             diff_fail_responses = filter_failed_level_1_cases(
                 level_1_metrics,
-                lambda m: m[1] <= diff_thresholds[0] or m[1] >= diff_thresholds[1],
+                lambda m: m[1] >= diff_threshold,
             )
 
             ce_fail_responses_list.extend(ce_fail_responses)
