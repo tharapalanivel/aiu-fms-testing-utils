@@ -125,37 +125,21 @@ common_shapes = list(
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
 # if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold defined above
-# threshold key is (model_id, is_tiny_model)
+# threshold key is model_id
 fail_thresholds = {
-    (LLAMA_3p1_8B_INSTRUCT, True): (
-        3.7392955756187423,
-        0.001,  # FIXME: compute
-    ),
-    (GRANITE_3p2_8B_INSTRUCT, True): (
-        2.996668996810913,
-        0.001,  # FIXME: compute
-    ),
-    (GRANITE_20B_CODE_INSTRUCT_8K, True): (
-        3.7392955756187423,  # FIXME: compute -- setting to micro llama 3.1 8b instruct
-        0.001,  # FIXME: compute
-    ),
-    (LLAMA_3p1_70B_INSTRUCT, True): (
-        3.8235735702514626,
-        0.001,  # FIXME: compute
-    ),
-    (LLAMA_3p1_8B_INSTRUCT, False): (
+    LLAMA_3p1_8B_INSTRUCT: (
         2.6994638133048965,
         0.00047589250549208347,
     ),
-    (GRANITE_3p2_8B_INSTRUCT, False): (
+    GRANITE_3p2_8B_INSTRUCT: (
         2.3919514417648315,
         0.0005767398688476533,
     ),
-    (GRANITE_20B_CODE_INSTRUCT_8K, False): (
+    GRANITE_20B_CODE_INSTRUCT_8K: (
         2.640706129074097,
         0.00034344267623964697,
     ),
-    (LLAMA_3p1_70B_INSTRUCT, False): (
+    LLAMA_3p1_70B_INSTRUCT: (
         2.841279556751251,
         0.0044301633024588115,
     ),
@@ -519,9 +503,14 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             # only consider those metrics captured prior to the eos
             level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
 
-            ce_threshold, diff_threshold = fail_thresholds.get(
-                (model_path, USE_MICRO_MODELS), default_metrics_threshold
-            )
+            # if we do not have real model weights, use a default_metrics_threshold
+            if USE_MICRO_MODELS and micro_model_path is None:
+                ce_threshold, diff_threshold = default_metrics_threshold
+            # if we have real weights, try and get the proper validation metrics threshold
+            else:
+                ce_threshold, diff_threshold = fail_thresholds.get(
+                    model_path, default_metrics_threshold
+                )
 
             # get all failed responses for each metric
             ce_fail_responses = filter_failed_level_1_cases(
