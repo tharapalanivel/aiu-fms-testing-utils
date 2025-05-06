@@ -31,7 +31,7 @@ The `test_decorers.py` file contains tests written for models that have **decode
 - **cross_entropy**: Cross entropy is a measure from information theory that quantifies the difference between two probability distributions. Cross entropy serves as a measure of the differences when comparing expected generated tokens and the actual output of the model. Quantifying the distance between the ground-truth distribution and the predicted distribution.
 A lower cross entropy indicates a closer match in expected versus generated. 
 - **prob_mean**: Probability Mean typically refers to the average probability assigned by the model to a sequence of words or tokens. It's a measure of how well the model understands and predicts language, with lower mean probabilities often indicating a poorer model that struggles to generate coherent or plausible text. 
-- **prob_std**: Probability standard deviation assess how spread out or consistent the model's predictions are when it assigns probabilities to different possible outcomes. A high standard deviation indicates wide variation in the model's certainty, while a low standard deviation suggests more consistent and confident prediction
+- **prob_std**: Probability standard deviation assesses how spread out or consistent the model's predictions are when it assigns probabilities to different possible outcomes. A high standard deviation indicates wide variation in the model's certainty, while a low standard deviation suggests more consistent and confident prediction
 - **diff_mean**:  The difference of the average or central tendency of a set of data points, often used to measure the model's performance. It can also refer to the intended purpose or interpretation of a text or sentence produced by the model. 
 
 They are calculated in lines [228 - 231 at generate_metrics.py](../scripts/generate_metrics.py#L228) script.
@@ -63,7 +63,7 @@ Then run the command for the metrics script:
 python generate_metrics.py --architecture=hf_pretrained --model_path=$MODEL_PATH --tokenizer=$MODEL_PATH --unfuse_weights --output_path=/tmp/aiu-fms-testing-utils/output/ --compile_dynamic --max_new_tokens=$MAX_NEW_TOKENS --min_pad_length=$SEQ_LENS --batch_size=$BATCH_SIZES --default_dtype=$DEFAULT_TYPES --sharegpt_path=$DS_PATH --num_test_tokens_per_sequence=1024
 ```
 
-This will generate csv files with the results of the metrics calulation. Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
+This will generate csv files with the results of the metrics calculation. Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
 
 ## 2. Get Thresholds
 Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
@@ -262,8 +262,8 @@ Finished running pytests
 ```
 ## 4. Run `test_model_expectations`
 
-- First add the desired model to the [decoder_models](./models/test_model_expectations.py#L55) variable;
-- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights;
+- First add the desired model to the [decoder_models](./models/test_model_expectations.py#L55) variable.
+- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights.
 After that you will get an output like this:
 ```bash
 FAILED tests/models/test_model_expectations.py::TestAIUModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
@@ -315,9 +315,9 @@ total          name                                        num avg            mi
 =========================================================== 4 passed, 2 skipped, 1 warning in 219.85s (0:03:39) ============================================================
 ```
 
-In this case, the model tested was a decoder model with a single output, the TestAIUModels is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multpile-output---testaiumodelstupleoutput) cases.
+In this case, the model tested was a decoder model with a single output, the TestAIUModels is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multiple-output---testaiumodelstupleoutput) cases.
 
-#### Case of multpile output - TestAIUModelsTupleOutput
+#### Case of multiple output - TestAIUModelsTupleOutput
 
 The case **TestAIUModelsTupleOutput** is applicable if the model being tested has output of more than one tensor. Like the model in the example default [tuple_output_models](./models/test_model_expectations.py#L76), is a RoBERTa model that can output in this different format.
 
