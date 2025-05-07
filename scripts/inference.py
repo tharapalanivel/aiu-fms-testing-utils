@@ -19,7 +19,6 @@ from fms.models import get_model, register_model
 from fms.models.llama import LLaMAConfig, _llama_factory_factory
 from fms.utils import generation, tokenizers
 from fms.utils.generation import generate, pad_input_ids
-import torch_sendnn
 
 
 # This example script validates the LLaMA implementation by running inference on a couple of prompts.
@@ -694,6 +693,7 @@ use_cache = [
 
 if args.compile:
     dprint(f"compilation warmup")
+    import torch_sendnn
     pt_compile_model_time = time.time()
     warmup_context = torch_sendnn.warmup_mode() if is_aiu_backend else contextlib.nullcontext()
     with warmup_context:
