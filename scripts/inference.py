@@ -695,8 +695,10 @@ if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
+        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
-        warmup_model(model=model, input_ids=ids, max_new_tokens=args.max_new_tokens)
+        for sample, cache in itertools.product(do_sample, use_cache):
+            infer(cache, sample, True)
         aiu_warmup_time = time.time() - aiu_warmup_time
         dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
     else:
