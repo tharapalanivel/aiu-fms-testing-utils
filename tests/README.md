@@ -254,8 +254,8 @@ assert 0.7638888888888888 < 0.01
 - 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUDecoderModels --capture_expectation` to save the model weights.
 After that you will get an output like this:
 ```bash
-FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
-FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
 ```
 This will tell that the weights and signature have been saved, so you can run the complete suite again to get the tests results.
 - 4.2 Then running the complete suite:
