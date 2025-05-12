@@ -26,7 +26,7 @@ The above will test shapes batch_size 1, with sequence length 128 of granite-20b
 
 ### Thresholds for the tests baselines for `test_decoders`
 
-The `test_decorers.py` file contains tests written for models that have **decoder** architecture. For each model to be tested, specific metrics baselines need to be created by following the next steps in this documentation. Four different metrics are generated with top k per token as base lines for these tests; Cross entropy loss per token, probability mean, probability standard deviation and absolute diff mean.
+The `test_decoders.py` file contains tests written for models that have **decoder** architecture. For each model to be tested, specific metrics baselines need to be created by following the next steps in this documentation. Four different metrics are generated with top k per token as base lines for these tests; Cross entropy loss per token, probability mean, probability standard deviation and absolute diff mean.
 
 - **cross_entropy**: Cross entropy is a measure from information theory that quantifies the difference between two probability distributions. Cross entropy serves as a measure of the differences when comparing expected generated tokens and the actual output of the model. Quantifying the distance between the ground-truth distribution and the predicted distribution.
 A lower cross entropy indicates a closer match in expected versus generated. 
@@ -63,8 +63,31 @@ Then run the command for the metrics script:
 python generate_metrics.py --architecture=hf_pretrained --model_path=$MODEL_PATH --tokenizer=$MODEL_PATH --unfuse_weights --output_dir=/tmp/aiu-fms-testing-utils/output/ --compile_dynamic --max_new_tokens=$MAX_NEW_TOKENS --min_pad_length=$SEQ_LENS --batch_size=$BATCH_SIZES --default_dtype=$DEFAULT_TYPES --sharegpt_path=$DS_PATH --num_test_tokens_per_sequence=1024
 ```
 
-This will generate csv files with the results of the metrics calculation. Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
-
+This will generate csv files with the results of the metrics calculation. Typically, this is run with batch size 1, 8 and sequency length 64, 2048 (4 runs in total). Then, we can run [get_thresholds.py](./resources/get_thresholds.py) to summarize the results and get the single values for each metric as the following.
+<br>
+At the output path, you will see the out and csv files generated:
+```bash
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.ce.csv
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.0.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.1.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.2.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.3.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.4.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.5.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.6.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cpu_validation_info.7.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.0.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.1.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.2.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.3.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.4.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.5.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.6.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.cuda_validation_info.7.out
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.diff_mean.csv
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.prob_mean.csv
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3_max-new-tokens-128_batch-size-8_seq-length64_dtype-fp16.prob_std.csv
+```
 ## 2. Get Thresholds
 Get the thresholds by running the [get_thresholds.py](./resources/get_thresholds.py):
 ```bash
