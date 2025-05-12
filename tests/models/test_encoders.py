@@ -8,6 +8,7 @@ import torch
 from aiu_fms_testing_utils.utils import ids_for_prompt, sample_squad_v2_qa_requests
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 import os
+import numpy as np
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
@@ -18,6 +19,7 @@ SQUAD_V2_DATASET_PATH = os.environ.get("SQUAD_V2_DATASET_PATH", os.path.expandus
 common_model_paths = os.environ.get("FMS_TEST_SHAPES_COMMON_MODEL_PATHS", [ROBERTA_SQUAD_V2])
 common_batch_sizes = os.environ.get("FMS_TEST_SHAPES_COMMON_BATCH_SIZES", [1, 2, 4, 8])
 common_seq_lengths = os.environ.get("FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS", [64, 512])
+validation_diff_threshold = os.environ.get("FMS_TEST_SHAPES_VALIDATION_DIFF_THRESHOLD", .01)
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/roberta,/tmp/models/roberta-base-squad2"
 if isinstance(common_model_paths, str):
@@ -31,6 +33,11 @@ if isinstance(common_batch_sizes, str):
 if isinstance(common_seq_lengths, str):
     common_seq_lengths = [int(sl) for sl in common_seq_lengths.split(",")]
 
+# FIXME: compare with GPU diffs for default value
+# pass custom validation diff threshold (if average of absolute mean diff of all samples < validation_diff_threshold, pass test)
+if isinstance(validation_diff_threshold, str):
+    validation_diff_threshold = float(validation_diff_threshold)
+
 common_shapes = list(itertools.product(common_model_paths, common_batch_sizes, common_seq_lengths))
 
 
@@ -42,6 +49,31 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
 
     input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length, is_causal_mask=False)
     return input_ids, padding_kwargs
+
+def __generate_diffs(model_params_1, model_params_2):
+    model_params_1.model.eval()
+    model_params_2.model.eval()
+    signature = get_signature(
+        model_params_1.model,
+        params=model_params_1.params,
+        optional_params=model_params_1.other_params,
+        logits_getter_fn=model_params_1.logits_getter_fn,
+        inp=model_params_1.inp,
+        device=model_params_1.inp.device
+    )
+    signature2 = get_signature(
+        model_params_2.model,
+        params=model_params_2.params,
+        optional_params=model_params_2.other_params,
+        logits_getter_fn=model_params_2.logits_getter_fn,
+        inp=model_params_2.inp,
+        device=model_params_2.inp.device
+    )
+
+    signature = np.array(signature)
+    signature2 = np.array(signature2)
+
+    return np.mean(np.abs(signature2 - signature))
 
 @pytest.fixture(autouse=True)
 def reset_compiler():
@@ -102,6 +134,23 @@ def test_common_shapes(model_path, batch_size, seq_length):
     aiu_msp = ModelSignatureParams(model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
     get_signature(aiu_msp.model, aiu_msp.params, aiu_msp.inp, aiu_msp.other_params, aiu_msp.logits_getter_fn)
 
-    cpu_msp = ModelSignatureParams(validation_model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
-    # FIXME: Compute GPU atol/rtol
-    compare_model_signatures(cpu_msp, aiu_msp, atol=0.1, rtol=.05)
+    # get the average diff over multiple samples
+    diffs = []
+    for i in range(20):
+        # prepare input_ids
+        input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer, seed=i)
+
+        aiu_msp = ModelSignatureParams(
+            model, 
+            ["x"], 
+            logits_getter_fn=logits_getter_fn, 
+            inp=input_ids, 
+            other_params=padding_kwargs
+        )
+        cpu_msp = ModelSignatureParams(validation_model, ["x"], logits_getter_fn=logits_getter_fn, inp=input_ids, other_params=padding_kwargs)
+        diffs.append(__generate_diffs(aiu_msp, cpu_msp))
+
+    abs_mean_diff = sum(diffs) / len(diffs)
+    print(f"absolute mean diff: {abs_mean_diff}")
+
+    assert abs_mean_diff < validation_diff_threshold
