@@ -24,6 +24,8 @@ The above will test shapes batch_size 1, with sequence length 128 of granite-20b
 
 - **test_model_expectations** - this test will capture a snapshot in time of what a randomly initialized model would produce on the AIU. To add a model to this, you simply add it to either the models list or tuple_output_models list which will generate 2 expectation tests. The first time you run this test, you run it with --capture_expectation which will create a resource file with the expected output. The next time you run it, you run without the --capture_expectation and all should pass.
 
+> When adding new models expectations, please include in the PR with capture expectation tests added, the date of the image used to generate the file.
+
 ### Thresholds for the tests baselines for `test_decoders`
 
 The `test_decoders.py` file contains tests written for models that have **decoder** architecture. For each model to be tested, specific metrics baselines need to be created by following the next steps in this documentation. Four different metrics are generated with top k per token as base lines for these tests; Cross entropy loss per token, probability mean, probability standard deviation and absolute diff mean.
