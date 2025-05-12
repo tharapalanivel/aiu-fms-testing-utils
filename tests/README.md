@@ -252,6 +252,7 @@ assert 0.7638888888888888 < 0.01
 ## 4. Run `test_model_expectations`
 
 - First add the desired model to the [decoder_models](./models/test_model_expectations.py#L55) variable.
+- If the models tested are too big, it is a valid option to add the micro model version for this specific test.
 - 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUModels --capture_expectation` to save the model weights.
 After that you will get an output like this:
 ```bash
