@@ -251,56 +251,46 @@ assert 0.7638888888888888 < 0.01
 
 - First add the desired model to the [decoder_models](./models/test_model_expectations.py#L55) variable.
 - If the models tested are too big, it is a valid option to add the micro model version for this specific test.
-- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUDecoderModels -vv --capture_expectation` to save the model weights.
+- 4.1 Run `pytest tests/models/test_model_expectations.py::TestAIUDecoderModels --capture_expectation` to save the model weights.
 After that you will get an output like this:
 ```bash
-FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
-FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-True] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] - Failed: Signature file has been saved, please re-run the tests without --capture_expectation
+FAILED tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] - Failed: Weights Key file has been saved, please re-run the tests without --capture_expectation
 ```
 This will tell that the weights and signature have been saved, so you can run the complete suite again to get the tests results.
-- 4.2 Then running the complete suit:
+- 4.2 Then running the complete suite:
 
 ```bash
-[1000780000@e2e-vllm-dt2-5f8474666c-6zwzb aiu-fms-testing-utils]$ pytest tests/models/test_model_expectations.py -vv
+[1000780000@e2e-vllm-dt2-646f66647b-68dh6 aiu-fms-testing-utils]$ pytest tests/models/test_model_expectations.py::TestAIUDecoderModels -vv
 [ 0/ 1]: Sentient AIU: Enabled
-=========================================================================== test session starts ============================================================================
-platform linux -- Python 3.11.9, pytest-8.3.5, pluggy-1.5.0 -- /usr/bin/python3.11
+===================================================================================== test session starts ======================================================================================
+platform linux -- Python 3.12.5, pytest-8.3.5, pluggy-1.5.0 -- /usr/bin/python3.12
 cachedir: .pytest_cache
 rootdir: /tmp/aiu-fms-testing-utils
-plugins: durations-1.4.0, env-1.1.5
-collected 6 items                                                                                                                                                          
+plugins: durations-1.5.2, env-1.1.5
+collected 3 items                                                                                                                                                                              
 
-tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 16%]
-tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 33%]
-tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_unfused[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603] SKIPPED (All AIU
-models are already unfused)                                                                                                                                          [ 50%]
-tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_output[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 66%]
-tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_weight_keys[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 83%]
-tests/models/test_model_expectations.py::TestAIUModelsTupleOutput::test_model_unfused[/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603] SKIPPED     [100%]
+tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_output[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 33%]
+tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_weight_keys[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3-False] <- ../foundation-model-stack/fms/testing/_internal/model_test_suite.py PASSED [ 66%]
+tests/models/test_model_expectations.py::TestAIUDecoderModels::test_model_unfused[/tmp/models/mistralai/Mistral-7B-Instruct-v0.3] SKIPPED (All AIU models are already unfused)           [100%]
 
-============================================================================= warnings summary =============================================================================
-../foundation-model-stack/fms/triton/pytorch_ops.py:103
-  /tmp/foundation-model-stack/fms/triton/pytorch_ops.py:103: FutureWarning: `torch.library.impl_abstract` was renamed to `torch.library.register_fake`. Please use that instead; we will remove `torch.library.impl_abstract` in a future version of PyTorch.
-    @torch.library.impl_abstract("moe::moe_mm")
+===================================================================================== fixture duration top =====================================================================================
+total          name                                    num avg            min           
+0:00:02.201162                     uninitialized_model   1 0:00:02.201162 0:00:02.201162
+0:00:00.051478                                   model   1 0:00:00.051478 0:00:00.051478
+0:00:02.252951                             grand total   6 0:00:00.000135 0:00:00.000046
+==================================================================================== test call duration top ====================================================================================
+total          name                                    num avg            min           
+0:03:05.951278 TestAIUDecoderModels::test_model_output   1 0:03:05.951278 0:03:05.951278
+0:03:05.954470                             grand total   3 0:00:00.003095 0:00:00.000097
+=================================================================================== test setup duration top ====================================================================================
+total          name                                    num avg            min           
+0:00:00.002004                             grand total   3 0:00:00.000289 0:00:00.000102
+================================================================================== test teardown duration top ==================================================================================
+total          name                                    num avg            min           
+0:00:00.000363                             grand total   3 0:00:00.000090 0:00:00.000077
+=========================================================================== 2 passed, 1 skipped in 189.01s (0:03:09) ===========================================================================
 
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-=========================================================================== fixture duration top ===========================================================================
-total          name                                        num avg            min           
-0:02:30.506714                                       model   2 0:01:15.253357 0:01:13.374073
-0:01:03.468178                         uninitialized_model   2 0:00:31.734089 0:00:31.329795
-0:03:33.976530                                 grand total  12 0:00:00.000702 0:00:00.000018
-========================================================================== test call duration top ==========================================================================
-total          name                                        num avg            min           
-0:00:02.528784            TestAIUModels::test_model_output   1 0:00:02.528784 0:00:02.528784
-0:00:02.238001 TestAIUModelsTupleOutput::test_model_output   1 0:00:02.238001 0:00:02.238001
-0:00:04.771857                                 grand total   6 0:00:00.002428 0:00:00.000078
-========================================================================= test setup duration top ==========================================================================
-total          name                                        num avg            min           
-0:00:00.003333                                 grand total   6 0:00:00.000203 0:00:00.000076
-======================================================================== test teardown duration top ========================================================================
-total          name                                        num avg            min           
-0:00:00.000512                                 grand total   6 0:00:00.000066 0:00:00.000032
-=========================================================== 4 passed, 2 skipped, 1 warning in 219.85s (0:03:39) ============================================================
 ```
 
 In this case, the model tested was a decoder model with a single output, the TestAIUDecoderModels is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multiple-output---testaiumodelstupleoutput) cases.
