@@ -12,6 +12,7 @@ import contextlib
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
+from aiu_fms_testing_utils.utils.paged import AIUPagedModelWrapper
 import numpy as np
 import torch
 from torch import distributed as dist
@@ -217,6 +218,13 @@ parser.add_argument(
     action='count',
     default=0,
     help="Set verbosity level (pass flag as `-v`, `-vv`, `-vvv`)"
+)
+parser.add_argument(
+    "--attention_type",
+    type=str,
+    choices=["sdpa", "paged"],
+    default="sdpa",
+    help="which backend attention to use in mha",
 )
 args = parser.parse_args()
 
@@ -474,6 +482,9 @@ if args.compile:
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
+
+if args.attention_type == "paged":
+    model = AIUPagedModelWrapper(model)
 
 add_special_tokens = tokenizer.bos_token_id != tokenizer.eos_token_id
 
