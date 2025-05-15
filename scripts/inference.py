@@ -228,8 +228,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.attention_type == "paged":
-    import aiu_fms_testing_utils.utils.paged
-    from aiu_fms_testing_utils.utils.paged import generate
+    from fms.utils.aiu.paged import generate
 else:
     from fms.utils.generation import generate
 
@@ -665,6 +664,10 @@ def infer(use_cache, do_sample, warmup):
     else:
         eos_token_id = None
 
+    attention_specific_kwargs = {}
+    if args.attention_type == "sdpa":
+        attention_specific_kwargs["contiguous_cache"] = True
+
     result = generate(
         model,
         ids,
@@ -674,8 +677,8 @@ def infer(use_cache, do_sample, warmup):
         max_seq_len=max_seq_len,
         timing=args.timing,
         eos_token_id=eos_token_id,
-        contiguous_cache=True,
         extra_kwargs=extra_generation_kwargs,
+        **attention_specific_kwargs
     )
     if args.timing != "":
         result, timings = result
