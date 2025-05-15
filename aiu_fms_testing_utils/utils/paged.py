@@ -133,9 +133,9 @@ def __aiu_paged_store_op(
 
     # for prefill, we want to return the original keys/values
     if "block_mapping" not in attn_kwargs:
-        return keys, values
+        return keys, values, result_key_cache, result_value_cache
     else:
-        return result_key_cache, result_value_cache
+        return result_key_cache, result_value_cache, result_key_cache, result_value_cache
 
 
 def __aiu_paged_compute_op(
@@ -203,10 +203,8 @@ class AIUPagedModelWrapper(nn.Module):
         self.block_numbers = [i for i in range(self.num_blocks)]
         random.seed(0)
         random.shuffle(self.block_numbers)
-        self.is_prefill = True
 
     def _prepare_prefill_kwargs(self, input_ids: torch.Tensor, position_ids: torch.Tensor) -> AIUPagedAttentionKwargs:
-        self.is_prefill = False
         self.position_i = input_ids.size(1) - 1
         self.left_padded_prompt_mask = (position_ids == 0).sum(dim=1) - 1
         current_context_lengths = (position_ids != 0).sum(dim=1) + 1
@@ -326,7 +324,7 @@ class AIUPagedModelWrapper(nn.Module):
         **kwargs # we create AIUPagedAttentionKwargs internally here, so no need to pass
     ):
         
-        if self.is_prefill:
+        if past_key_value_states is None:
             return self._run_prefill(x, position_ids, only_last_token, mask)
         else:
             return self._run_decode(x, position_ids, only_last_token, past_key_value_states)
