@@ -12,14 +12,13 @@ import contextlib
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
-from aiu_fms_testing_utils.utils.paged import AIUPagedModelWrapper
 import numpy as np
 import torch
 from torch import distributed as dist
 from fms.models import get_model, register_model
 from fms.models.llama import LLaMAConfig, _llama_factory_factory
 from fms.utils import generation, tokenizers
-from fms.utils.generation import generate, pad_input_ids
+from fms.utils.generation import pad_input_ids
 
 
 # This example script validates the LLaMA implementation by running inference on a couple of prompts.
@@ -227,6 +226,12 @@ parser.add_argument(
     help="which backend attention to use in mha",
 )
 args = parser.parse_args()
+
+if args.attention_type == "paged":
+    import aiu_fms_testing_utils.utils.paged
+    from aiu_fms_testing_utils.utils.paged import generate
+else:
+    from fms.utils.generation import generate
 
 if args.quantization == "gptq":
     if "aiu" in args.device_type:
@@ -482,9 +487,6 @@ if args.compile:
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
-
-if args.attention_type == "paged":
-    model = AIUPagedModelWrapper(model)
 
 add_special_tokens = tokenizer.bos_token_id != tokenizer.eos_token_id
 
