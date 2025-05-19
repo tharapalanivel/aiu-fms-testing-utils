@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import random
 import time
+import contextlib
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
@@ -469,7 +470,7 @@ dprint(f"loading complete, took {loading_model_time:.3f}s")
 if args.compile:
     dprint("compiling model")
     if is_aiu_backend:
-        model.compile(backend="sendnn_decoder", options={'sendnn.dynamic': args.compile_dynamic_sendnn})
+        model.compile(backend="sendnn", options={'sendnn.dynamic': args.compile_dynamic_sendnn})
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
@@ -691,14 +692,20 @@ use_cache = [
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
 
 if args.compile:
-    warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
-
+    dprint(f"compilation warmup")
+    pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
+        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
         aiu_warmup_time = time.time() - aiu_warmup_time
         dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
+    else:
+        for sample, cache in itertools.product(do_sample, use_cache):
+            infer(cache, sample, True)
+    pt_compile_model_time = time.time() - pt_compile_model_time
+    dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
 dprint(f"generating output")
 
