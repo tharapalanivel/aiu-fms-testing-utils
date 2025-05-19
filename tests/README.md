@@ -16,7 +16,7 @@ Example:
 # Note: you might need an hf_token if the model requires it (this will download)
 export FMS_TEST_SHAPES_COMMON_BATCH_SIZES=1
 export FMS_TEST_SHAPES_COMMON_SEQ_LENGTHS=128
-export FMS_TEST_SHAPES_COMMON_MODEL_PATHS=/ibm-dmf/models/watsonx/shared/granite-20b-code-cobol-v1/20240603/
+export FMS_TEST_SHAPES_COMMON_MODEL_PATHS=/local-path/granite-20b-code-cobol-v1/
 export FMS_TEST_SHAPES_USE_MICRO_MODELS=0
 pytest tests/models/test_decoders.py
 ```
@@ -293,7 +293,7 @@ total          name                                    num avg            min
 
 ```
 
-In this case, the model tested was a decoder model with a single output, the TestAIUDecoderModels is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multiple-output---testaiumodelstupleoutput) cases.
+In this case, the model tested was a decoder model with a single output, the `TestAIUDecoderModels` is the most important case. In the next section, check the applicability for the [TestAIUModelsTupleOutput](./README.md#case-of-multiple-output---testaiumodelstupleoutput) cases.
 
 #### Case of multiple output - TestAIUModelsTupleOutput
 
