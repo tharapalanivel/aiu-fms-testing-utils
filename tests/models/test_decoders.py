@@ -404,7 +404,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     # first test validation level 0
     aiu_validation_info = extract_validation_information(
-        model, input_ids, max_new_tokens, None, only_last_token=True, **padding_kwargs
+        model, input_ids, max_new_tokens, None, only_last_token=True, attn_algorithm=None, **padding_kwargs
     )
     dprint("aiu validation info extracted for validation level 0")
 
