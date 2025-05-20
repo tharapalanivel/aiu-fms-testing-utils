@@ -53,10 +53,7 @@ validation_info_dir = os.environ.get(
 )
 common_model_paths = os.environ.get(
     "FMS_TEST_SHAPES_COMMON_MODEL_PATHS",
-    [LLAMA_3p1_8B_INSTRUCT, 
-     GRANITE_3p2_8B_INSTRUCT, 
-     GRANITE_20B_CODE_INSTRUCT_8K, 
-     LLAMA_3p1_70B_INSTRUCT],
+    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
 )
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
