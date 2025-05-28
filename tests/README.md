@@ -39,7 +39,7 @@ They are calculated in lines [228 - 231 at generate_metrics.py](../scripts/gener
 cross_entropy = lambda r, t: torch.nn.CrossEntropyLoss()(r, t.softmax(dim=1).to(dtype=torch.float32))
 prob_mean = lambda r, t: torch.mean((r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32)) - 1.0)
 prob_std = lambda r, t: torch.std(r.softmax(dim=1).to(dtype=torch.float32) / t.softmax(dim=1).to(dtype=torch.float32))
-diff_mean = lambda r, t: torch.mean(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32))
+diff_mean = lambda r, t: torch.mean(torch.abs(r.softmax(dim=1).to(dtype=torch.float32) - t.softmax(dim=1).to(dtype=torch.float32)))
 ```
 More at [pytorch.org](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html), [Yiren,Wang](https://courses.grainger.illinois.edu/ece598pv/fa2017/Lecture13_LM_YirenWang.pdf), [Li, Wang, Shang Et al.](https://arxiv.org/abs/2412.12177#:~:text=%5B2412.12177%5D%20Model%2Ddiff:,%3E%20cs%20%3E%20arXiv:2412.12177) and [Wu,Hilton](https://arxiv.org/html/2410.13211v1).
 </br>
@@ -98,7 +98,7 @@ After running these scripts in namespace with 1 GPU, these were the thresholds g
 ```bash
 python3 get_thresholds.py --models /tmp/aiu-fms-testing-utils/models/Mistral-7B-Instruct-v0.3 --metrics diff_mean ce --file_base /tmp/aiu-fms-testing-utils/output
 found 7 metric files
---tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3 diff_mean -1.0710003217617725e-08 0.0007839603102183846
+--tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3 diff_mean 0.0007839603102183846
 found 7 metric files
 --tmp--aiu-fms-testing-utils--models--Mistral-7B-Instruct-v0.3 ce 2.8364005851745624
 ```
@@ -120,7 +120,7 @@ These are the variables set at the deployment:
 | FMS_TEST_SHAPES_METRICS_THRESHOLD | 2.8364005851745624,0.0007839603102183846
 
 
-> Set `FMS_TEST_SHAPES_METRICS_THRESHOLD` in case there is no need to add the model to the default ones. No code changes needed, just this environment variable set with the metrics values.
+> Set `FMS_TEST_SHAPES_METRICS_THRESHOLD` in case there is no need to add the model to the default ones. No code changes needed, just this environment variable set with the metrics values. Set `FMS_TEST_SHAPES_VALIDATION_INFO_DIR` to speed up the tests considerably when testing larger models by using the output logits saved from generating the metrics. Set `FMS_TEST_SHAPES_FAILURE_THRESHOLD` if you would like to relax the threshold - default is `0.01`.
 
 Add the new numbers at the end of the [dictionary](./models/test_decoders.py#L116):
 ```python

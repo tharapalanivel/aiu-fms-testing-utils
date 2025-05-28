@@ -50,8 +50,4 @@ for model in models:
                     metric_list.append(float(line))
         print(f"found {len(metric_files)} metric files")
         if metric == "diff_mean":
-            m1 = np.percentile(metric_list, .5)
-            m2 = np.percentile(metric_list, 99.5)
-            print(model, metric, m1, m2)
-        else:
             print(model, metric, np.percentile(metric_list, 99.0))
