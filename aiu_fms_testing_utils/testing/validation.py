@@ -76,8 +76,7 @@ class ValidationInfo:
         :param save_dir_path: the path to save to
         """
         dprint(f"saving validation info to {save_dir_path}")
-        if not os.path.exists(save_dir_path):
-            os.makedirs(save_dir_path)
+        os.makedirs(save_dir_path, exist_ok=True)
 
         for sentence_i, sentence in enumerate(self._validation_info_list):
             file_path = os.path.join(save_dir_path, f"{sentence_i}.pt")
@@ -193,9 +192,11 @@ def extract_validation_information(model, input_ids, max_new_tokens, post_iterat
     max_seq_len = model.config.max_expected_seq_len
 
     # Add only_last_token optimization
-    extra_generation_kwargs = {**padding_kwargs, "attn_algorithm": attn_algorithm}
+    extra_generation_kwargs = {**padding_kwargs}
     if only_last_token:
         extra_generation_kwargs["only_last_token"] = only_last_token
+    if attn_algorithm is not None:
+        extra_generation_kwargs["attn_algorithm"] = attn_algorithm
 
     result = generate(
         model,

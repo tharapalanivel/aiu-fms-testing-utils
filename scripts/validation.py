@@ -107,6 +107,11 @@ parser.add_argument(
     help="Use dynamic shapes with torch.compile",
 )
 parser.add_argument(
+    "--compile_dynamic_sendnn",
+    action="store_true",
+    help="Use dynamic shapes with aiu compile",
+)
+parser.add_argument(
     "--deterministic",
     action="store_true",
     help="Set torch.use_deterministic_algorithms? Requires env variable `CUBLAS_WORKSPACE_CONFIG=:4096:8`",
@@ -462,7 +467,8 @@ if not args.compile_dynamic:
     torch._dynamo.config.assume_static_by_default = True
     torch._dynamo.config.dynamic_shapes = False
     torch._dynamo.config.automatic_dynamic_shapes = False
-model.compile(backend="sendnn_decoder")
+
+model.compile(backend="sendnn")
 
 if needs_validation_run and args.validation_compile:
     dprint("compiling validation model")
@@ -680,7 +686,7 @@ else:
         **padding_kwargs
     )
 
-warmup_model(model, ids, args.max_new_tokens, **padding_kwargs)
+warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **padding_kwargs)
 
 ### AIU generation loop
 static_tokens = validation_info.get_info("tokens")

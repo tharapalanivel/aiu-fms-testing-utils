@@ -7,9 +7,10 @@ import os
 from pathlib import Path
 import random
 import time
+import contextlib
 
 # Third Party
-from aiu_fms_testing_utils.utils import aiu_setup
+from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
 import numpy as np
 import torch
@@ -128,6 +129,11 @@ parser.add_argument(
     "--compile_dynamic",
     action="store_true",
     help="Use dynamic shapes with torch.compile",
+)
+parser.add_argument(
+    "--compile_dynamic_sendnn",
+    action="store_true",
+    help="Use dynamic shapes with aiu compile",
 )
 parser.add_argument(
     "--deterministic",
@@ -464,7 +470,7 @@ dprint(f"loading complete, took {loading_model_time:.3f}s")
 if args.compile:
     dprint("compiling model")
     if is_aiu_backend:
-        model.compile(backend="sendnn_decoder")
+        model.compile(backend="sendnn", options={'sendnn.dynamic': args.compile_dynamic_sendnn})
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
@@ -688,24 +694,18 @@ use_cache = [
 if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
-    for sample, cache in itertools.product(do_sample, use_cache):
-        infer(cache, sample, True)
-    pt_compile_model_time = time.time() - pt_compile_model_time
-    dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
-
-    if is_aiu_backend:
-        dprint("executing update_lazyhandle and compiling for AIU")
-        update_lh_time = time.time()
-        torch_sendnn.update_lazyhandle()
-        update_lh_time = time.time() - update_lh_time
-        dprint(f"update_lazyhandle complete, took {update_lh_time:.3f}s")
-
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
+        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
         aiu_warmup_time = time.time() - aiu_warmup_time
         dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
+    else:
+        for sample, cache in itertools.product(do_sample, use_cache):
+            infer(cache, sample, True)
+    pt_compile_model_time = time.time() - pt_compile_model_time
+    dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
 dprint(f"generating output")
 

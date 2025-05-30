@@ -330,7 +330,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     distributed_kwargs = {}
     if USE_DISTRIBUTED:
-        distributed_kwargs["distr_param"] = "tp"
+        distributed_kwargs["distributed_strategy"] = "tp"
         distributed_kwargs["group"] = dist.group.WORLD
 
     get_model_kwargs = {}
@@ -355,7 +355,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     model.eval()
     torch.set_grad_enabled(False)
-    model.compile(backend="sendnn_decoder")
+    model.compile(backend="sendnn")
 
     # prepare the cpu model
     validation_model = get_model(
