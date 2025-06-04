@@ -225,6 +225,12 @@ parser.add_argument(
     default="sdpa",
     help="which backend attention to use in mha",
 )
+parser.add_argument(
+    "--max_sequence_length",
+    type=int,
+    default=-1,
+    help="override the max sequence length of the prompt + max_new_tokens"
+)
 args = parser.parse_args()
 
 if args.attention_type == "paged":
@@ -608,6 +614,11 @@ else:
         ids = ids[0].unsqueeze(0)
     extra_generation_kwargs = None
 
+if args.max_sequence_length == -1:
+    max_seq_length = ids.size(0) + args.max_new_tokens
+else:
+    max_seq_length = args.max_sequence_length
+
 
 def print_result(result, result_idx: int):
     if local_rank != 0:
@@ -643,11 +654,6 @@ def infer(use_cache, do_sample, warmup):
     if local_rank == 0 and not warmup:
         dprint(f"use_cache {use_cache};; do_sample {do_sample}")
         dprint("==================")
-    if hasattr(model.config, "ntk_scaling") and model.config.ntk_scaling:
-        max_seq_len = max(max_len, model.config.max_expected_seq_len)
-    else:
-        # without ntk scaling, extending the seq length too far gives bogus results.
-        max_seq_len = model.config.max_expected_seq_len
 
     # Add only_last_token optimization
     global extra_generation_kwargs
@@ -674,7 +680,7 @@ def infer(use_cache, do_sample, warmup):
         max_new_tokens=args.max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,
-        max_seq_len=max_seq_len,
+        max_seq_len=max_seq_length,
         timing=args.timing,
         eos_token_id=eos_token_id,
         extra_kwargs=extra_generation_kwargs,
@@ -711,7 +717,7 @@ if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
-        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, attn_type=args.attention_type, **extra_generation_kwargs)
+        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, attn_type=args.attention_type, max_seq_len=max_seq_length, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
