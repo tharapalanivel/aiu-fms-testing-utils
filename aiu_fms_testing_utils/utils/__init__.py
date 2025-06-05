@@ -13,7 +13,7 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     import torch_sendnn
     attention_specific_kwargs = {}
     if attn_type == "paged":
-        from fms.utils.aiu.paged import generate
+        from fms.utils.spyre.paged import generate
     else:
         from fms.utils.generation import generate
         attention_specific_kwargs["contiguous_cache"] = True
