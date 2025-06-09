@@ -20,7 +20,7 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     
     dprint("AIU warmup")
     pt_compile_model_time = time.time()
-    extra_kwargs = {**padding_kwargs, "only_last_token": True}
+    extra_kwargs = {**padding_kwargs, "only_last_token": False}
     max_new_tokens_warmup = max_new_tokens
     if compile_dynamic_sendnn:
         max_new_tokens_warmup = 2

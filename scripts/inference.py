@@ -659,7 +659,7 @@ def infer(use_cache, do_sample, warmup):
     global extra_generation_kwargs
     if extra_generation_kwargs is None:
         extra_generation_kwargs = {}
-    extra_generation_kwargs["only_last_token"] = True
+    extra_generation_kwargs["only_last_token"] = False
 
     if args.device_type == "cpu":
         # Bug in 2.3.1 fixed in 2.4.1 for SDPA flash cpu impl when padding too much
