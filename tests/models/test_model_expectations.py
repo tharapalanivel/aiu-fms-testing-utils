@@ -20,15 +20,16 @@ model_dir = os.environ.get("FMS_TESTING_MODEL_DIR", "/tmp/models")
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
 GRANITE_GUARDIAN_3p1_8B = "ibm-granite/granite-guardian-3.1-8b"
+MISTRAL_7B_INSTRUCT = "mistralai/Mistral-7B-Instruct-v0.3"
 ROBERTA_SQUAD_v2 = "deepset/roberta-base-squad2"
-torch.manual_seed(42)
 
-micro_models = {LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_GUARDIAN_3p1_8B}
+micro_models = {LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_GUARDIAN_3p1_8B, MISTRAL_7B_INSTRUCT}
 
 
 class AIUModelFixtureMixin(ModelFixtureMixin):
     @pytest.fixture(scope="class", autouse=True)
     def uninitialized_model(self, model_id):
+        torch.manual_seed(42)
         if model_id in micro_models:
             get_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
         else:
@@ -53,7 +54,7 @@ class AIUModelFixtureMixin(ModelFixtureMixin):
         return uninitialized_model
 
 
-decoder_models = [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_GUARDIAN_3p1_8B]
+decoder_models = [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_GUARDIAN_3p1_8B, MISTRAL_7B_INSTRUCT]
 
 
 class TestAIUDecoderModels(
