@@ -35,7 +35,7 @@ except ImportError:
     GPTQ_ENABLED = False
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
-MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MODELS_HOME", "/home/senuser/models")
+MICRO_MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MICRO_MODELS_HOME", "/mnt/home")
 
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
@@ -44,7 +44,8 @@ GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
 LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
 
 micro_model_mapping = {
-    LLAMA_3p1_8B_INSTRUCT: os.path.join(MODELS_HOME, "llama-8b-layers-3-step-24000"),
+    LLAMA_3p1_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-8b-layers-3-step-24000"),
+    GRANITE_3p2_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-24000")
 }
 
 SHARE_GPT_DATASET_PATH = os.environ.get(
@@ -56,7 +57,7 @@ FORCE_VALIDATION_LEVEL_1 = (
     os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
 )
 validation_info_dir = os.environ.get(
-    "FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/home/senuser/models/validation_info"
+    "FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info"
 )
 common_model_paths = os.environ.get(
     "FMS_TEST_SHAPES_COMMON_MODEL_PATHS",
@@ -125,21 +126,21 @@ common_shapes = list(
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
 # if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold defined above
-# threshold key is model_id
+# threshold key is (model_id, is_tiny_model)
 fail_thresholds = {
-    LLAMA_3p1_8B_INSTRUCT: (
+    (LLAMA_3p1_8B_INSTRUCT, False): (
         2.6994638133048965,
         0.00047589250549208347,
     ),
-    GRANITE_3p2_8B_INSTRUCT: (
+    (GRANITE_3p2_8B_INSTRUCT, False): (
         2.3919514417648315,
         0.0005767398688476533,
     ),
-    GRANITE_20B_CODE_INSTRUCT_8K: (
+    (GRANITE_20B_CODE_INSTRUCT_8K, False): (
         2.640706129074097,
         0.00034344267623964697,
     ),
-    LLAMA_3p1_70B_INSTRUCT: (
+    (LLAMA_3p1_70B_INSTRUCT, False): (
         2.841279556751251,
         0.0044301633024588115,
     ),
@@ -303,7 +304,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     os.environ["COMPILATION_MODE"] = "offline_decoder"
 
     if "HF_HOME" not in os.environ:
-        os.environ["HF_HOME"] = "/home/senuser/models/hf_cache"
+        os.environ["HF_HOME"] = "/tmp/models/hf_cache"
 
     dprint(
         f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}"
@@ -420,6 +421,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     # if level 0 fails validation, validate level 1
     if FORCE_VALIDATION_LEVEL_1 or failed_validation_level_0:
+
         if failed_validation_level_0:
             dprint("failed validation level 0, testing validation level 1")
         else:
@@ -508,9 +510,15 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                 ce_threshold, diff_threshold = default_metrics_threshold
             # if we have real weights, try and get the proper validation metrics threshold
             else:
-                ce_threshold, diff_threshold = fail_thresholds.get(
-                    model_path, default_metrics_threshold
-                )
+                # if we have a micro model with real weights, but no real thresholds, default to the full model thresholds
+                if USE_MICRO_MODELS:
+                    ce_threshold, diff_threshold = fail_thresholds.get(
+                        (model_path, True), fail_thresholds.get((model_path, False), default_metrics_threshold)
+                    )
+                else:
+                    ce_threshold, diff_threshold = fail_thresholds.get(
+                        (model_path, False), default_metrics_threshold
+                    )
 
             # get all failed responses for each metric
             ce_fail_responses = filter_failed_level_1_cases(
