@@ -56,7 +56,7 @@ common_model_paths = os.environ.get(
     [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
 )
 model_configuration_path = os.environ.get("FMS_TEST_SHAPES_FROM_MODEL_CONFIGURATION", "")
-model_configuration_priority = os.environ.get("FMS_TEST_SHAPES_FROM_MODEL_CONFIGURATION_PRIORITY", "0")
+model_configuration_frequency = os.environ.get("FMS_TEST_SHAPES_FROM_MODEL_CONFIGURATION_FREQUENCY", "0")
 
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
@@ -145,12 +145,12 @@ if model_configuration_path != "":
     print("ignoring FMS_TEST_SHAPES_COMMON_MODEL_PATHS, FMS_TEST_SHAPES_USE_MICRO_MODELS as configuration will be set by FMS_TEST_SHAPES_FROM_MODEL_CONFIGURATION")
     USE_MICRO_MODELS = False
     common_model_paths = []
-    priority = int(model_configuration_priority)
+    frequency = int(model_configuration_frequency)
     with open(model_configuration_path, 'r') as f:
         for line in f:
             try:
                 model_config = json.loads(line)
-                if model_config["priority"] <= priority:
+                if model_config["frequency"] <= frequency:
                     common_model_paths.append(model_config["model_id"])
                     # assume fullsize models
                     fail_thresholds[(model_config["model_id"], USE_MICRO_MODELS)] = (model_config["ce"], model_config["mean_diff"])
