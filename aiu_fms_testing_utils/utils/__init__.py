@@ -13,7 +13,7 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     import torch_sendnn
     attention_specific_kwargs = {}
     if attn_type == "paged":
-        from fms.utils.spyre.paged import generate
+        from aiu_fms_testing_utils.utils.paged import generate, adjust_inputs_to_batch
     else:
         from fms.utils.generation import generate
         attention_specific_kwargs["contiguous_cache"] = True
@@ -28,14 +28,7 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
         max_new_tokens_warmup = 2
         # always warmup with batch size 2 when using attn_type=paged
         if attn_type == "paged":
-            _padding_kwargs = {}
-            _warmup_input_ids = input_ids[0].repeat(2, 1)
-            mask = padding_kwargs.get("mask", None)
-            if mask is not None:
-                _padding_kwargs["mask"] = torch.stack((mask[0], mask[0]))
-            position_ids = padding_kwargs.get("position_ids", None)
-            if position_ids is not None:
-                _padding_kwargs["position_ids"] = position_ids[0].repeat(2, 1)
+            _warmup_input_ids, _padding_kwargs = adjust_inputs_to_batch(input_ids, **padding_kwargs)
 
     extra_kwargs = {**_padding_kwargs, "only_last_token": attn_type != "paged"}
     max_new_tokens_warmup = max_new_tokens

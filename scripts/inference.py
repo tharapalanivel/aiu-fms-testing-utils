@@ -234,7 +234,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.attention_type == "paged":
-    from fms.utils.spyre.paged import generate
+    from aiu_fms_testing_utils.utils.paged import generate
 else:
     from fms.utils.generation import generate
 
