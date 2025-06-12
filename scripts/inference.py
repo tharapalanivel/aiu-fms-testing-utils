@@ -595,7 +595,8 @@ else:
     ids = prompts
     if isinstance(ids, list) and len(ids) == 1:
         ids = ids[0].unsqueeze(0)
-    extra_generation_kwargs = None
+    extra_generation_kwargs = {}
+extra_generation_kwargs["attn_name"] = "math_fp8"
 
 
 def print_result(result, result_idx: int):

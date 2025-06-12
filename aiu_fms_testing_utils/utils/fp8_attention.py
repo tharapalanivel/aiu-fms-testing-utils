@@ -12,7 +12,7 @@ from typing import (
 import torch
 from torch import Tensor
 
-from fms.modules.attention import AttentionKwargs, register_attention_op
+from fms.modules.attention import AttentionKwargs, register_attention_op, _sdpa_update_attn_kwargs
 
 class MathFP8AttentionKwargs(AttentionKwargs):
     mask: NotRequired[Tensor]
@@ -58,6 +58,7 @@ def sendnn_scaled_bmm(
     out_dtype: Optional[torch.dtype] = None,
     use_fast_accum: bool = False,
 ) -> Tensor:
+    print(mat1.shape, mat2.shape)
     assert mat1.shape[:-2] == mat2.shape[:-2], "batch dimensions must match for mat1 and mat2"
     assert mat1.shape[:-2] == scale1.shape[:-2], "batch dimensions must match for mat1 and scale1"
     assert mat2.shape[:-2] == scale2.shape[:-2], "batch dimensions must match for mat2 and scale2"
@@ -98,7 +99,7 @@ def _(
     out_dtype: Optional[torch.dtype] = None,
     use_fast_accum: bool = False,
 ) -> Tensor:
-    return torch.empty((mat1.shape[0], mat1.shape[1], mat2.shape[2]), dtype=out_dtype, device=mat1.device)
+    return torch.empty((*mat1.shape[:-2], mat1.shape[-2], mat2.shape[-1]), dtype=out_dtype, device=mat1.device)
 
 
 # TODO: Doens't quite work yet, more discussion needed
@@ -153,7 +154,7 @@ def _math_fp8_compute_op(
             query.size(-3) // key_cache.size(-3), -3
         )
         value_cache = value_cache.repeat_interleave(
-            query.size(-3) // key_cache.size(-3), -3
+            query.size(-3) // value_cache.size(-3), -3
         )
 
     scale = torch.ones((1,), dtype=torch.float32, device=query.device)
@@ -182,4 +183,5 @@ register_attention_op(
     "math_fp8",
     _math_fp8_store_op,
     _math_fp8_compute_op,
+    update_attn_kwargs_op=_sdpa_update_attn_kwargs
 )
