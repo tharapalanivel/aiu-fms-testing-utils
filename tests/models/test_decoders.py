@@ -100,7 +100,7 @@ if isinstance(common_seq_lengths, str):
 if isinstance(common_max_new_tokens, str):
     common_max_new_tokens = [int(mnt) for mnt in common_max_new_tokens.split(",")]
 
-# pass metrics to skip as a comma separated list (ce, mean_diff)
+# pass metrics to skip as a comma separated list (ce,mean_diff)
 if isinstance(skip_assertions, str):
     _skip_assertions = []
     for metric in skip_assertions.split(","):
