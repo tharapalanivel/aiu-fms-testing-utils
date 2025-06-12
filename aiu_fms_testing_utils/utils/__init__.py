@@ -20,14 +20,30 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     
     dprint("AIU warmup")
     pt_compile_model_time = time.time()
-    extra_kwargs = {**padding_kwargs, "only_last_token": False}
-    max_new_tokens_warmup = max_new_tokens
+
+    # adjust inputs depending on attn_type and dynamic shapes
+    _warmup_input_ids = input_ids
+    _padding_kwargs = padding_kwargs
     if compile_dynamic_sendnn:
         max_new_tokens_warmup = 2
+        # always warmup with batch size 2 when using attn_type=paged
+        if attn_type == "paged":
+            _padding_kwargs = {}
+            _warmup_input_ids = input_ids[0].repeat(2, 1)
+            mask = padding_kwargs.get("mask", None)
+            if mask is not None:
+                _padding_kwargs["mask"] = torch.stack((mask[0], mask[0]))
+            position_ids = padding_kwargs.get("position_ids", None)
+            if position_ids is not None:
+                _padding_kwargs["position_ids"] = position_ids[0].repeat(2, 1)
+
+    extra_kwargs = {**_padding_kwargs, "only_last_token": attn_type != "paged"}
+    max_new_tokens_warmup = max_new_tokens
+
     if max_seq_len == -1:
         max_seq_len = model.config.max_expected_seq_len
     with torch_sendnn.warmup_mode():
-        generate(model, input_ids, max_new_tokens=max_new_tokens_warmup, max_seq_len=max_seq_len, use_cache=True, do_sample=False, extra_kwargs=extra_kwargs, **attention_specific_kwargs)
+        generate(model, _warmup_input_ids, max_new_tokens=max_new_tokens_warmup, max_seq_len=max_seq_len, use_cache=True, do_sample=False, extra_kwargs=extra_kwargs, **attention_specific_kwargs)
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
