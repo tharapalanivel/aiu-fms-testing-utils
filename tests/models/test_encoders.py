@@ -86,10 +86,7 @@ def reset_compiler():
     else:
         os.environ['HF_HOME'] = ORIGINAL_HF_HOME
 
-encoder_paths = ["deepset/roberta-base-squad2"]
-common_encoder_shapes = list(itertools.product(encoder_paths, common_batch_sizes, common_seq_lengths))
-
-@pytest.mark.parametrize("model_path,batch_size,seq_length", common_encoder_shapes)
+@pytest.mark.parametrize("model_path,batch_size,seq_length", common_shapes)
 def test_common_shapes(model_path, batch_size, seq_length):
     os.environ["COMPILATION_MODE"] = "offline"
 

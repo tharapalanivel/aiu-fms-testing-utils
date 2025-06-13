@@ -35,7 +35,7 @@ except ImportError:
     GPTQ_ENABLED = False
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
-MICRO_MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MICRO_MODELS_HOME", "/mnt/home")
+MICRO_MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MICRO_MODELS_HOME", "/mnt/home/models/tiny-models")
 
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
@@ -44,8 +44,9 @@ GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
 LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
 
 micro_model_mapping = {
-    LLAMA_3p1_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-8b-layers-3-step-24000"),
-    GRANITE_3p2_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-24000")
+    LLAMA_3p1_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-8b-layers-3-step-24000"),
+    GRANITE_3p2_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-100000"),
+    LLAMA_3p1_70B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-70b-layers-3-step-24000")
 }
 
 SHARE_GPT_DATASET_PATH = os.environ.get(
@@ -53,9 +54,11 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
 )
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
+
 FORCE_VALIDATION_LEVEL_1 = (
     os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
 )
+skip_assertions = os.environ.get("FMS_TEST_SHAPES_SKIP_ASSERTIONS", {})
 validation_info_dir = os.environ.get(
     "FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info"
 )
@@ -113,6 +116,16 @@ if isinstance(common_seq_lengths, str):
 # pass custom common max new tokens as a comma separated str of ints
 if isinstance(common_max_new_tokens, str):
     common_max_new_tokens = [int(mnt) for mnt in common_max_new_tokens.split(",")]
+
+# pass metrics to skip as a comma separated list (ce,mean_diff)
+if isinstance(skip_assertions, str):
+    _skip_assertions = []
+    for metric in skip_assertions.split(","):
+        metric = metric.lower()
+        if metric not in {"ce", "mean_diff"}:
+            pytest.fail("FMS_TEST_SHAPES_SKIP_ASSERTIONS can only accept metrics ce and mean_diff")
+        _skip_assertions.append(metric)
+    skip_assertions = set(_skip_assertions)
 
 common_shapes = list(
     itertools.product(
@@ -538,12 +551,14 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         ce_failure_rate = len(ce_fail_responses_list) / total_tokens
         dprint(f"mean diff failure rate: {diff_failure_rate}")
         dprint(f"cross entropy loss failure rate: {ce_failure_rate}")
-        assert diff_failure_rate < failure_rate_threshold, (
-            f"failure rate for mean diff was too high: {diff_failure_rate}"
-        )
-        assert ce_failure_rate < failure_rate_threshold, (
-            f"failure rate for cross entropy loss was too high: {ce_failure_rate}"
-        )
+        if "mean_diff" not in skip_assertions:
+            assert diff_failure_rate < failure_rate_threshold, (
+                f"failure rate for mean diff was too high: {diff_failure_rate}"
+            )
+        if "ce" not in skip_assertions:
+            assert ce_failure_rate < failure_rate_threshold, (
+                f"failure rate for cross entropy loss was too high: {ce_failure_rate}"
+            )
 
         print("passed validation level 1")
     else:
