@@ -615,7 +615,7 @@ else:
     extra_generation_kwargs = None
 
 if args.max_sequence_length == -1:
-    max_seq_length = ids.size(0) + args.max_new_tokens
+    max_seq_length = ids.size(1) + args.max_new_tokens
 else:
     max_seq_length = args.max_sequence_length
 
