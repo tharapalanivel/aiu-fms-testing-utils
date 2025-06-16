@@ -1,7 +1,6 @@
 import os
 import time
 
-import pytest
 import itertools
 import torch
 
@@ -9,6 +8,7 @@ from fms.utils import tokenizers
 from fms.models import get_model
 from fms.utils.generation import pad_input_ids, generate
 
+from aiu_fms_testing_utils.testing.validation import get_default_validation_prefix
 
 from aiu_fms_testing_utils.utils import (
     sample_sharegpt_requests,
@@ -24,10 +24,13 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
     "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
 )
 
-common_model_paths = "/tmp/models/ibm-granite/granite-3.2-8b-instruct"
+common_model_paths = "ibm-granite/granite-3.2-8b-instruct"
 common_batch_sizes = [1]
 common_seq_lengths = [64]
 common_max_new_tokens = [128]
+
+output_dir = os.environ.get("OUTPUT_PATH", os.path.expanduser("~/tmp/output")
+)
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/granite-3-8b-base,/tmp/models/granite-7b-base"
 if isinstance(common_model_paths, str):
@@ -63,6 +66,8 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
         seq_length,
         seed,
     )
+    print(prompts_and_sizes)
+    ## TODO: for each prompt 
     prompt_list = []
     for prompt, _ in prompts_and_sizes:
         prompt_list.append(ids_for_prompt(prompt, tokenizer))
@@ -168,14 +173,12 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
         layer_name = module_name.get(module, 0)
         # Save inputs and outputs
         if hasattr(module, '_debug_input'):
-            print(module._debug_input) 
             print(output)
             layer_stack.append((layer_name, output))
             # Clean up
             delattr(module, '_debug_input')
     
     for name, layer in model.named_modules():
-        print(name)
         hooks.append(layer.register_forward_pre_hook(pre_hook_fn))
         hooks.append(layer.register_forward_hook(post_hook_fn))
 
@@ -193,14 +196,21 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
 
     return layer_stack
 
-def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+def write_csv(l, path, metric):
+    with open(path, 'w') as f:
+        f.write(f'{metric}\n')
+        for t in l:
+            f.write(f"{t[2].item()}\n") 
+        f.close()
+
+def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
 
     if "HF_HOME" not in os.environ:
         os.environ["HF_HOME"] = "/tmp/models/hf_cache"
 
-    model_path_kwargs = {"model_path": model_path}
+    model_path_kwargs = {"variant": model_path}
     micro_model_kwargs = {"architecture": "hf_pretrained"}
 
     get_model_kwargs = {
@@ -224,7 +234,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
         data_type=torch.float16,
         fused_weights=False,
         **get_model_kwargs,
-    ).to("cuda")
+    )
 
     layer_stack_cpu = __register_call_layers(model=validation_model,
                                             batch_size=batch_size, 
@@ -240,39 +250,36 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     
     absolute_differences = []
 
-    for layer, cpu_out in layer_stack_cpu:
-        cuda_eq = [cuda_layer for cuda_layer in layer_stack_cuda if layer in cuda_layer]
-        print("cuda layer equivalent")
-        print(cuda_eq)
-        print(layer)
-        print("cpu output")
-        cuda_layer, cuda_out = cuda_eq[0]
-        print(len(cpu_out))
+    assert len(layer_stack_cuda) == len(layer_stack_cpu)
 
     for layer, cuda_out in layer_stack_cuda:
-        cuda_eq = [cuda_layer for cuda_layer in layer_stack_cuda if layer in cuda_layer]
-        print(cuda_eq)
-        print(layer)
-        print("cuda output")
-        cuda_layer, cuda_out = cuda_eq[0]
-        print(len(cuda_out))
+        for cpu_layer, cpu_output in layer_stack_cpu:
+            if cpu_layer == layer:
+                print("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
 
-        abs_diff = torch.abs(cpu_out - cuda_out).flatten().tolist()
-        absolute_differences.extend(abs_diff)
+                tensor_cpu_cuda_out = cuda_out.to(torch.device('cpu'))
+                abs_diff = torch.abs(cpu_output - tensor_cpu_cuda_out).flatten().tolist()
+                absolute_differences.extend(abs_diff)
 
         if len(absolute_differences) == 0:
-           abs_diff = {"mean": float('nan'), "median": float('nan'), "q1": float('nan'), "q3": float('nan')}
-        
-        print("abs_diff")
-        print(abs_diff)
-        abs_diff_tensor = torch.tensor(absolute_differences)
-        abs_diff_tensor = torch.nan_to_num(abs_diff_tensor, nan=0.0) 
-        mean_diff = torch.mean(abs_diff_tensor).item()
-        median_diff = torch.median(abs_diff_tensor).item()
+            abs_diff = {"mean": float('nan'), "median": float('nan'), "q1": float('nan'), "q3": float('nan')}
 
-for model_id, max_new_token, batch_size, sequence_length in common_shapes:
+    abs_diff_tensor = torch.tensor(absolute_differences)
+    abs_diff_tensor = torch.nan_to_num(abs_diff_tensor, nan=0.0)
+    mean_diff = torch.mean(abs_diff_tensor).item()
+    median_diff = torch.median(abs_diff_tensor).item()
+
+    return abs_diff, mean_diff, median_diff
+
+for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     print("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
-    test_common_shapes(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
+    abs_diff, mean_diff, median_diff = generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
 
-# if local_rank == 0:
-#     write_csv(prob_diff_metrics, os.path.join(args.output_dir, f"{prefix}.diff_mean.csv"), "diff_mean")
+    prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
+    if os.path.exists(os.path.join(output_dir, f"{prefix}.abs_diff.csv")):
+        print("skipping metric generation as it has already been done")
+        exit(0)
+    write_csv(abs_diff, os.path.join(output_dir, f"{prefix}.abs_diff.csv"), "abs_diff")
+    write_csv(mean_diff, os.path.join(output_dir, f"{prefix}.mean_diff.csv"), "mean_diff")
+    write_csv(median_diff, os.path.join(output_dir, f"{prefix}.median_diff.csv"), "median_diff")
+    
