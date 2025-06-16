@@ -34,18 +34,20 @@ try:
 except ImportError:
     GPTQ_ENABLED = False
 
-ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 MICRO_MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MICRO_MODELS_HOME", "/mnt/home/models/tiny-models")
 
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
+GRANITE_3p3_8B_INSTRUCT = "ibm-granite/granite-3.3-8b-instruct"
 GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
 LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
 
 micro_model_mapping = {
     LLAMA_3p1_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-8b-layers-3-step-24000"),
     GRANITE_3p2_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-100000"),
+    # FIXME: Because this uses the same config as 3.2, re-using here, but should update
+    GRANITE_3p3_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-100000"),
     LLAMA_3p1_70B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-70b-layers-3-step-24000")
 }
 
@@ -67,6 +69,7 @@ common_model_paths = os.environ.get(
     [
         LLAMA_3p1_8B_INSTRUCT,
         GRANITE_3p2_8B_INSTRUCT,
+        GRANITE_3p3_8B_INSTRUCT,
         GRANITE_20B_CODE_INSTRUCT_8K,
         LLAMA_3p1_70B_INSTRUCT,
     ],
@@ -149,6 +152,10 @@ fail_thresholds = {
         2.3919514417648315,
         0.0005767398688476533,
     ),
+    (GRANITE_3p3_8B_INSTRUCT, False): (
+        2.4444521379470827,
+        0.0004970188625156878,
+    ),
     (GRANITE_20B_CODE_INSTRUCT_8K, False): (
         2.640706129074097,
         0.00034344267623964697,
@@ -171,10 +178,6 @@ def reset_compiler():
     torch.compiler.reset()
     torch._dynamo.reset()
     os.environ.pop("COMPILATION_MODE", None)
-    if ORIGINAL_HF_HOME is None:
-        os.environ.pop("HF_HOME", None)
-    else:
-        os.environ["HF_HOME"] = ORIGINAL_HF_HOME
 
 
 # TODO: Currently, gptq does not have the same level of support as non-gptq models for get_model. This method provides the extra requirements for gptq for get_model,
@@ -315,9 +318,6 @@ def __maybe_reset_model(model, is_gptq):
 def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
-
-    if "HF_HOME" not in os.environ:
-        os.environ["HF_HOME"] = "/tmp/models/hf_cache"
 
     dprint(
         f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}"
