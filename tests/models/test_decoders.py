@@ -39,6 +39,7 @@ ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
+GRANITE_3p3_8B_INSTRUCT = "ibm-granite/granite-3.3-8b-instruct"
 GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
 LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
 
@@ -54,7 +55,7 @@ validation_info_dir = os.environ.get(
 )
 common_model_paths = os.environ.get(
     "FMS_TEST_SHAPES_COMMON_MODEL_PATHS",
-    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
+    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_3p3_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
 )
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
@@ -147,6 +148,10 @@ fail_thresholds = {
     (GRANITE_3p2_8B_INSTRUCT, False): (
         2.3919514417648315,
         0.0005767398688476533,
+    ),
+    (GRANITE_3p3_8B_INSTRUCT, False): (
+        2.4444521379470827,
+        0.0004970188625156878,
     ),
     (GRANITE_20B_CODE_INSTRUCT_8K, False): (
         2.640706129074097,
