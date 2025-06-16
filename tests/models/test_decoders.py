@@ -47,6 +47,7 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
 )
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
+ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
 FORCE_VALIDATION_LEVEL_1 = os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
 skip_assertions = os.environ.get("FMS_TEST_SHAPES_SKIP_ASSERTIONS", {})
 validation_info_dir = os.environ.get(
@@ -109,6 +110,10 @@ if isinstance(skip_assertions, str):
             pytest.fail("FMS_TEST_SHAPES_SKIP_ASSERTIONS can only accept metrics ce and mean_diff")
         _skip_assertions.append(metric)
     skip_assertions = set(_skip_assertions)
+
+if ATTN_TYPE == "paged":
+    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(max(common_seq_lengths) + max(common_max_new_tokens) - 1)
+    os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(common_batch_sizes))
 
 common_shapes = list(
     itertools.product(
@@ -307,6 +312,32 @@ def __maybe_reset_model(model, is_gptq):
                 res /= 20.0
             param.copy_(res)
 
+global global_model
+global_model = None
+def get_global_model_or_create(is_gptq, **kwargs):
+    global global_model
+    # we want to keep a global model when attn_type==paged as it can be re-used for all tests (if one test fails they'll all fail compilation)
+    if global_model is None:
+        
+        model = get_model(
+            device_type="cpu",
+            data_type=None if is_gptq else torch.float16,
+            fused_weights=False,
+            **kwargs,
+        )
+        __maybe_reset_model(model, is_gptq)
+
+        model.eval()
+        torch.set_grad_enabled(False)
+        model.compile(backend="sendnn")
+
+        if ATTN_TYPE == "paged":
+            global_model = model
+        
+        return model
+    else:
+        return global_model
+
 
 @pytest.mark.parametrize(
     "model_path,batch_size,seq_length,max_new_tokens", common_shapes
@@ -352,13 +383,8 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     tokenizer = tokenizers.get_tokenizer(model_path)
 
     # prepare the AIU model
-    model = get_model(
-        device_type="cpu",
-        data_type=None if is_gptq else torch.float16,
-        fused_weights=False,
-        **gptq_kwargs_aiu,
-        **get_model_kwargs,
-    )
+    model = get_global_model_or_create(is_gptq, **gptq_kwargs_aiu, **get_model_kwargs)
+
     __maybe_reset_model(model, is_gptq)
 
     model.eval()
@@ -383,7 +409,9 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
 
     # warmup aiu model
-    warmup_model(model, input_ids, max_new_tokens, **padding_kwargs)
+    compile_dynamic_sendnn = ATTN_TYPE == "paged"
+    max_seq_len = int(os.environ["VLLM_DT_MAX_CONTEXT_LEN"]) if ATTN_TYPE == "paged" else -1
+    warmup_model(model, input_ids, max_new_tokens, compile_dynamic_sendnn=compile_dynamic_sendnn, attn_type=ATTN_TYPE, max_seq_len=max_seq_len, **padding_kwargs)
 
     # generate cpu validation info
     cpu_validation_info = __load_validation_info(
@@ -415,7 +443,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     # first test validation level 0
     aiu_validation_info = extract_validation_information(
-        model, input_ids, max_new_tokens, None, only_last_token=True, **padding_kwargs
+        model, input_ids, max_new_tokens, None, only_last_token=ATTN_TYPE != "paged", max_seq_len=max_seq_len, attn_type=ATTN_TYPE, **padding_kwargs
     )
     dprint("aiu validation info extracted for validation level 0")
 
@@ -490,7 +518,9 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                 input_ids,
                 max_new_tokens,
                 GoldenTokenHook(cpu_static_tokens),
-                only_last_token=True,
+                only_last_token=ATTN_TYPE != "paged", 
+                max_seq_len=max_seq_len, 
+                attn_type=ATTN_TYPE, 
                 **padding_kwargs,
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
