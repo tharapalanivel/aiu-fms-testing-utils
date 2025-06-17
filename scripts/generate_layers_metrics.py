@@ -29,8 +29,7 @@ common_batch_sizes = [1]
 common_seq_lengths = [64]
 common_max_new_tokens = [128]
 
-output_dir = os.environ.get("OUTPUT_PATH", os.path.expanduser("~/tmp/output")
-)
+output_dir = os.environ.get("OUTPUT_PATH", "/tmp/output")
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/granite-3-8b-base,/tmp/models/granite-7b-base"
 if isinstance(common_model_paths, str):
@@ -199,9 +198,17 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
 def write_csv(l, path, metric):
     with open(path, 'w') as f:
         f.write(f'{metric}\n')
-        for t in l:
-            f.write(f"{t[2].item()}\n") 
+        if type(l) is list:
+            for t in l:
+                f.write(f"{t}\n") 
+        else:
+            f.write(f"{l}\n") 
         f.close()
+
+def convert_tensor(output):
+    out_unique = set(output)
+    keys = {key: value for key, value in zip(out_unique, range(len(out_unique)))}
+    return torch.zeros(size=(len(output), len(keys)))
 
 def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     torch.manual_seed(42)
@@ -249,43 +256,46 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                              tokenizer=tokenizer)
     
     absolute_differences = []
+    mean_diff_list = []
+    median_diff_list = []
+    abs_diff_list = []
 
     assert len(layer_stack_cuda) == len(layer_stack_cpu)
 
-    for layer, cuda_out in layer_stack_cuda:
+    for layer, cuda_output in layer_stack_cuda:
         for cpu_layer, cpu_output in layer_stack_cpu:
             if cpu_layer == layer:
                 print("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
 
-                if not type(cuda_out) is tuple:
-                    tensor_cpu_cuda_out = cuda_out.to(torch.device('cpu'))
+                if not type(cuda_output) is tuple:
+                    tensor_cuda_out = cuda_output.to(torch.device('cpu'))
                 else:
-                    cuda_out_unique = set(cuda_out)
-                    keys = {key: value for key, value in zip(cuda_out_unique, range(len(cuda_out_unique)))}
-                    tensor_cpu_cuda_out = torch.zeros(size=(len(cuda_out), len(keys)))
-                
-                abs_diff = torch.abs(cpu_output - tensor_cpu_cuda_out).flatten().tolist()
-                absolute_differences.extend(abs_diff)
+                    tensor_cuda_out = convert_tensor(cuda_output)
+                if type(cpu_output) is tuple:
+                    tensor_cpu_out = convert_tensor(cpu_output)
+                else:
+                    tensor_cpu_out = cpu_output
 
+                abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
+                absolute_differences.extend(abs_diff)
         if len(absolute_differences) == 0:
             abs_diff = {"mean": float('nan'), "median": float('nan'), "q1": float('nan'), "q3": float('nan')}
 
-    abs_diff_tensor = torch.tensor(absolute_differences)
-    abs_diff_tensor = torch.nan_to_num(abs_diff_tensor, nan=0.0)
-    mean_diff = torch.mean(abs_diff_tensor).item()
-    median_diff = torch.median(abs_diff_tensor).item()
+        abs_diff_tensor = torch.tensor(absolute_differences)
+        abs_diff_tensor = torch.nan_to_num(abs_diff_tensor, nan=0.0)
+        mean_diff = torch.mean(abs_diff_tensor).item()
+        median_diff = torch.median(abs_diff_tensor).item()
 
-    return abs_diff, mean_diff, median_diff
+        prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
+
+        write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer}.abs_diff.csv"), "abs_diff")
+        write_csv(mean_diff, os.path.join(output_dir, f"{prefix}--{layer}.mean_diff.csv"), "mean_diff")
+        write_csv(median_diff, os.path.join(output_dir, f"{prefix}--{layer}.median_diff.csv"), "median_diff")
+        
+    print(f"Completed {model_id} layers' metrics generation")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     print("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
     abs_diff, mean_diff, median_diff = generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
 
-    prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
-    if os.path.exists(os.path.join(output_dir, f"{prefix}.abs_diff.csv")):
-        print("skipping metric generation as it has already been done")
-        exit(0)
-    write_csv(abs_diff, os.path.join(output_dir, f"{prefix}.abs_diff.csv"), "abs_diff")
-    write_csv(mean_diff, os.path.join(output_dir, f"{prefix}.mean_diff.csv"), "mean_diff")
-    write_csv(median_diff, os.path.join(output_dir, f"{prefix}.median_diff.csv"), "median_diff")
     
