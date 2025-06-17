@@ -257,7 +257,13 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
             if cpu_layer == layer:
                 print("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
 
-                tensor_cpu_cuda_out = cuda_out.to(torch.device('cpu'))
+                if not type(cuda_out) is tuple:
+                    tensor_cpu_cuda_out = cuda_out.to(torch.device('cpu'))
+                else:
+                    cuda_out_unique = set(cuda_out)
+                    keys = {key: value for key, value in zip(cuda_out_unique, range(len(cuda_out_unique)))}
+                    tensor_cpu_cuda_out = torch.zeros(size=(len(cuda_out), len(keys)))
+                
                 abs_diff = torch.abs(cpu_output - tensor_cpu_cuda_out).flatten().tolist()
                 absolute_differences.extend(abs_diff)
 
