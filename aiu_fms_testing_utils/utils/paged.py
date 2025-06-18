@@ -1,3 +1,4 @@
+import os
 import random
 import time
 from typing import Any, Callable, List, MutableMapping, Optional, Tuple, Union
@@ -105,7 +106,9 @@ def generate(
     result = input_ids
     next_input = input_ids
     BLOCK_SIZE = 64
-    NUM_BLOCKS = 2 * max_seq_len // BLOCK_SIZE
+    MAX_BATCH = int(os.environ.get("VLLM_DT_MAX_BATCH_SIZE", input_ids.size(0)))
+    MAX_CONTEXT = int(os.environ.get("VLLM_DT_MAX_CONTEXT_LEN", max_seq_len))
+    NUM_BLOCKS = (MAX_BATCH * MAX_CONTEXT // BLOCK_SIZE) + 1 # add 1 for pad block
     if hasattr(model, "head"):
         model_dtype = model.head.weight.dtype
     elif hasattr(model, "shared"):
@@ -142,18 +145,22 @@ def generate(
     ]
     kwargs["block_table"] = None
     block_numbers = [i for i in range(NUM_BLOCKS)]
+    PAD_BLOCK = block_numbers.pop(0)
     # this will ensure we don't have contiguous blocks
     random.seed(0)
     random.shuffle(block_numbers)
     left_padded_prompt_mask = (kwargs["position_ids"] == 0).sum(dim=1) - 1
+    
     current_context_lengths = (kwargs["position_ids"] != 0).sum(dim=1) + 1
+    current_tkv_mask_removed_empty_pages = left_padded_prompt_mask + current_context_lengths - ((left_padded_prompt_mask // BLOCK_SIZE) * BLOCK_SIZE)
     current_tkv_mask = left_padded_prompt_mask + current_context_lengths
     slot_mapping = []
     block_table = []
-    for seq_i in input_ids:
+    # each sequence has the possibility of a different tkv, so loop over that
+    for seq_tkv in current_tkv_mask_removed_empty_pages:
         block_table_i = []
         slot_mapping_i = []
-        for pos_i in range(seq_i.size(0)):
+        for pos_i in range(seq_tkv):
             if pos_i % BLOCK_SIZE == 0:
                 block_number = block_numbers.pop(0)
                 block_table_i.append(block_number)
@@ -162,7 +169,6 @@ def generate(
             slot_mapping_i.append(slot)
         slot_mapping.append(slot_mapping_i)
         block_table.append(block_table_i)
-    kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
     kwargs["current_tkv_mask"] = None
     kwargs["left_padded_prompt_mask"] = None
     kwargs["use_cache"] = use_cache
@@ -181,18 +187,22 @@ def generate(
         if i > 0:
             kwargs["mask"] = None
             kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
-            pos_i = result.size(1) - 1
-            if pos_i % BLOCK_SIZE == 0:
-                for block_table_i in block_table:
-                    block_number = block_numbers.pop(0)
-                    block_table_i.append(block_number)
-            block_offset = pos_i % BLOCK_SIZE
 
+            # we no longer have a global pos_i, each sequence has its own pos_i
             slot_mapping = []
-            for block_table_i in block_table:
-                slot = block_table_i[-1] * BLOCK_SIZE + block_offset
+            for seq_i, pos_i in enumerate(current_tkv_mask):
+                if pos_i % BLOCK_SIZE == 0:
+                    block_number = block_numbers.pop(0)
+                    block_table[seq_i].append(block_number)
+
+                block_offset = pos_i % BLOCK_SIZE
+                slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
                 slot_mapping.append([slot])
-            kwargs["block_table"] = torch.tensor(block_table, dtype=torch.int64)
+            
+            # right pad the block_table since each sequence has a different tkv and may require more blocks
+            max_block_table_len = int(max(len(b) for b in block_table))
+            kwargs["block_table"] = torch.tensor([([PAD_BLOCK] * (max_block_table_len - len(b))) + b for b in block_table], dtype=torch.int64)
+
             kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
             current_tkv_mask = current_tkv_mask + 1
             kwargs["current_tkv_mask"] = current_tkv_mask
@@ -204,11 +214,12 @@ def generate(
 
             outputs_list = []
             current_kv_cache = kwargs["past_key_value_states"]
-            for seq_i in range(input_ids.size(0)):
-                input_ids_i = input_ids[seq_i].unsqueeze(0)
-                slot_mapping_i = kwargs["slot_mapping"][seq_i].unsqueeze(0)
-                position_ids_i = kwargs["position_ids"][seq_i].unsqueeze(0)
-                mask_i = kwargs["mask"][seq_i].unsqueeze(0)
+            for seq_i, current_tkv in enumerate(current_tkv_mask_removed_empty_pages):
+                # remove extra pads from the input_ids, slot_mapping, position_ids, mask to account for empty pages
+                input_ids_i = input_ids[seq_i][-current_tkv:].unsqueeze(0)
+                slot_mapping_i = torch.tensor(slot_mapping[seq_i][-current_tkv:], dtype=torch.int64).unsqueeze(0)
+                position_ids_i = kwargs["position_ids"][seq_i][-current_tkv:].unsqueeze(0)
+                mask_i = kwargs["mask"][seq_i][:, -current_tkv:, -current_tkv:].unsqueeze(0).contiguous()
 
                 # batch dynamic
                 torch._dynamo.mark_static(input_ids_i, 0)
@@ -240,6 +251,9 @@ def generate(
                     attn_name=kwargs["attn_name"],
                 )
 
+                if not kwargs.get("only_last_token", False):
+                    output = output[:, -1, :]
+
                 outputs_list.append(output[0].squeeze(0))
 
             output = (torch.stack(outputs_list), current_kv_cache)
@@ -266,7 +280,13 @@ def generate(
             #     torch._dynamo.mark_dynamic(k_i, 0)
             #     torch._dynamo.mark_dynamic(v_i, 0)
 
-            output = model(input_ids, **kwargs)
+            logits, past_key_value_states = model(input_ids, **kwargs)
+
+            if not kwargs.get("only_last_token", False):
+                logits = logits[:, -1, :]
+            
+            output = (logits, past_key_value_states)
+
         if use_cache:
             logits, past_key_value_states = output
             # TODO: this should go away when reduce-overhead issues are fixed, or
@@ -275,8 +295,6 @@ def generate(
         else:
             logits = output
 
-        if not kwargs.get("only_last_token", False):
-            logits = logits[:, -1, :]
 
         if do_sample:
             # get logits from last value in sequence nad scale

@@ -561,7 +561,7 @@ else:
         prompt1 = template.format(
             "Provide a list of instructions for preparing chicken soup."
         )
-        prompt2 = template.format("Explain some popular greetings in Spanish.")
+        prompt2 = template.format("Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish. Explain some popular greetings in Spanish.")
         prompt3 = template.format("Explain to me why ignorance is bliss.")
         prompt4 = template.format(
             "I have just come into a very large sum of money. Provide me a list of things that I can do with my new found wealth."
