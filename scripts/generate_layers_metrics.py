@@ -3,6 +3,7 @@ import time
 
 import itertools
 import torch
+import torch.nn as nn
 
 from fms.utils import tokenizers
 from fms.models import get_model
@@ -24,10 +25,13 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
     "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
 )
 
-common_model_paths = "ibm-granite/granite-3.2-8b-instruct"
-common_batch_sizes = [1]
-common_seq_lengths = [64]
-common_max_new_tokens = [128]
+common_model_paths = common_model_paths = os.environ.get(
+    "MODEL_PATHS",
+    ["ibm-granite/granite-3.2-8b-instruct"],
+)
+common_batch_sizes = os.environ.get("BATCH_SIZES", [1, 2, 4, 8])
+common_seq_lengths = os.environ.get("SEQ_LENGTHS", [64, 2048])
+common_max_new_tokens = os.environ.get("MAX_NEW_TOKENS", [128])
 
 output_dir = os.environ.get("OUTPUT_PATH", "/tmp/output")
 
@@ -196,17 +200,20 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
     return layer_stack
 
 def write_csv(l, path, metric):
+    print("saving file")
     with open(path, 'w') as f:
         f.write(f'{metric}\n')
-        if type(l) is list:
+        if not type(l) is float:
+            print("saving list")
             for t in l:
-                f.write(f"{t}\n") 
+                f.write(f"{t}\n")
         else:
-            f.write(f"{l}\n") 
+            print("saving float")
+            f.write(f"{l}\n")
         f.close()
 
 def convert_tensor(output):
-    out_unique = set(output)
+    out_unique = set(list(itertools.chain.from_iterable(output)))
     keys = {key: value for key, value in zip(out_unique, range(len(out_unique)))}
     return torch.zeros(size=(len(output), len(keys)))
 
@@ -256,9 +263,6 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                              tokenizer=tokenizer)
     
     absolute_differences = []
-    mean_diff_list = []
-    median_diff_list = []
-    abs_diff_list = []
 
     assert len(layer_stack_cuda) == len(layer_stack_cpu)
 
@@ -275,27 +279,26 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                     tensor_cpu_out = convert_tensor(cpu_output)
                 else:
                     tensor_cpu_out = cpu_output
-
+                print("tensor converted... get torch abs diff")
                 abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
-                absolute_differences.extend(abs_diff)
-        if len(absolute_differences) == 0:
-            abs_diff = {"mean": float('nan'), "median": float('nan'), "q1": float('nan'), "q3": float('nan')}
-
-        abs_diff_tensor = torch.tensor(absolute_differences)
-        abs_diff_tensor = torch.nan_to_num(abs_diff_tensor, nan=0.0)
-        mean_diff = torch.mean(abs_diff_tensor).item()
-        median_diff = torch.median(abs_diff_tensor).item()
+                cos = nn.CosineSimilarity()
+                cos_sim = cos(tensor_cpu_out - tensor_cuda_out)
+                
+        print("abs_diff and cos_sim calculated")
+        absolute_differences.append(abs_diff)
+        print("abs_diff list extended")
 
         prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
+        layer_name = str(layer).replace('[','').replace(']', '')
 
-        write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer}.abs_diff.csv"), "abs_diff")
-        write_csv(mean_diff, os.path.join(output_dir, f"{prefix}--{layer}.mean_diff.csv"), "mean_diff")
-        write_csv(median_diff, os.path.join(output_dir, f"{prefix}--{layer}.median_diff.csv"), "median_diff")
+        print("saving files")
+        write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv"), "abs_diff")
+        write_csv(cos_sim, os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv"), "cos_sim")
         
     print(f"Completed {model_id} layers' metrics generation")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     print("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
-    abs_diff, mean_diff, median_diff = generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
+    generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
 
     
