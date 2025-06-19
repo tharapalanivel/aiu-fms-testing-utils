@@ -267,26 +267,31 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     assert len(layer_stack_cuda) == len(layer_stack_cpu)
 
     for layer, cuda_output in layer_stack_cuda:
+        tensor_cuda_out = None
+        tensor_cpu_out = None
+        abs_diff = None
         for cpu_layer, cpu_output in layer_stack_cpu:
             if cpu_layer == layer:
                 print("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
 
                 if not type(cuda_output) is tuple:
-                    tensor_cuda_out = cuda_output.to(torch.device('cpu'))
+                    tensor_cuda_out = cuda_output
                 else:
                     tensor_cuda_out = convert_tensor(cuda_output)
                 if type(cpu_output) is tuple:
                     tensor_cpu_out = convert_tensor(cpu_output)
                 else:
-                    tensor_cpu_out = cpu_output
+                    tensor_cpu_out = cpu_output.to('cuda')
                 print("tensor converted... get torch abs diff")
                 abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
-                cos = nn.CosineSimilarity()
-                cos_sim = cos(tensor_cpu_out - tensor_cuda_out)
-                
-        print("abs_diff and cos_sim calculated")
+                print("abs_diff calculated")
+                cos = nn.CosineSimilarity(dim=1)
+                cos_sim = cos(tensor_cpu_out, tensor_cuda_out)
+                print(cos_sim)
+
         absolute_differences.append(abs_diff)
-        print("abs_diff list extended")
+        print("abs_diff list appended")
+        print(len(absolute_differences))
 
         prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
         layer_name = str(layer).replace('[','').replace(']', '')
