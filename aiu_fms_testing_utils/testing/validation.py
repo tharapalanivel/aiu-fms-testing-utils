@@ -193,6 +193,7 @@ def extract_validation_information(model, input_ids, max_new_tokens, post_iterat
     if attn_type == "paged":
         from aiu_fms_testing_utils.utils.paged import generate
     else:
+        # TODO: Add a unified generation dependent on attn_type
         from fms.utils.generation import generate
         attention_specific_kwargs["contiguous_cache"] = True
         attention_specific_kwargs["max_seq_len"] = max_seq_len

@@ -294,60 +294,65 @@ def __load_validation_info(
     else:
         return None
 
+class PersistentModel:
+    """This class will either get a model that is pre-compiled (if compile_dynamic_sendnn) or re-create the model for each test"""
+    def __init__(self):
+        self.model = None
 
-# TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
-#  however the gptq modules are yet to support this
-def __maybe_reset_model(model, is_gptq):
-    if USE_MICRO_MODELS and is_gptq:
-        sd = model.state_dict()
-        for key, param in sd.items():
-            if "qweight" in key:
-                res = torch.randint(
-                    low=0,
-                    high=torch.iinfo(torch.int32).max,
-                    size=param.shape,
-                    dtype=torch.int32,
-                )
-                sd[key].copy_(res)
-            elif "qzeros" in key:
-                res = torch.ones(param.shape, dtype=torch.int32) * 8
-            elif "g_idx" in key:
-                res = param
-            else:
-                res = torch.randn_like(param)
-                res -= 0.5
-                res /= 20.0
-            param.copy_(res)
+    def get_or_create(self, is_gptq, **kwargs):
+        if self.model is None:
+            model = get_model(
+                device_type="cpu",
+                data_type=None if is_gptq else torch.float16,
+                fused_weights=False,
+                **kwargs,
+            )
+            self.__maybe_reset_model(model, is_gptq)
 
-global global_model
-global_model = None
-def get_global_model_or_create(is_gptq, **kwargs):
-    global global_model
-    # we want to keep a global model when attn_type==paged as it can be re-used for all tests (if one test fails they'll all fail compilation)
-    if global_model is None:
-        model = get_model(
-            device_type="cpu",
-            data_type=None if is_gptq else torch.float16,
-            fused_weights=False,
-            **kwargs,
-        )
-        __maybe_reset_model(model, is_gptq)
+            model.eval()
+            model.compile(backend="sendnn", options={'sendnn.dynamic': compile_dynamic_sendnn})
 
-        model.eval()
-        model.compile(backend="sendnn", options={'sendnn.dynamic': compile_dynamic_sendnn})
+            if compile_dynamic_sendnn:
+                self.model = model
+            
+            return model
+        else:
+            return self.model
+    
+    # TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
+    #  however the gptq modules are yet to support this
+    @staticmethod
+    def __maybe_reset_model(model, is_gptq):
+        if USE_MICRO_MODELS and is_gptq:
+            sd = model.state_dict()
+            for key, param in sd.items():
+                if "qweight" in key:
+                    res = torch.randint(
+                        low=0,
+                        high=torch.iinfo(torch.int32).max,
+                        size=param.shape,
+                        dtype=torch.int32,
+                    )
+                    sd[key].copy_(res)
+                elif "qzeros" in key:
+                    res = torch.ones(param.shape, dtype=torch.int32) * 8
+                elif "g_idx" in key:
+                    res = param
+                else:
+                    res = torch.randn_like(param)
+                    res -= 0.5
+                    res /= 20.0
+                param.copy_(res)
 
-        if compile_dynamic_sendnn:
-            global_model = model
-        
-        return model
-    else:
-        return global_model
+@pytest.fixture
+def persistent_model():
+    return PersistentModel()
 
 
 @pytest.mark.parametrize(
     "model_path,batch_size,seq_length,max_new_tokens", common_shapes
 )
-def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persistent_model):
     torch.manual_seed(42)
     torch.set_grad_enabled(False)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
@@ -391,7 +396,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     tokenizer = tokenizers.get_tokenizer(model_path)
 
     # prepare the AIU model
-    model = get_global_model_or_create(is_gptq, **gptq_kwargs_aiu, **get_model_kwargs)
+    model = persistent_model.get_or_create(is_gptq, **gptq_kwargs_aiu, **get_model_kwargs)
 
     # prepare the cpu model
     validation_model = get_model(

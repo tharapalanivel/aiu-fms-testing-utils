@@ -15,6 +15,7 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
     if attn_type == "paged":
         from aiu_fms_testing_utils.utils.paged import generate, adjust_inputs_to_batch
     else:
+        # TODO: Add a unified generation dependent on attn_type
         from fms.utils.generation import generate
         attention_specific_kwargs["contiguous_cache"] = True
     

@@ -77,6 +77,7 @@ def generate(
             For example: if extra_kwargs contains position_ids and mask keys, these
             model parameters will be updated as-appropriate for each token generated.
     """
+    random.seed(0)
     if num_beams != 1:
         raise NotImplementedError("generate() does yet not support beam search")
 
@@ -112,6 +113,7 @@ def generate(
     if hasattr(model, "head"):
         model_dtype = model.head.weight.dtype
     elif hasattr(model, "shared"):
+        # TODO: Rework the llama model (should be able to use head instead of shared)
         model_dtype = model.shared.head.weight.dtype
     else:
         model_dtype = torch.float32
@@ -146,7 +148,6 @@ def generate(
     kwargs["block_table"] = None
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
-    random.seed(0)
     random.shuffle(block_numbers)
     left_padded_prompt_mask = (kwargs["position_ids"] == 0).sum(dim=1) - 1
     current_context_lengths = (kwargs["position_ids"] != 0).sum(dim=1) + 1
