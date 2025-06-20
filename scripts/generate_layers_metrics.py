@@ -305,5 +305,3 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     print("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
     generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
-
-    
