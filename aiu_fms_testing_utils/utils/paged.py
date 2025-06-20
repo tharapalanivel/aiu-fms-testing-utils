@@ -1,3 +1,4 @@
+import os
 import random
 import time
 from typing import Any, Callable, List, MutableMapping, Optional, Tuple, Union
@@ -105,7 +106,10 @@ def generate(
     result = input_ids
     next_input = input_ids
     BLOCK_SIZE = 64
-    NUM_BLOCKS = 2 * max_seq_len // BLOCK_SIZE
+    _MAX_BATCH = int(os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", input_ids.size(0)))
+    _MAX_CONTEXT_LENGTH = int(os.environ.setdefault("VLLM_DT_MAX_CONTEXT_LEN", ((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) * BLOCK_SIZE))
+    NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
+    max_seq_len = input_ids.size(1) + max_new_tokens
     if hasattr(model, "head"):
         model_dtype = model.head.weight.dtype
     elif hasattr(model, "shared"):
@@ -223,10 +227,6 @@ def generate(
                 torch._dynamo.mark_dynamic(mask_i, 2)
                 torch._dynamo.mark_dynamic(mask_i, 3)
 
-                # for k_i, v_i in current_kv_cache:
-                #     torch._dynamo.mark_dynamic(k_i, 0)
-                #     torch._dynamo.mark_dynamic(v_i, 0)
-
                 only_last_token = kwargs.get("only_last_token", False)
 
                 output, current_kv_cache = model(
@@ -261,10 +261,6 @@ def generate(
             torch._dynamo.mark_dynamic(kwargs["block_table"], 1)
             torch._dynamo.mark_static(kwargs["slot_mapping"], 1)  # always 1
             torch._dynamo.mark_static(kwargs["position_ids"], 1)  # always 1
-
-            # for k_i, v_i in kwargs["past_key_value_states"]:
-            #     torch._dynamo.mark_dynamic(k_i, 0)
-            #     torch._dynamo.mark_dynamic(v_i, 0)
 
             output = model(input_ids, **kwargs)
         if use_cache:
