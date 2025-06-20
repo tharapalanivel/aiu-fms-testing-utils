@@ -27,7 +27,6 @@ def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
 def generate(
     model: Union[Callable, torch.nn.Module],
     input_ids: torch.Tensor,
-    max_seq_len: int = 4096,
     max_new_tokens: int = 256,
     temperature: float = 1.0,
     top_k: int = 10,
@@ -287,9 +286,19 @@ def generate(
             next_val = torch.argmax(logits, dim=-1).unsqueeze(0).t()
 
         if post_iteration_hook is not None:
-            next_val, kwargs = post_iteration_hook(
-                i + prompt_length, logits, next_val, kwargs
+            _logits = logits
+            _next_val = next_val
+            # since we cannot handle batch size 1 and mimic with batch size 2, we need to only pass in the first logits/next_val
+            if not is_batch:
+                _logits = logits[0].unsqueeze(0)
+                _next_val = _next_val[0].unsqueeze(0)
+            _next_val, kwargs = post_iteration_hook(
+                i + prompt_length, _logits, _next_val, kwargs
             )
+            # we need to normalize back to batch size 2
+            if not is_batch:
+                # we need to do an in-place copy here for the same reason we do in-place copy for injecting tokens
+                next_val.copy_(torch.cat((_next_val, _next_val), dim=0))
 
         result = torch.cat((result, next_val), dim=-1)
 

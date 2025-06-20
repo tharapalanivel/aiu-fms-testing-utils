@@ -195,6 +195,7 @@ def extract_validation_information(model, input_ids, max_new_tokens, post_iterat
     else:
         from fms.utils.generation import generate
         attention_specific_kwargs["contiguous_cache"] = True
+        attention_specific_kwargs["max_seq_len"] = max_seq_len
 
     # Add only_last_token optimization
     extra_generation_kwargs = {**padding_kwargs}
@@ -209,7 +210,6 @@ def extract_validation_information(model, input_ids, max_new_tokens, post_iterat
         max_new_tokens=max_new_tokens,
         use_cache=True,
         do_sample=False,
-        max_seq_len=max_seq_len,
         post_iteration_hook=post_iteration_hook,
         eos_token_id=eos_token_id,
         timing=timing,
