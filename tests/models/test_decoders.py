@@ -134,7 +134,7 @@ if isinstance(skip_assertions, str):
 compile_dynamic_sendnn = ATTN_TYPE == "paged"
 
 if compile_dynamic_sendnn:
-    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) * 64)
+    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str((((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) + 1) * 64)
     os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(common_batch_sizes))
 
 common_shapes = list(

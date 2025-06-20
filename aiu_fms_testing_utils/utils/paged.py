@@ -105,8 +105,8 @@ def generate(
     result = input_ids
     next_input = input_ids
     BLOCK_SIZE = 64
-    _MAX_BATCH = int(os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", input_ids.size(0)))
-    _MAX_CONTEXT_LENGTH = int(os.environ.setdefault("VLLM_DT_MAX_CONTEXT_LEN", ((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) * BLOCK_SIZE))
+    _MAX_BATCH = int(os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", str(input_ids.size(0))))
+    _MAX_CONTEXT_LENGTH = int(os.environ.setdefault("VLLM_DT_MAX_CONTEXT_LEN", str((((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) + 1) * BLOCK_SIZE)))
     NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
     max_seq_len = input_ids.size(1) + max_new_tokens
     if hasattr(model, "head"):
