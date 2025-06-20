@@ -58,7 +58,6 @@ USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
 
 ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
-
 FORCE_VALIDATION_LEVEL_1 = (
     os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
 )
@@ -183,10 +182,16 @@ __custom_adapter = {"architecture": "llama", "source": "fms_aiu"}
 @pytest.fixture(autouse=True)
 def reset_compiler():
     yield  # run the test
+<<<<<<< HEAD
     if not compile_dynamic_sendnn:
         torch.compiler.reset()
         torch._dynamo.reset()
         os.environ.pop("COMPILATION_MODE", None)
+=======
+    torch.compiler.reset()
+    torch._dynamo.reset()
+    os.environ.pop("COMPILATION_MODE", None)
+>>>>>>> main
 
 
 # TODO: Currently, gptq does not have the same level of support as non-gptq models for get_model. This method provides the extra requirements for gptq for get_model,
