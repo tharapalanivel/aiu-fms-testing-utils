@@ -182,16 +182,10 @@ __custom_adapter = {"architecture": "llama", "source": "fms_aiu"}
 @pytest.fixture(autouse=True)
 def reset_compiler():
     yield  # run the test
-<<<<<<< HEAD
     if not compile_dynamic_sendnn:
         torch.compiler.reset()
         torch._dynamo.reset()
         os.environ.pop("COMPILATION_MODE", None)
-=======
-    torch.compiler.reset()
-    torch._dynamo.reset()
-    os.environ.pop("COMPILATION_MODE", None)
->>>>>>> main
 
 
 # TODO: Currently, gptq does not have the same level of support as non-gptq models for get_model. This method provides the extra requirements for gptq for get_model,
