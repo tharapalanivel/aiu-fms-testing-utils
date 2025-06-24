@@ -35,8 +35,6 @@ def sendnn_scaled_bmm(
     mat2: Tensor,
     scale1: Tensor,
     scale2: Tensor,
-    bias: Optional[Tensor] = None,
-    scale_result: Optional[Tensor] = None,
     out_dtype: Optional[torch.dtype] = None,
     use_fast_accum: bool = False,
 ) -> Tensor:
@@ -59,10 +57,6 @@ def sendnn_scaled_bmm(
     mat2 = mat2.view(-1, *mat2.shape[-2:])
     scale1 = scale1.view(-1, *scale1.shape[-2:])
     scale2 = scale2.view(-1, *scale2.shape[-2:])
-    if bias:
-        bias = bias.view(-1, *bias.shape[-2:])
-    if scale_result:
-        scale_result = scale_result.view(-1, *scale_result.shape[-2:])
     out = torch.empty(
         (mat1.shape[0], mat1.shape[1], mat2.shape[2]),
         dtype=out_dtype,
@@ -74,8 +68,6 @@ def sendnn_scaled_bmm(
             mat2[b_idx],
             scale1[b_idx],
             scale2[b_idx],
-            bias[b_idx] if bias else None,
-            scale_result[b_idx] if scale_result else None,
             out_dtype,
             use_fast_accum,
         )
@@ -89,8 +81,6 @@ def _(
     mat2: Tensor,
     scale1: Tensor,
     scale2: Tensor,
-    bias: Optional[Tensor] = None,
-    scale_result: Optional[Tensor] = None,
     out_dtype: Optional[torch.dtype] = None,
     use_fast_accum: bool = False,
 ) -> Tensor:
