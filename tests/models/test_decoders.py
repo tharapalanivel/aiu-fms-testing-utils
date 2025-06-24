@@ -34,34 +34,52 @@ try:
 except ImportError:
     GPTQ_ENABLED = False
 
-ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
+MICRO_MODELS_HOME = os.environ.get("FMS_TEST_SHAPES_MICRO_MODELS_HOME", "/mnt/home/models/tiny-models")
 
 # Add models to test here
 LLAMA_3p1_8B_INSTRUCT = "meta-llama/Llama-3.1-8B-Instruct"
 GRANITE_3p2_8B_INSTRUCT = "ibm-granite/granite-3.2-8b-instruct"
+GRANITE_3p3_8B_INSTRUCT = "ibm-granite/granite-3.3-8b-instruct"
 GRANITE_20B_CODE_INSTRUCT_8K = "ibm-granite/granite-20b-code-instruct-8k"
 LLAMA_3p1_70B_INSTRUCT = "meta-llama/Llama-3.1-70B-Instruct"
+
+micro_model_mapping = {
+    LLAMA_3p1_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-8b-layers-3-step-24000"),
+    GRANITE_3p2_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-100000"),
+    # FIXME: Because this uses the same config as 3.2, re-using here, but should update
+    GRANITE_3p3_8B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "granite-3.2-8b-layers-3-step-100000"),
+    LLAMA_3p1_70B_INSTRUCT: os.path.join(MICRO_MODELS_HOME, "llama-3.1-70b-layers-3-step-24000")
+}
 
 SHARE_GPT_DATASET_PATH = os.environ.get(
     "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
 )
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
+
 ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
-FORCE_VALIDATION_LEVEL_1 = os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
+FORCE_VALIDATION_LEVEL_1 = (
+    os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
+)
 skip_assertions = os.environ.get("FMS_TEST_SHAPES_SKIP_ASSERTIONS", {})
 validation_info_dir = os.environ.get(
     "FMS_TEST_SHAPES_VALIDATION_INFO_DIR", "/tmp/models/validation_info"
 )
 common_model_paths = os.environ.get(
     "FMS_TEST_SHAPES_COMMON_MODEL_PATHS",
-    [LLAMA_3p1_8B_INSTRUCT, GRANITE_3p2_8B_INSTRUCT, GRANITE_20B_CODE_INSTRUCT_8K, LLAMA_3p1_70B_INSTRUCT],
+    [
+        LLAMA_3p1_8B_INSTRUCT,
+        GRANITE_3p2_8B_INSTRUCT,
+        GRANITE_3p3_8B_INSTRUCT,
+        GRANITE_20B_CODE_INSTRUCT_8K,
+        LLAMA_3p1_70B_INSTRUCT,
+    ],
 )
 # for validation level 1, the default is a failure rate of 1%
 # set this environment variable if you would like to relax that threshold
 failure_rate_threshold = os.environ.get("FMS_TEST_SHAPES_FAILURE_THRESHOLD", 0.01)
 default_metrics_threshold = os.environ.get(
-    "FMS_TEST_SHAPES_METRICS_THRESHOLD", (3.0, .001)
+    "FMS_TEST_SHAPES_METRICS_THRESHOLD", (3.0, 0.001)
 )
 save_validation_info_outputs = (
     os.environ.get("FMS_TEST_SHAPES_SAVE_VALIDATION_INFO_OUTPUTS", "0") == "1"
@@ -87,7 +105,9 @@ if isinstance(failure_rate_threshold, str):
 
 # pass custom default metrics threshold as a comma separated str of floats <cross-entropy threshold>,<mean diff threshold>
 if isinstance(default_metrics_threshold, str):
-    default_metrics_threshold = tuple([float(m) for m in default_metrics_threshold.split(",")])
+    default_metrics_threshold = tuple(
+        [float(m) for m in default_metrics_threshold.split(",")]
+    )
 
 # pass custom common batch sizes as a comma separated str of ints
 if isinstance(common_batch_sizes, str):
@@ -111,8 +131,10 @@ if isinstance(skip_assertions, str):
         _skip_assertions.append(metric)
     skip_assertions = set(_skip_assertions)
 
-if ATTN_TYPE == "paged":
-    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(max(common_seq_lengths) + max(common_max_new_tokens) - 1)
+compile_dynamic_sendnn = ATTN_TYPE == "paged"
+
+if compile_dynamic_sendnn:
+    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str((((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) + 1) * 64)
     os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(common_batch_sizes))
 
 common_shapes = list(
@@ -129,22 +151,6 @@ common_shapes = list(
 # if a models failure thresholds do not exist in this dict, default to the default_metrics_threshold defined above
 # threshold key is (model_id, is_tiny_model)
 fail_thresholds = {
-    (LLAMA_3p1_8B_INSTRUCT, True): (
-        3.7392955756187423,
-        .001, # FIXME: compute
-    ),
-    (GRANITE_3p2_8B_INSTRUCT, True): (
-        2.996668996810913,
-        .001, # FIXME: compute
-    ),
-    (GRANITE_20B_CODE_INSTRUCT_8K, True): (
-        3.7392955756187423, # FIXME: compute -- setting to micro llama 3.1 8b instruct
-        .001, # FIXME: compute
-    ),
-    (LLAMA_3p1_70B_INSTRUCT, True): (
-        3.8235735702514626,
-        .001, # FIXME: compute
-    ),
     (LLAMA_3p1_8B_INSTRUCT, False): (
         2.6994638133048965,
         0.00047589250549208347,
@@ -152,6 +158,10 @@ fail_thresholds = {
     (GRANITE_3p2_8B_INSTRUCT, False): (
         2.3919514417648315,
         0.0005767398688476533,
+    ),
+    (GRANITE_3p3_8B_INSTRUCT, False): (
+        2.4444521379470827,
+        0.0004970188625156878,
     ),
     (GRANITE_20B_CODE_INSTRUCT_8K, False): (
         2.640706129074097,
@@ -172,13 +182,10 @@ __custom_adapter = {"architecture": "llama", "source": "fms_aiu"}
 @pytest.fixture(autouse=True)
 def reset_compiler():
     yield  # run the test
-    torch.compiler.reset()
-    torch._dynamo.reset()
-    os.environ.pop("COMPILATION_MODE", None)
-    if ORIGINAL_HF_HOME is None:
-        os.environ.pop("HF_HOME", None)
-    else:
-        os.environ["HF_HOME"] = ORIGINAL_HF_HOME
+    if not compile_dynamic_sendnn:
+        torch.compiler.reset()
+        torch._dynamo.reset()
+        os.environ.pop("COMPILATION_MODE", None)
 
 
 # TODO: Currently, gptq does not have the same level of support as non-gptq models for get_model. This method provides the extra requirements for gptq for get_model,
@@ -287,67 +294,68 @@ def __load_validation_info(
     else:
         return None
 
+class PersistentModel:
+    """This class will either get a model that is pre-compiled (if compile_dynamic_sendnn) or re-create the model for each test"""
+    def __init__(self):
+        self.model = None
 
-# TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
-#  however the gptq modules are yet to support this
-def __maybe_reset_model(model, is_gptq):
-    if USE_MICRO_MODELS and is_gptq:
-        sd = model.state_dict()
-        for key, param in sd.items():
-            if "qweight" in key:
-                res = torch.randint(
-                    low=0,
-                    high=torch.iinfo(torch.int32).max,
-                    size=param.shape,
-                    dtype=torch.int32,
-                )
-                sd[key].copy_(res)
-            elif "qzeros" in key:
-                res = torch.ones(param.shape, dtype=torch.int32) * 8
-            elif "g_idx" in key:
-                res = param
-            else:
-                res = torch.randn_like(param)
-                res -= 0.5
-                res /= 20.0
-            param.copy_(res)
+    def get_or_create(self, is_gptq, **kwargs):
+        if self.model is None:
+            model = get_model(
+                device_type="cpu",
+                data_type=None if is_gptq else torch.float16,
+                fused_weights=False,
+                **kwargs,
+            )
+            self.__maybe_reset_model(model, is_gptq)
 
-global global_model
-global_model = None
-def get_global_model_or_create(is_gptq, **kwargs):
-    global global_model
-    # we want to keep a global model when attn_type==paged as it can be re-used for all tests (if one test fails they'll all fail compilation)
-    if global_model is None:
-        
-        model = get_model(
-            device_type="cpu",
-            data_type=None if is_gptq else torch.float16,
-            fused_weights=False,
-            **kwargs,
-        )
-        __maybe_reset_model(model, is_gptq)
+            model.eval()
+            model.compile(backend="sendnn", options={'sendnn.dynamic': compile_dynamic_sendnn})
 
-        model.eval()
-        torch.set_grad_enabled(False)
-        model.compile(backend="sendnn")
+            if compile_dynamic_sendnn:
+                self.model = model
+            
+            return model
+        else:
+            return self.model
+    
+    # TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
+    #  however the gptq modules are yet to support this
+    @staticmethod
+    def __maybe_reset_model(model, is_gptq):
+        if USE_MICRO_MODELS and is_gptq:
+            sd = model.state_dict()
+            for key, param in sd.items():
+                if "qweight" in key:
+                    res = torch.randint(
+                        low=0,
+                        high=torch.iinfo(torch.int32).max,
+                        size=param.shape,
+                        dtype=torch.int32,
+                    )
+                    sd[key].copy_(res)
+                elif "qzeros" in key:
+                    res = torch.ones(param.shape, dtype=torch.int32) * 8
+                elif "g_idx" in key:
+                    res = param
+                else:
+                    res = torch.randn_like(param)
+                    res -= 0.5
+                    res /= 20.0
+                param.copy_(res)
 
-        if ATTN_TYPE == "paged":
-            global_model = model
-        
-        return model
-    else:
-        return global_model
+@pytest.fixture
+def persistent_model():
+    return PersistentModel()
 
 
 @pytest.mark.parametrize(
     "model_path,batch_size,seq_length,max_new_tokens", common_shapes
 )
-def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
+def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persistent_model):
     torch.manual_seed(42)
+    torch.set_grad_enabled(False)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
-
-    if "HF_HOME" not in os.environ:
-        os.environ["HF_HOME"] = "/tmp/models/hf_cache"
 
     dprint(
         f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}"
@@ -357,13 +365,18 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     gptq_kwargs_aiu, gptq_kwargs_cpu = __maybe_get_gptq_kwargs(model_path)
     is_gptq = len(gptq_kwargs_aiu) != 0
 
-    if USE_MICRO_MODELS:
+    micro_model_path = micro_model_mapping.get(model_path, None)
+    if USE_MICRO_MODELS and micro_model_path is None:
+        dprint("using randomly initialized model")
         micro_model_kwargs = {"architecture": "hf_configured", "nlayers": 3}
     else:
+        dprint("using trained model")
         micro_model_kwargs = {"architecture": "hf_pretrained"}
 
     if not USE_MICRO_MODELS and os.path.exists(model_path):
         model_path_kwargs = {"model_path": model_path}
+    elif USE_MICRO_MODELS and micro_model_path is not None:
+        model_path_kwargs = {"model_path": micro_model_path}
     else:
         model_path_kwargs = {"variant": model_path}
 
@@ -383,13 +396,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     tokenizer = tokenizers.get_tokenizer(model_path)
 
     # prepare the AIU model
-    model = get_global_model_or_create(is_gptq, **gptq_kwargs_aiu, **get_model_kwargs)
-
-    __maybe_reset_model(model, is_gptq)
-
-    model.eval()
-    torch.set_grad_enabled(False)
-    model.compile(backend="sendnn")
+    model = persistent_model.get_or_create(is_gptq, **gptq_kwargs_aiu, **get_model_kwargs)
 
     # prepare the cpu model
     validation_model = get_model(
@@ -409,9 +416,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
     input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
 
     # warmup aiu model
-    compile_dynamic_sendnn = ATTN_TYPE == "paged"
-    max_seq_len = int(os.environ["VLLM_DT_MAX_CONTEXT_LEN"]) if ATTN_TYPE == "paged" else -1
-    warmup_model(model, input_ids, max_new_tokens, compile_dynamic_sendnn=compile_dynamic_sendnn, attn_type=ATTN_TYPE, max_seq_len=max_seq_len, **padding_kwargs)
+    warmup_model(model, input_ids, max_new_tokens, compile_dynamic_sendnn, attn_type=ATTN_TYPE, **padding_kwargs)
 
     # generate cpu validation info
     cpu_validation_info = __load_validation_info(
@@ -443,7 +448,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
 
     # first test validation level 0
     aiu_validation_info = extract_validation_information(
-        model, input_ids, max_new_tokens, None, only_last_token=ATTN_TYPE != "paged", max_seq_len=max_seq_len, attn_type=ATTN_TYPE, **padding_kwargs
+        model, input_ids, max_new_tokens, None, only_last_token=ATTN_TYPE != "paged", attn_type=ATTN_TYPE, **padding_kwargs
     )
     dprint("aiu validation info extracted for validation level 0")
 
@@ -467,10 +472,12 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             cross_entropy = torch.nn.CrossEntropyLoss()(
                 r, t.softmax(dim=1).to(dtype=torch.float32)
             )
-            diff = torch.mean(torch.abs(
-                r.softmax(dim=1).to(dtype=torch.float32)
-                - t.softmax(dim=1).to(dtype=torch.float32)
-            ))
+            diff = torch.mean(
+                torch.abs(
+                    r.softmax(dim=1).to(dtype=torch.float32)
+                    - t.softmax(dim=1).to(dtype=torch.float32)
+                )
+            )
             return (cross_entropy, diff)
 
         iters = 1024 // max_new_tokens
@@ -518,8 +525,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
                 input_ids,
                 max_new_tokens,
                 GoldenTokenHook(cpu_static_tokens),
-                only_last_token=ATTN_TYPE != "paged", 
-                max_seq_len=max_seq_len, 
+                only_last_token=ATTN_TYPE != "paged",
                 attn_type=ATTN_TYPE, 
                 **padding_kwargs,
             )
@@ -540,9 +546,20 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens):
             # only consider those metrics captured prior to the eos
             level_1_metrics = __filter_before_eos(level_1_metrics, eos_indexes)
 
-            ce_threshold, diff_threshold = fail_thresholds.get(
-                (model_path, USE_MICRO_MODELS), default_metrics_threshold
-            )
+            # if we do not have real model weights, use a default_metrics_threshold
+            if USE_MICRO_MODELS and micro_model_path is None:
+                ce_threshold, diff_threshold = default_metrics_threshold
+            # if we have real weights, try and get the proper validation metrics threshold
+            else:
+                # if we have a micro model with real weights, but no real thresholds, default to the full model thresholds
+                if USE_MICRO_MODELS:
+                    ce_threshold, diff_threshold = fail_thresholds.get(
+                        (model_path, True), fail_thresholds.get((model_path, False), default_metrics_threshold)
+                    )
+                else:
+                    ce_threshold, diff_threshold = fail_thresholds.get(
+                        (model_path, False), default_metrics_threshold
+                    )
 
             # get all failed responses for each metric
             ce_fail_responses = filter_failed_level_1_cases(

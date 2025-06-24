@@ -25,7 +25,7 @@ def test_paged_equivalence():
         )
 
         # use_cache=True
-        ids, padding_kwargs = pad_input_ids([first, second])
+        ids, padding_kwargs = pad_input_ids([first, second], min_pad_length=64)
         result = generate(
             _model_mock,
             ids,
