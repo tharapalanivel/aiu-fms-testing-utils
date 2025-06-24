@@ -108,6 +108,11 @@ parser.add_argument(
     help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format",
 )
 parser.add_argument(
+    "--cast_bf16_to_fp16",
+    action="store_true",
+    help="If set, cast any bf16 weights in the model to fp16 for AIU compiler. Doesn't touch fp32 or quantized",
+)
+parser.add_argument(
     "--compile",
     action="store_true",
     help="Use torch.compile (slow for first inference pass)",
@@ -452,6 +457,11 @@ model = get_model(
     fused_weights=fused_weights,
 )
 
+if args.cast_bf16_to_fp16:
+    for param in model.parameters():
+        if param.dtype == torch.bfloat16:
+            param.data = param.data.to(dtype=torch.float16)
+
 if args.quantization in ["gptq", "int8"]:
     if rank == 0 and args.verbose > 0:
         dprint("PARAMS:\n" + "\n".join(f"{k:60} {str(v.dtype):15} {str(v.device):10} {list(v.size())}" for k,v in model.named_parameters()))
@@ -645,14 +655,12 @@ def infer(use_cache, do_sample, warmup):
         extra_generation_kwargs = {}
     extra_generation_kwargs["only_last_token"] = True
 
-    if args.device_type == "cpu":
-        # Bug in 2.3.1 fixed in 2.4.1 for SDPA flash cpu impl when padding too much
-        extra_generation_kwargs["attn_algorithm"] = "math"
-
     if not args.no_early_termination and not warmup:
         eos_token_id = tokenizer.eos_token_id
     else:
         eos_token_id = None
+
+    print(f"use_cache infer: {use_cache}")
 
     result = generate(
         model,
@@ -692,14 +700,17 @@ do_sample = [False]
 use_cache = [
     args.no_use_cache
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
+print(f"use_cache global: {use_cache}")
 
 if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
-        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
+        for cache in use_cache:
+            warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, use_cache=cache, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
+            print(f"use_cache loop: {cache}")
             infer(cache, sample, True)
         aiu_warmup_time = time.time() - aiu_warmup_time
         dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
