@@ -170,8 +170,10 @@ def _math_fp8_store_op(
         and isinstance(value_cache, AffineQuantizedTensor)
         and value_cache.numel() > 0
     ):
-        key_cache = torch.cat((key_cache, keys), dim=2)
-        value_cache = torch.cat((value_cache, values), dim=2)
+        key_cache = torch.cat((key_cache.tensor_impl.float8_data, keys), dim=2)
+        value_cache = torch.cat((value_cache.tensor_impl.float8_data, values), dim=2)
+        key_cache = _construct_fp8_cache(key_cache, k_scale, orig_dtype)
+        value_cache = _construct_fp8_cache(value_cache, v_scale, orig_dtype)
         return (
             key_cache,
             value_cache,
