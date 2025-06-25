@@ -164,16 +164,9 @@ def generate(
 
     # this is the number of pads actually required when reducing the prompt to its smallest multiple of 64
     min_padded_prompt_mask = left_padded_prompt_mask - empty_slots
-    
-    # adjust the left_padded_prompt_mask to remove the empty slots in the last page as we will be pushing all tokens to the left
-    # left_padded_prompt_mask = empty_slots
 
     # this is the context length for each sequence with no empty pages (padded to multiple of 64)
     context_lengths = min_padded_prompt_mask + context_lengths_without_pads
-    
-    # this is the true current tkv to be used when computing paged attention using a paged kv-cache
-    # it may include whole empty pages described by the left_padded_prompt_mask
-    # current_tkv_mask = left_padded_prompt_mask + context_lengths_without_pads
     
     slot_mapping = []
     block_table = []
