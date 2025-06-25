@@ -156,8 +156,8 @@ def generate(
     # it may include whole empty pages
     left_padded_prompt_mask = (kwargs["position_ids"] == 0).sum(dim=1) - 1
 
-    # this is the context length for each sequence including empty pages
-    context_lengths_with_empty_slots = (kwargs["position_ids"] != 0).sum(dim=1) + 1
+    # this is the context length for each sequence without pads
+    context_lengths_without_pads = (kwargs["position_ids"] != 0).sum(dim=1) + 1
 
     # this is the number of empty slots per sequence (64 slots per page)
     empty_slots = (left_padded_prompt_mask // BLOCK_SIZE) * BLOCK_SIZE
@@ -166,32 +166,31 @@ def generate(
     min_padded_prompt_mask = left_padded_prompt_mask - empty_slots
     
     # adjust the left_padded_prompt_mask to remove the empty slots in the last page as we will be pushing all tokens to the left
-    left_padded_prompt_mask = empty_slots
+    # left_padded_prompt_mask = empty_slots
 
     # this is the context length for each sequence with no empty pages (padded to multiple of 64)
-    context_lengths = min_padded_prompt_mask + context_lengths_with_empty_slots
+    context_lengths = min_padded_prompt_mask + context_lengths_without_pads
     
     # this is the true current tkv to be used when computing paged attention using a paged kv-cache
     # it may include whole empty pages described by the left_padded_prompt_mask
-    current_tkv_mask = left_padded_prompt_mask + context_lengths_with_empty_slots
+    # current_tkv_mask = left_padded_prompt_mask + context_lengths_without_pads
     
     slot_mapping = []
     block_table = []
     # each sequence has the possibility of a different tkv, so loop over that
     for num_pads, seq_tkv in zip(min_padded_prompt_mask, context_lengths):
-        block_table_i = []
+        block_table_i = [block_numbers.pop(0) for _ in range(seq_tkv // BLOCK_SIZE)]
         slot_mapping_i = []
         for pos_i in range(seq_tkv):
-            if pos_i % BLOCK_SIZE == 0:
-                block_number = block_numbers.pop(0)
-                block_table_i.append(block_number)
-            
             num_valid_tokens = seq_tkv - num_pads
             # push all the values to the left of the kv-cache as to not waste any extra space
             if pos_i < num_pads:
                 actual_pos_i = num_valid_tokens + pos_i
             else:
-                actual_pos_i = pos_i - num_valid_tokens
+                actual_pos_i = pos_i - num_pads
+            
+            # we may have already popped a block, so index to the proper block
+            block_number = block_table_i[actual_pos_i // BLOCK_SIZE]
 
             block_offset = actual_pos_i % BLOCK_SIZE
             slot = block_number * BLOCK_SIZE + block_offset
@@ -219,7 +218,7 @@ def generate(
 
             # we no longer have a global pos_i, each sequence has its own pos_i
             slot_mapping = []
-            for seq_i, pos_i in enumerate(current_tkv_mask):
+            for seq_i, pos_i in enumerate(context_lengths_without_pads):
                 if pos_i % BLOCK_SIZE == 0:
                     block_number = block_numbers.pop(0)
                     block_table[seq_i].append(block_number)
@@ -227,20 +226,49 @@ def generate(
                 block_offset = pos_i % BLOCK_SIZE
                 slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
                 slot_mapping.append([slot])
-            
-            # right pad the block_table since each sequence has a different tkv and may require more blocks
-            max_block_table_len = int(max(len(b) for b in block_table))
-            
-            # left pad the block table with the first block in each sequence
-            # the only requirement here is that the block be a real block that maps to somewhere in the memory space (it will be ignored)
-            # left padding is required here as the current_tkv_mask must have the same value for every sequence as part of homogeneous tkv 
-            # (if the pads were on the right, the current_tkv_mask would have different values per sequence)
-            kwargs["block_table"] = torch.tensor([([b[0]] * (max_block_table_len - len(b))) + b for b in block_table], dtype=torch.int64)
 
+            # left pad the block_table since each sequence has a different tkv and may require more blocks
+            # if it happens that max is 1, we set to 2 to trigger symbolic shapes
+            max_block_table_len = max((((empty_slots + context_lengths_without_pads - 1) // BLOCK_SIZE) + 1).max().item(), 2)
+
+            # calculating these now on the fly as it is possible that the largest sequence in the batch increased its number of blocks
+            # while a smaller sequence did not, resulting in requiring an increase of BLOCK_SIZE to the current_tkv/left_padded_prompt_mask of the smaller sequence
+            _left_padded_prompt_mask = []
+            _current_tkv_mask = []
+            _block_table = []
+            for i, block in enumerate(block_table):
+                num_left_pad_blocks = max_block_table_len - len(block)
+                num_left_pad_slots = num_left_pad_blocks * BLOCK_SIZE
+                _current_tkv_mask.append(context_lengths_without_pads[i].item() + num_left_pad_slots)
+                _left_padded_prompt_mask.append(num_left_pad_slots)
+                # left pad the block table with the first block in each sequence
+                # the only requirement here is that the block be a real block that maps to somewhere in the memory space (it will be ignored)
+                # left padding is required here as the current_tkv_mask must have the same value for every sequence as part of homogeneous tkv 
+                # (if the pads were on the right, the current_tkv_mask would have different values per sequence)
+                _block_table.append(([block[0]] * num_left_pad_blocks) + block)
+
+            kwargs["block_table"] = torch.tensor(_block_table, dtype=torch.int64)
             kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
-            current_tkv_mask = current_tkv_mask + 1
-            kwargs["current_tkv_mask"] = current_tkv_mask
-            kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
+            kwargs["current_tkv_mask"] = torch.tensor(_current_tkv_mask, dtype=torch.int64)
+            kwargs["left_padded_prompt_mask"] = torch.tensor(_left_padded_prompt_mask, dtype=torch.int64)
+
+            print("context_lengths_without_pads: ", context_lengths_without_pads)
+            print("current_tkv_mask: ", kwargs["current_tkv_mask"])
+            print("left_padded_prompt_mask", kwargs["left_padded_prompt_mask"])
+
+
+            
+            # # left pad the block table with the first block in each sequence
+            # # the only requirement here is that the block be a real block that maps to somewhere in the memory space (it will be ignored)
+            # # left padding is required here as the current_tkv_mask must have the same value for every sequence as part of homogeneous tkv 
+            # # (if the pads were on the right, the current_tkv_mask would have different values per sequence)
+            # kwargs["block_table"] = torch.tensor([([b[0]] * (max_block_table_len - len(b))) + b for b in block_table], dtype=torch.int64)
+
+            # kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
+            # current_tkv_mask = current_tkv_mask + 1
+            # kwargs["left_padded_prompt_mask"] = torch.tensor([((max_block_table_len - len(b)) * BLOCK_SIZE) for b in block_table], dtype=torch.int64)
+            context_lengths_without_pads += 1
+
 
         # prefill
         if i == 0:
