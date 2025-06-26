@@ -660,8 +660,6 @@ def infer(use_cache, do_sample, warmup):
     else:
         eos_token_id = None
 
-    print(f"use_cache infer: {use_cache}")
-
     result = generate(
         model,
         ids,
@@ -709,7 +707,6 @@ if args.compile:
             warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, use_cache=cache, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
-            print(f"use_cache loop: {cache}")
             infer(cache, sample, True)
         aiu_warmup_time = time.time() - aiu_warmup_time
         dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
