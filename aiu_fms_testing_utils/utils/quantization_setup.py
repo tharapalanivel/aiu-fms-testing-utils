@@ -20,11 +20,11 @@ def import_addons(args: argparse.Namespace) -> None:
 
     try:
         if args.quantization == "gptq" and "aiu" in args.device_type:
-            pass
+            from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear  # noqa: F401
         elif args.quantization == "fp8":
-            pass
+            from fms_mo.aiu_addons.fp8 import fp8_adapter, fp8_attn, fp8_linear  # noqa: F401
         elif args.quantization == "int8":
-            pass
+            from fms_mo.aiu_addons.i8i8 import i8i8_aiu_adapter, i8i8_aiu_linear  # noqa: F401
         dprint("Loaded `aiu_addons` functionalities")
     except ImportError:
         raise ImportError(f"Failed to import {args.quantization} addons from FMS-MO.")
