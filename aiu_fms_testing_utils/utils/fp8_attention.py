@@ -1,13 +1,10 @@
+import functools
 import math
 from importlib.util import find_spec
 from typing import (
-    Any,
-    Callable,
-    Mapping,
     NotRequired,
     Optional,
     Tuple,
-    TypedDict,
     Unpack,
 )
 import torch
@@ -20,17 +17,11 @@ from fms.modules.attention import (
 )
 
 
-class MathFP8AttentionKwargs(AttentionKwargs):
-    mask: NotRequired[Tensor]
-    do_scale_q: bool
-    is_causal_mask: bool
-
-
 ########
 ## scaled_bmm - A batched version of _scaled_mm
 ########
-@torch.library.custom_op("sendnn::scaled_bmm", mutates_args=())
-def sendnn_scaled_bmm(
+@torch.library.custom_op("spyre::scaled_bmm", mutates_args=())
+def spyre_scaled_bmm(
     mat1: Tensor,
     mat2: Tensor,
     scale1: Tensor,
@@ -38,25 +29,11 @@ def sendnn_scaled_bmm(
     out_dtype: Optional[torch.dtype] = None,
     use_fast_accum: bool = False,
 ) -> Tensor:
-    print(mat1.shape, mat2.shape)
     assert mat1.shape[:-2] == mat2.shape[:-2], (
         "batch dimensions must match for mat1 and mat2"
     )
-    assert mat1.shape[:-2] == scale1.shape[:-2], (
-        "batch dimensions must match for mat1 and scale1"
-    )
-    assert mat2.shape[:-2] == scale2.shape[:-2], (
-        "batch dimensions must match for mat2 and scale2"
-    )
-    if bias:
-        assert mat1.shape[:-2] == bias.shape[:-2], (
-            "batch dimensions must match for mat1 and bias"
-        )
-    orig_batch = mat2.shape[:-2]
     mat1 = mat1.view(-1, *mat1.shape[-2:])
     mat2 = mat2.view(-1, *mat2.shape[-2:])
-    scale1 = scale1.view(-1, *scale1.shape[-2:])
-    scale2 = scale2.view(-1, *scale2.shape[-2:])
     out = torch.empty(
         (mat1.shape[0], mat1.shape[1], mat2.shape[2]),
         dtype=out_dtype,
@@ -66,16 +43,16 @@ def sendnn_scaled_bmm(
         out[b_idx] = torch._scaled_mm(
             mat1[b_idx],
             mat2[b_idx],
-            scale1[b_idx],
-            scale2[b_idx],
-            out_dtype,
-            use_fast_accum,
+            scale1,
+            scale2,
+            out_dtype=out_dtype,
+            use_fast_accum=use_fast_accum,
         )
-    return out
+    return out.view(*mat1.shape[:-2], mat1.shape[1], mat2.shape[2])
 
 
 # All that's needed for torch.compile support
-@sendnn_scaled_bmm.register_fake
+@spyre_scaled_bmm.register_fake
 def _(
     mat1: Tensor,
     mat2: Tensor,
@@ -90,47 +67,94 @@ def _(
         device=mat1.device,
     )
 
-
-### FP8 linear layers
-if find_spec("torchao"):
-    TORCHAO_INSTALLED = True
-    from torchao.dtypes.affine_quantized_tensor import (
-        AffineQuantizedTensor,
-    )  # type: ignore
-    from torchao.dtypes.floatx.float8_layout import (  # type: ignore
-        Float8AQTTensorImpl,
-        Float8Layout,
-        Float8MMConfig,
-    )
-    from torchao.quantization.granularity import PerTensor  # type: ignore
-    from torchao.quantization.observer import get_block_size  # type: ignore
-    from torchao.quantization.quant_primitives import ZeroPointDomain  # type: ignore
-else:
-    TORCHAO_INSTALLED = False
+_HANDLED_FUNCTIONS = {}
 
 
-# TODO: Doesn't quite work yet, more discussion needed
+def _implements(torch_function):
+    """Register a torch function override"""
+    def decorator(func):
+        @functools.wraps(torch_function)
+        def wrapper(f, types, args, kwargs):
+            return func(f, types, args, kwargs)
+
+        _HANDLED_FUNCTIONS[torch_function] = wrapper
+        return func
+
+    return decorator
+
+
+
+class ScaledTensor(torch.Tensor):
+    def __new__(
+        cls,
+        data: torch.Tensor,
+        scale: torch.Tensor,
+    ):
+        return torch.Tensor._make_wrapper_subclass(
+            cls,
+            data.size(),
+            strides=data.stride(),
+            storage_offset=data.storage_offset(),
+            dtype=data.dtype,
+            layout=data.layout,
+            requires_grad=data.requires_grad,
+            device=data.device,
+        )
+
+    def __init__(
+            self,
+            data: torch.Tensor,
+            scale: torch.Tensor,
+    ):
+        self._data = data
+        self._scale = scale
+
+    def __tensor_flatten__(self):
+        ctx = {}
+        return ["_data", "_scale"], ctx
+
+    @staticmethod
+    def __tensor_unflatten__(inner_tensors, metadata, outer_size, outer_stride):
+        assert len(inner_tensors) == 2
+        return ScaledTensor(
+            inner_tensors["_data"],
+            inner_tensors["_scale"],
+        )
+
+    @classmethod
+    def __torch_dispatch__(cls, func, types, args, kwargs=None):
+        if func in _HANDLED_FUNCTIONS:
+            return _HANDLED_FUNCTIONS[func](func, types, args, kwargs)
+
+        arg_types = tuple(type(arg) for arg in args)
+        kwarg_types = {k: type(arg) for k, arg in kwargs.items()}
+        raise NotImplementedError(
+            f"{cls.__name__} dispatch: attempting to run unimplemented operator/function: {func=}, {types=}, {arg_types=}, {kwarg_types=}"
+        )
+
+    def __repr__(self):
+        return f"{self._data.__repr__()}\n{self._scale.__repr__()}"
+
+
+# TODO: Figure out better scales for AIU? These come from vLLM
 Q_RANGE = 200.0
 K_RANGE = 200.0
 V_RANGE = 100.0
 
+
+class MathFP8AttentionKwargs(AttentionKwargs):
+    mask: NotRequired[Tensor]
+    do_scale_q: bool
+    is_causal_mask: bool
+
+
 def _construct_fp8_cache(
-    tensor: torch.Tensor, scale: torch.Tensor, orig_dtype: torch.dtype
-) -> "AffineQuantizedTensor":
+    tensor: torch.Tensor, scale: torch.Tensor
+) -> ScaledTensor:
     # Construct the torchao tensor to save kv cache with its scales
-    weight_granularity = PerTensor()
-    fp8_layout = Float8Layout(Float8MMConfig(use_fast_accum=True))
-    return AffineQuantizedTensor(
-        Float8AQTTensorImpl.from_plain(
-            tensor,
-            scale,
-            None,
-            fp8_layout,
-        ),
-        get_block_size(tensor.shape, weight_granularity),
-        tensor.shape,
-        zero_point_domain=ZeroPointDomain.NONE,
-        dtype=orig_dtype,
+    return ScaledTensor(
+        tensor,
+        scale,
     )
 
 
@@ -141,13 +165,11 @@ def _math_fp8_store_op(
     value_cache: Optional[torch.Tensor],
     **attn_kwargs: Unpack[MathFP8AttentionKwargs],
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    orig_dtype = keys.dtype
-
-    if isinstance(key_cache, AffineQuantizedTensor) and isinstance(
-        value_cache, AffineQuantizedTensor
+    if isinstance(key_cache, ScaledTensor) and isinstance(
+        value_cache, ScaledTensor
     ):
-        k_scale = key_cache.tensor_impl.scale
-        v_scale = value_cache.tensor_impl.scale
+        k_scale = key_cache._scale
+        v_scale = value_cache._scale
     else:
         k_scale = (torch.abs(keys).max() / K_RANGE).to(dtype=torch.float32)
         v_scale = (torch.abs(values).max() / V_RANGE).to(dtype=torch.float32)
@@ -156,14 +178,14 @@ def _math_fp8_store_op(
     values = (values / v_scale).to(torch.float8_e4m3fn).transpose(2, 1)
 
     if (
-        isinstance(key_cache, AffineQuantizedTensor)
-        and isinstance(value_cache, AffineQuantizedTensor)
+        isinstance(key_cache, ScaledTensor)
+        and isinstance(value_cache, ScaledTensor)
         and value_cache.numel() > 0
     ):
-        key_cache = torch.cat((key_cache.tensor_impl.float8_data, keys), dim=2)
-        value_cache = torch.cat((value_cache.tensor_impl.float8_data, values), dim=2)
-        key_cache = _construct_fp8_cache(key_cache, k_scale, orig_dtype)
-        value_cache = _construct_fp8_cache(value_cache, v_scale, orig_dtype)
+        key_cache = torch.cat((key_cache._data, keys), dim=2)
+        value_cache = torch.cat((value_cache._data, values), dim=2)
+        key_cache = _construct_fp8_cache(key_cache, k_scale)
+        value_cache = _construct_fp8_cache(value_cache, v_scale)
         return (
             key_cache,
             value_cache,
@@ -171,8 +193,8 @@ def _math_fp8_store_op(
             value_cache,
         )
     else:
-        keys = _construct_fp8_cache(keys, k_scale, orig_dtype)
-        values = _construct_fp8_cache(values, v_scale, orig_dtype)
+        keys = _construct_fp8_cache(keys.contiguous(), k_scale)
+        values = _construct_fp8_cache(values.contiguous(), v_scale)
         return (keys, values, keys, values)
 
 
@@ -196,13 +218,13 @@ def _math_fp8_compute_op(
     query = query.to(torch.float8_e4m3fn).transpose(2, 1)
 
     if (
-        isinstance(key_cache, AffineQuantizedTensor) and 
-        isinstance(value_cache, AffineQuantizedTensor)
+        isinstance(key_cache, ScaledTensor) and 
+        isinstance(value_cache, ScaledTensor)
     ):
-        k_scale = key_cache.tensor_impl.scale
-        v_scale = value_cache.tensor_impl.scale
-        key_cache = key_cache.tensor_impl.float8_data
-        value_cache = value_cache.tensor_impl.float8_data
+        k_scale = key_cache._scale
+        v_scale = value_cache._scale
+        key_cache = key_cache._data
+        value_cache = value_cache._data
     else:
         k_scale = (torch.abs(key_cache).max() / K_RANGE).to(dtype=torch.float32)
         v_scale = (torch.abs(value_cache).max() / V_RANGE).to(dtype=torch.float32)
@@ -249,7 +271,7 @@ def _math_fp8_compute_op(
         )
 
     attn_weight = (
-        torch.ops.sendnn.scaled_bmm(
+        torch.ops.spyre.scaled_bmm(
             query,
             key_cache.transpose(-2, -1),
             q_scale,

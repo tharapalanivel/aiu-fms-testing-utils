@@ -700,7 +700,6 @@ do_sample = [False]
 use_cache = [
     args.no_use_cache
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
-print(f"use_cache global: {use_cache}")
 
 if args.compile:
     dprint(f"compilation warmup")
