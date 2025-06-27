@@ -184,6 +184,7 @@ def generate(
     kwargs["current_tkv_mask"] = None
     kwargs["left_padded_prompt_mask"] = None
     kwargs["use_cache"] = use_cache
+    only_last_token = kwargs.get("only_last_token", False)
 
     prompt_length = input_ids.shape[1]
 
@@ -249,8 +250,6 @@ def generate(
                 torch._dynamo.mark_dynamic(mask_i, 2)
                 torch._dynamo.mark_dynamic(mask_i, 3)
 
-                only_last_token = kwargs.get("only_last_token", False)
-
                 output, current_kv_cache = model(
                     input_ids_i,
                     slot_mapping=slot_mapping_i,
@@ -258,12 +257,12 @@ def generate(
                     mask=mask_i,
                     past_key_value_states=current_kv_cache,
                     use_cache=kwargs["use_cache"],
-                    only_last_token=only_last_token,
+                    index=-1 if only_last_token else None,
                     attn_name=kwargs["attn_name"],
                 )
 
                 # only last token must be handled here to properly stack the tensors
-                if not kwargs.get("only_last_token", False):
+                if not only_last_token:
                     output = output[:, -1, :]
 
                 outputs_list.append(output[0].squeeze(0))
@@ -288,10 +287,10 @@ def generate(
             torch._dynamo.mark_static(kwargs["slot_mapping"], 1)  # always 1
             torch._dynamo.mark_static(kwargs["position_ids"], 1)  # always 1
 
-            logits, past_key_value_states = model(input_ids, **kwargs)
+            logits, past_key_value_states = model(input_ids, index=-1 if only_last_token else None, **kwargs)
 
             # handle the only_last_token here as it is already being handled above in prefill
-            if not kwargs.get("only_last_token", False):
+            if not only_last_token:
                 logits = logits[:, -1, :]
             
             output = (logits, past_key_value_states)
