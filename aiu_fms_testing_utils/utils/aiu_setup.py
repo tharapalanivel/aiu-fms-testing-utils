@@ -1,4 +1,6 @@
+import argparse
 import os
+import torch
 
 # ==============================================================
 # Common utilities
@@ -21,7 +23,7 @@ def dprint(text):
 # ==============================================================
 # Common setup
 # ==============================================================
-def aiu_setup(rank=0, world_size=1, local_rank=0, local_size=1, verbose=False):
+def aiu_setup(rank=0, world_size=1, local_rank=0, verbose=False):
     # -------------
     # Envar setup for Sentient backend
     # -------------
@@ -54,11 +56,9 @@ def aiu_setup(rank=0, world_size=1, local_rank=0, local_size=1, verbose=False):
 # ==============================================================
 # Distributed setup
 # ==============================================================
-def aiu_dist_setup(rank, world_size, local_rank=-0, local_size=-1, verbose=False):
+def aiu_dist_setup(rank, world_size, local_rank=-0, verbose=False):
     if local_rank < 0:
         local_rank = rank
-    if local_size < 0:
-        local_size = world_size
 
     if os.getenv("TORCHELASTIC_RUN_ID") is None:
         os.environ["MASTER_ADDR"] = "localhost"
@@ -67,3 +67,55 @@ def aiu_dist_setup(rank, world_size, local_rank=-0, local_size=-1, verbose=False
         dprint(f"Detected running via torchrun")
 
     aiu_setup(rank, world_size)
+
+
+# ==============================================================
+# Environment variables utilities
+# ==============================================================
+def set_aiu_env_vars(args: argparse.Namespace) -> None:
+    """Set necessary environment variables for AIU"""
+
+    if not args.compile_dynamic:
+        _target_cache_size = max(
+            int(args.max_new_tokens * 2),
+            int(args.min_pad_length * 2.5),
+            int(args.fixed_prompt_length * 2.5),
+        )
+        _prompt_size = max(int(args.min_pad_length), int(args.fixed_prompt_length))
+        if hasattr(torch._dynamo.config, "accumulated_cache_size_limit"):
+            if _target_cache_size > torch._dynamo.config.accumulated_cache_size_limit:
+                _prev = torch._dynamo.config.accumulated_cache_size_limit
+                torch._dynamo.config.accumulated_cache_size_limit = _target_cache_size
+                dprint(
+                    "NOTICE: Adjusting torch._dynamo.config.accumulated_cache_size_limit "
+                    f"from {_prev} to {torch._dynamo.config.accumulated_cache_size_limit} "
+                    f"to accomodate prompt size of {_prompt_size} and decode tokens of "
+                    f"{args.max_new_tokens}"
+                )
+
+        if _target_cache_size > torch._dynamo.config.cache_size_limit:
+            _prev = torch._dynamo.config.cache_size_limit
+            torch._dynamo.config.cache_size_limit = _target_cache_size
+            dprint(
+                f"NOTICE: Adjusting torch._dynamo.config.cache_size_limit from {_prev} to "
+                f"{torch._dynamo.config.cache_size_limit} to accomodate prompt size of "
+                f"{_prompt_size} and decode tokens of {args.max_new_tokens}"
+            )
+
+        torch._dynamo.config.assume_static_by_default = True
+        torch._dynamo.config.automatic_dynamic_shapes = False
+
+    # os.environ.setdefault("DTCOMPILER_KEEP_EXPORT", "true")  # CONFIRM IF THIS IS NEEDE
+
+    if not args.is_encoder:
+        os.environ.setdefault("COMPILATION_MODE", "offline_decoder")
+
+    if args.device_type == "aiu-senulator":
+        os.environ["FLEX_COMPUTE"] = "SENULATOR"
+        os.environ["FLEX_DEVICE"] = "MOCK"
+    else:
+        if "AIU_WORLD_RANK_0" not in os.environ:
+            print("must set AIU_WORLD_RANK_0")
+            exit()
+        os.environ.setdefault("FLEX_COMPUTE", "SENTIENT")
+        os.environ.setdefault("FLEX_DEVICE", "PF")  # will use VF eventually
