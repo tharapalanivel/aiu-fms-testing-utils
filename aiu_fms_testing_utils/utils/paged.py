@@ -287,7 +287,7 @@ def generate(
             torch._dynamo.mark_static(kwargs["slot_mapping"], 1)  # always 1
             torch._dynamo.mark_static(kwargs["position_ids"], 1)  # always 1
 
-            logits, past_key_value_states = model(input_ids, index=-1 if only_last_token else None, **kwargs)
+            logits, past_key_value_states = model(input_ids, **kwargs)
 
             # handle the only_last_token here as it is already being handled above in prefill
             if not only_last_token:
