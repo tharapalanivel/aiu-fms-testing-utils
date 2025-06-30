@@ -20,6 +20,8 @@ def import_addons(args: argparse.Namespace) -> None:
     try:
         if args.quantization == "gptq" and "aiu" in args.device_type:
             from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear
+        elif args.quantization == "fp8":
+            from fms_mo.aiu_addons.fp8 import fp8_adapter, fp8_attn, fp8_linear
         elif args.quantization == "int8":
             from fms_mo.aiu_addons.i8i8 import i8i8_aiu_adapter, i8i8_aiu_linear
         dprint("Loaded `aiu_addons` functionalities")
@@ -76,6 +78,9 @@ def get_linear_config(args: argparse.Namespace) -> dict[str, Any]:
             "group_size": group_size,
             "desc_act": desc_act,
         }
+    elif args.quantization == "fp8":
+        dprint("fp8 config is inferred from HF checkpoint via FMS / FMS-MO functions")
+        return None
     elif args.quantization == "int8":
         if fused_weights and args.is_aiu_backend:
             raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")

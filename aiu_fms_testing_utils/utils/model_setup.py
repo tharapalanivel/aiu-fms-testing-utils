@@ -121,7 +121,7 @@ def print_model_params(model: nn.Module, args: argparse.Namespace) -> None:
         dprint("="*60 + "\n")
         dprint("\n".join(
             f"{k:80} {str(list(v.size())):15} {str(v.dtype):18} {str(v.device):10} "
-            f"{v.min().item():12.4f} {v.max().item():12.4f}"
+            f"{v.float().min().item():12.4f} {v.float().max().item():12.4f}"
             for k,v in model.state_dict().items()
         ))
         dprint("="*60 + "\n")
