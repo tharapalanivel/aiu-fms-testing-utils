@@ -74,7 +74,7 @@ if args.distributed:
     distributed.barrier()
 dprint(f"Loading model completed in {time.time() - loading_model_start:.2f} s.")
 
-if args.architecture == "roberta":
+if isinstance(model, RoBERTa):
     model = wrap_encoder(model)  # enable using pipeline to eval RoBERTa MaskedLM
 
 if args.compile:
@@ -88,15 +88,9 @@ if args.compile:
 else:
     dprint("Skip model compiling. Only for debug purpose.")
 
-if (
-    args.architecture == "roberta_question_answering"
-    or isinstance(model, RoBERTaForQuestionAnswering)
-):
+if isinstance(model, RoBERTaForQuestionAnswering):
     run_encoder_eval_qa(model, tokenizer, args)
-elif (
-    args.architecture == "roberta"
-    or isinstance(model, RoBERTa)
-):  # basic MaskedLM downstream task
+elif isinstance(model, RoBERTa):  # basic MaskedLM downstream task
     run_encoder_eval_mlm(model, tokenizer, args)
 
 if args.distributed:

@@ -1,4 +1,4 @@
-# STandard
+# Standard
 from typing import Optional, List, Tuple
 import json
 import os
