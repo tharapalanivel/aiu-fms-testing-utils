@@ -187,10 +187,10 @@ def load_validation_information(validation_path, validation_files_type, batch_si
 
     return ValidationInfo(validation_info)
 
-def extract_validation_information(model, input_ids, max_new_tokens, post_iteration_hook, attn_algorithm=None, eos_token_id = None, only_last_token=False, timing="", attn_type="sdpa", **padding_kwargs):
+def extract_validation_information(model, input_ids, max_new_tokens, post_iteration_hook, attn_algorithm=None, eos_token_id = None, only_last_token=False, timing="", **padding_kwargs):
     max_seq_len = model.config.max_expected_seq_len
     attention_specific_kwargs = {}
-    if attn_type == "paged":
+    if "paged" in padding_kwargs["attn_name"]:
         from aiu_fms_testing_utils.utils.paged import generate
     else:
         # TODO: Add a unified generation dependent on attn_type

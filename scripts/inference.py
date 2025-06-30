@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import random
 import time
-import contextlib
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
@@ -227,16 +226,28 @@ parser.add_argument(
 parser.add_argument(
     "--attention_type",
     type=str,
-    choices=["sdpa", "paged"],
+    choices=["sdpa", "paged", "math_fp8", "paged_fp8"],
     default="sdpa",
     help="which backend attention to use in mha",
 )
 args = parser.parse_args()
 
-if args.attention_type == "paged":
+attention_map = {
+    "sdpa": "sdpa_causal",
+    "paged": "spyre_paged_attn",
+    "math_fp8": "math_fp8",
+    "paged_fp8": "spyre_paged_attn_fp8",
+}
+
+attn_name = attention_map[args.attention_type]
+
+if "paged" in attn_name:
     from aiu_fms_testing_utils.utils.paged import generate
 else:
     from fms.utils.generation import generate
+
+if "fp8" in attn_name:
+    import fms_mo.aiu_addons.fp8.fp8_attn
 
 if args.quantization == "gptq":
     if "aiu" in args.device_type:
@@ -618,7 +629,8 @@ else:
     if isinstance(ids, list) and len(ids) == 1:
         ids = ids[0].unsqueeze(0)
     extra_generation_kwargs = {}
-extra_generation_kwargs["attn_name"] = "math_fp8"
+
+extra_generation_kwargs["attn_name"] = attn_name
 
 
 def print_result(result, result_idx: int):
@@ -660,7 +672,7 @@ def infer(use_cache, do_sample, warmup):
     global extra_generation_kwargs
     if extra_generation_kwargs is None:
         extra_generation_kwargs = {}
-    extra_generation_kwargs["only_last_token"] = args.attention_type != "paged"
+    extra_generation_kwargs["only_last_token"] = "paged" not in attn_name
 
     if not args.no_early_termination and not warmup:
         eos_token_id = tokenizer.eos_token_id
@@ -668,7 +680,7 @@ def infer(use_cache, do_sample, warmup):
         eos_token_id = None
 
     attention_specific_kwargs = {}
-    if args.attention_type == "sdpa":
+    if attn_name == "sdpa_causal":
         attention_specific_kwargs["contiguous_cache"] = True
 
     result = generate(
@@ -715,7 +727,7 @@ if args.compile:
     pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
         for cache in use_cache:
-            warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, attn_type=args.attention_type, **extra_generation_kwargs)
+            warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)

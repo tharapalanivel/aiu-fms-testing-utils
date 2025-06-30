@@ -137,14 +137,23 @@ def generate(
 
     kvheads = kvheads // tensor_parallel_size if kvheads > 1 else kvheads
     head_size = model.config.emb_dim // nheads
-    kwargs["attn_name"] = "spyre_paged_attn"
-    kwargs["past_key_value_states"] = [
-        (
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-        )
-        for _ in range(model.config.nlayers)
-    ]
+    if "fp8" in kwargs["attn_name"]:
+        from fms_mo.aiu_addons.fp8.fp8_utils import ScaledTensor
+        kwargs["past_key_value_states"] = [
+            (
+                ScaledTensor(torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn), torch.tensor(1.0), False),
+                ScaledTensor(torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn), torch.tensor(1.0), False),
+            )
+            for _ in range(model.config.nlayers)
+        ]
+    else:
+        kwargs["past_key_value_states"] = [
+            (
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn),
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn),
+            )
+            for _ in range(model.config.nlayers)
+        ]
     kwargs["block_table"] = None
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
