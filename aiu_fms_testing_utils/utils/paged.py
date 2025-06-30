@@ -149,8 +149,8 @@ def generate(
     else:
         kwargs["past_key_value_states"] = [
             (
-                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn),
-                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn),
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
             )
             for _ in range(model.config.nlayers)
         ]
@@ -248,6 +248,12 @@ def generate(
                     only_last_token=only_last_token,
                     attn_name=kwargs["attn_name"],
                 )
+
+                # TODO: Figure out how to do this cleanly
+                if "fp8" in kwargs["attn_name"] and seq_i != input_ids.size(0) - 1:
+                    for layer_cache in current_kv_cache:
+                        layer_cache[0]._scaled = False
+                        layer_cache[1]._scaled = False
 
                 outputs_list.append(output[0].squeeze(0))
 

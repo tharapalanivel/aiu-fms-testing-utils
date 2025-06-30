@@ -10,7 +10,6 @@ import time
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
-from aiu_fms_testing_utils.utils import fp8_attention
 from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank, local_rank, world_size
 import numpy as np
 import torch
