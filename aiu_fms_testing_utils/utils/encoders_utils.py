@@ -38,7 +38,7 @@ def wrap_encoder(model: nn.Module) -> HFModelArchitecture:
 
     if not has_hf:
         raise ImportError(
-            "MaskedLM Encoder requires transformer package but import "
+            "MaskedLM Encoder requires transformers package but import "
             "was unsuccessful."
         )
 
@@ -161,7 +161,7 @@ class EncoderQAInfer():
 
         if not has_hf:
             raise ImportError(
-                "QuestionAnswering Encoder requires transformer package but import "
+                "QuestionAnswering Encoder requires transformers package but import "
                 "was unsuccessful."
             )
 
@@ -650,7 +650,7 @@ class EncoderMLMInfer():
 
         if not has_hf:
             raise ImportError(
-                "MaskedLM Encoder requires transformer package but import "
+                "MaskedLM Encoder requires transformers package but import "
                 "was unsuccessful."
             )
 
