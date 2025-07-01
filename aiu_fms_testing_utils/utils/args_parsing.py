@@ -234,12 +234,15 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         ),
     )
     args_encoder.add_argument(
-        "--preprocessing_num_workers", type=int, default=1, help=""
+        "--preprocessing_num_workers",
+        type=int,
+        default=1,
+        help="Number of workers used during preprocessing of validation set (QA only).",
     )
     args_encoder.add_argument(
         "--overwrite_cache",
         action="store_true",
-        help="Overwrite the cached training and evaluation sets",
+        help="Overwrite the cached training and evaluation sets.",
     )
     args_encoder.add_argument(
         "--doc_stride",
