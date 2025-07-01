@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 # Local Packages
-from aiu_fms_testing_utils.utils.aiu_setup import dprint
+from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank
 
 
 # Optional imports (required for QA)
@@ -600,33 +600,34 @@ class EncoderQAInfer():
             f"bs = {args.batch_size})"
         )
 
-        # concatenate the numpy array
-        max_len = max([x.shape[1] for x in all_start_logits])
-        start_logits_concat = self.create_and_fill_np_array(
-            all_start_logits,
-            self.eval_dataset,
-            max_len,
-        )
-        end_logits_concat = self.create_and_fill_np_array(
-            all_end_logits,
-            self.eval_dataset,
-            max_len,
-        )
+        if rank == 0:
+            # concatenate the numpy array
+            max_len = max([x.shape[1] for x in all_start_logits])
+            start_logits_concat = self.create_and_fill_np_array(
+                all_start_logits,
+                self.eval_dataset,
+                max_len,
+            )
+            end_logits_concat = self.create_and_fill_np_array(
+                all_end_logits,
+                self.eval_dataset,
+                max_len,
+            )
 
-        del all_start_logits
-        del all_end_logits
+            del all_start_logits
+            del all_end_logits
 
-        outputs_numpy = (start_logits_concat, end_logits_concat)
-        prediction = self.post_processing_function(
-            self.eval_examples,
-            self.eval_dataset,
-            outputs_numpy,
-        )
-        eval_metric = self.metric.compute(
-            predictions=prediction.predictions,
-            references=prediction.label_ids,
-        )
-        dprint(f"Evaluation metrics: {eval_metric}")
+            outputs_numpy = (start_logits_concat, end_logits_concat)
+            prediction = self.post_processing_function(
+                self.eval_examples,
+                self.eval_dataset,
+                outputs_numpy,
+            )
+            eval_metric = self.metric.compute(
+                predictions=prediction.predictions,
+                references=prediction.label_ids,
+            )
+            dprint(f"Evaluation metrics: {eval_metric}")
 
 
 class EncoderMLMInfer():
