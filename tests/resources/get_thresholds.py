@@ -3,6 +3,8 @@ import numpy as np
 import argparse
 import os
 
+import json
+
 parser = argparse.ArgumentParser(
     description="Script to get thresholds metrics"
 )
@@ -62,6 +64,7 @@ for model in models:
             for metric_file in metric_files:
                 layer_dict = {}
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
+                layer_name = layer_name.replace(".csv","")
                 with open(metric_file, "r") as file:
                     next(file)
                     for line in file:
@@ -72,6 +75,10 @@ for model in models:
 
             for l in layers:
                 for key in l.keys():
-                    print(f"Layer {key} avg {metric}")
-                    print(metric, np.percentile(l[key], 99.0))
+                    metric_val = np.percentile(l[key], 99.0)
+                    print(f"Layer {key} avg {metric} = {metric_val}")
+                    l[metric] = metric_val
+            f_result_path = os.path.join(file_base, f"{model}-{metric}.json")
+            with open(f_result_path, 'w') as fp:
+                json.dump(layers, fp)
 
