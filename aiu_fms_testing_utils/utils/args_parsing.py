@@ -56,7 +56,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
     args_quantization.add_argument(
         "--quantization",
         type=str,
-        choices=["gptq", "fp8"],  # TODO: add "fp8" when available in FMS
+        choices=["gptq", "fp8"],
         default=None,
         help="Type of quantization of the model checkpoint",
     )
