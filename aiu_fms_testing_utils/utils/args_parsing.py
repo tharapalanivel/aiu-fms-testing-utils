@@ -106,11 +106,11 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         action="store_true",
         help="This is a distributed job (multiple instances run with RANK+WORLD_SIZE)",
     )
-    args_run_settings.add_argument(  # could be a bool / flag
+    args_run_settings.add_argument(
         '-v', '--verbose',
-        action='count',
+        action='store_true',
         default=0,
-        help="Set verbosity level (pass flag as `-v`, `-vv`, `-vvv`)"
+        help="Enable verbose output"
     )
 
     # Arguments for compilation
