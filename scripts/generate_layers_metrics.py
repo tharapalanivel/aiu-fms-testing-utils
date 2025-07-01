@@ -293,14 +293,14 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
         print("abs_diff list appended")
         print(len(absolute_differences))
 
-        prefix = get_default_validation_prefix(model_id, max_new_token, batch_size, 0, 'float16')
+        prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
         layer_name = str(layer).replace('[','').replace(']', '')
 
         print("saving files")
         write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv"), "abs_diff")
         write_csv(cos_sim, os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv"), "cos_sim")
         
-    print(f"Completed {model_id} layers' metrics generation")
+    print(f"Completed {model_path} layers' metrics generation")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     print("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
