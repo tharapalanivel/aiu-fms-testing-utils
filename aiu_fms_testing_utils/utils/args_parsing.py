@@ -221,7 +221,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         action="store_true",
         help=(
             "If passed, pad all samples to `max_seq_length`. "
-            "Otherwise, dynamic padding is used."
+            "Otherwise, pad each batch individually to the longest sequence."
         ),
     )
     args_encoder.add_argument(

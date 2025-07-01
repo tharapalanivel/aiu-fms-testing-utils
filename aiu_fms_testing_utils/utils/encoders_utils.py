@@ -235,8 +235,8 @@ class EncoderQAInfer():
             # that will just convert everything to tensors.
             self.data_collator = default_data_collator
         else:
-            # Otherwise, `DataCollatorWithPadding` will apply dynamic padding for us
-            # (by padding to the maximum length of the samples passed).
+            # Otherwise, `DataCollatorWithPadding` will pad to the maximum length
+            # of the samples passed.
             pad_to_multiple_of = None
             self.data_collator = DataCollatorWithPadding(
                 self.tokenizer.tokenizer,
