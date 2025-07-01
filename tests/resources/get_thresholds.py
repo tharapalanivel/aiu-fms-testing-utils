@@ -48,8 +48,9 @@ for model in models:
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
 
+        metric_list = []
+
         if not layer_mode:
-            metric_list = []
             for metric_file in metric_files:
 
                 with open(metric_file, "r") as file:
@@ -59,8 +60,9 @@ for model in models:
             print(f"found {len(metric_files)} metric files")
             print(model, metric, np.percentile(metric_list, 99.0))
         else:
-            metric_list = []
             layers = []
+            result_dict = {"model_id": model}
+            result_dict[metric] = []
             for metric_file in metric_files:
                 layer_dict = {}
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
@@ -75,10 +77,13 @@ for model in models:
 
             for l in layers:
                 for key in l.keys():
+                    tmp = {}
                     metric_val = np.percentile(l[key], 99.0)
                     print(f"Layer {key} avg {metric} = {metric_val}")
-                    l[metric] = metric_val
-            f_result_path = os.path.join(file_base, f"{model}-{metric}.json")
-            with open(f_result_path, 'w') as fp:
-                json.dump(layers, fp)
+                    tmp[key] = metric_val
+                    result_dict[metric].append(tmp)
+
+    f_result_path = os.path.join(file_base, f"{model}-thresholds.json")
+    with open(f_result_path, 'w') as fp:
+        json.dump(result_dict, fp)
 
