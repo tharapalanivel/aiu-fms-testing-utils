@@ -66,7 +66,7 @@ def get_device(args: argparse.Namespace) -> torch.device:
 def print_system_setup(args: argparse.Namespace) -> None:
     """Display system info (rank 0 only)."""
 
-    if rank == 0 and args.verbose:
+    if args.verbose:
         dprint("-"*60)
         dprint(
             f"Python Version  : {sys.version_info.major}."
@@ -79,7 +79,7 @@ def print_system_setup(args: argparse.Namespace) -> None:
             for peer_rank in range(aiu_setup.world_size):
                 pcie_env_str="AIU_WORLD_RANK_"+str(peer_rank)
                 dprint(f"PCI Addr. for Rank {peer_rank} : {os.environ[pcie_env_str]}")
-        print("-"*60)
+        dprint("-"*60)
 
 
 def set_determinism(args: argparse.Namespace) -> None:
@@ -122,7 +122,7 @@ def setup_model(args: argparse.Namespace) -> tuple[str | None, torch.device, str
 def print_model_params(model: nn.Module, args: argparse.Namespace) -> None:
     """Printout model and list of model parameters with related statistics."""
 
-    if rank == 0 and args.verbose:
+    if args.verbose:
         dprint("="*60 + "\n")
         dprint("\n".join(
             f"{k:80} {str(list(v.size())):15} {str(v.dtype):18} {str(v.device):10} "

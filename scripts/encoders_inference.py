@@ -40,13 +40,12 @@ default_dtype, device, dist_strat = setup_model(args)
 # Retrieve linear configuration (quantized or not) to instantiate FMS model
 linear_config = get_linear_config(args)
 
-if rank == 0:
-    dprint("="*60)
-    dprint(f"model_path={args.model_path}")
-    dprint(f"{linear_config=}")
-    dprint(f"fused_weights={args.fused_weights}")
-    dprint(f"data_type={default_dtype}")
-    dprint("="*60 + "\n")
+dprint("="*60)
+dprint(f"model_path={args.model_path}")
+dprint(f"{linear_config=}")
+dprint(f"fused_weights={args.fused_weights}")
+dprint(f"data_type={default_dtype}")
+dprint("="*60 + "\n")
 
 dprint("Loading model...")
 loading_model_start = time.time()
