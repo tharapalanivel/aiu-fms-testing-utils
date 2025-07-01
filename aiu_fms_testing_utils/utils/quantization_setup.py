@@ -79,11 +79,15 @@ def get_linear_config(args: argparse.Namespace) -> dict[str, Any]:
             "desc_act": desc_act,
         }
     elif args.quantization == "fp8":
-        dprint("fp8 config is inferred from HF checkpoint via FMS / FMS-MO functions")
+        dprint(
+            "[INFO] fp8 config is inferred from HF checkpoint via FMS / FMS-MO functions"
+        )
         return None
     elif args.quantization == "int8":
         if fused_weights and args.is_aiu_backend:
-            raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
+            raise ValueError(
+                "INT8 checkpoints on AIU must always run with --unfuse_weights"
+            )
         if args.default_dtype is not None:
             raise ValueError(
                 "INT8 default_dtype must be None to preserve the checkpoint data types."
