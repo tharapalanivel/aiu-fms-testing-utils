@@ -30,6 +30,11 @@ def get_default_dtype(args: argparse.Namespace) -> torch.dtype | None:
             default_dtype = dtypes_map[args.default_dtype]
         if default_dtype is not None:
             torch.set_default_dtype(default_dtype)
+    elif args.default_dtype is not None:
+        raise ValueError(
+            f"default_dtype (currently set to {args.default_dtype}) must be unset "
+            "when running a quantized model."
+        )
     return default_dtype
 
 
