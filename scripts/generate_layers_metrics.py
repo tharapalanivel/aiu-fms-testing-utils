@@ -165,7 +165,7 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
         if module.parameters() == None: return
         param_size = sum(p.numel() for p in module.parameters() if p.requires_grad)
         param_size_str = f"{param_size:,}" if param_size > 0 else "--"
-        logger.info(f"DEBUG TOOL {prefix}├─{layer_name}() -> {module.__class__.__name__} : | Input(arg): {input_shape_str} | {input_type} | Params: {param_size_str}")
+        logger.info(f"{prefix}├─{layer_name}() -> {module.__class__.__name__} : | Input(arg): {input_shape_str} | {input_type} | Params: {param_size_str}")
         wrap_forward(module)
         # save input for later use with outputs
         module._debug_input = input 
@@ -293,5 +293,5 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     logger.info(f"Completed {model_path} layers' metrics generation")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
-    logger.info("testing ", "model_id-", model_id, ", max_new_tokens-", max_new_token, ", batch_size-",batch_size, ", seq_length-",sequence_length)
+    logger.info(f"testing model_id-{model_id}, max_new_tokens-{max_new_token}, batch_size-{batch_size}, seq_length-{sequence_length}")
     generate_layers_metrics(model_path=model_id, batch_size=batch_size, seq_length=sequence_length, max_new_tokens=max_new_token)
