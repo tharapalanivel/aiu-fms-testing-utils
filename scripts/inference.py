@@ -283,6 +283,10 @@ if args.default_dtype is not None:
 if default_dtype is not None:
     torch.set_default_dtype(default_dtype)
 
+if default_dtype is not None or args.cast_bf16_to_fp16:
+    dprint("You may be casting your checkpoint to a data type with lower dynamic range." \
+    " This can lead to a loss of model accuracy.")
+
 dprint(f"{args}")
 
 is_aiu_backend = "aiu" in args.device_type
@@ -345,7 +349,7 @@ elif is_aiu_backend:
             print("must set AIU_WORLD_RANK_0")
             exit()
         os.environ.setdefault("FLEX_COMPUTE", "SENTIENT")
-        os.environ.setdefault("FLEX_DEVICE", "VFIO")
+        os.environ.setdefault("FLEX_DEVICE", "PF")
 
     device = torch.device("cpu")
 else:
