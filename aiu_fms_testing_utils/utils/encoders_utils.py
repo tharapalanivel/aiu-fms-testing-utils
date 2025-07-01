@@ -67,7 +67,11 @@ class EncoderQAInfer():
         self.validate_encoder_arguments()
 
     def validate_encoder_arguments(self) -> None:
-        """Ensure arguments compatibility with Encoder models."""
+        """Ensure arguments compatibility with Encoder models.
+
+        NOTE: when Decoder models are refactored, this function will be expanded to
+        ensure decoder arguments are not being provided to the encoder script.
+        """
 
         args = self.args
         if not getattr(args, "is_encoder", False):
@@ -75,23 +79,6 @@ class EncoderQAInfer():
                 "Running encoder model but is_encoder argument is not set to True. "
                 "Verify your launch script."
             )
-        # if args.min_pad_length != 0:
-        #     raise ValueError(
-        #         "Argument min_pad_length should not be provided to encoders. "
-        #         "To pad the input sequence, use --pad_to_max_length flag instead."
-        #     )
-        # if args.fixed_prompt_length != 0:
-        #     raise ValueError(
-        #         "Argument fixed_prompt_length should not be provided to encoders. "
-        #         "To pad the input sequence, use --pad_to_max_length flag instead."
-        #     )
-        # if args.max_new_tokens != 100:  # default value for decoder models
-        #     raise ValueError(
-        #         "Argument max_new_token should not be provided to encoders. "
-        #         "To define the max length of a generated answer in QuestionAnswering "
-        #         "use --max_answer_length instead."
-        #     )
-
 
     def prepare_validation_features(
         self,
