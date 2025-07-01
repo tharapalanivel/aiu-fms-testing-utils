@@ -85,6 +85,7 @@ def print_system_setup(args: argparse.Namespace) -> None:
 def set_determinism(args: argparse.Namespace) -> None:
     """Set determinism.
     NOTE: torch determinism requires env variable: `CUBLAS_WORKSPACE_CONFIG=:4096:8`
+    when running on GPU. This env variable is ignored on AIU.
     """
 
     if args.deterministic:

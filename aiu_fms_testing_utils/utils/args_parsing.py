@@ -98,7 +98,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         action="store_true",
         help=(
             "`deterministic` requires env variable `CUBLAS_WORKSPACE_CONFIG=:4096:8`"
-            " when running on CPU or GPU. This flag is ignored on AIU."
+            " when running on GPU. This flag is ignored on AIU."
         ),
     )
     args_run_settings.add_argument(
