@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 # Local Packages
-from aiu_fms_testing_utils.utils.aiu_setup import dprint, rank
+from aiu_fms_testing_utils.utils.aiu_setup import dprint
 
 
 # Optional imports (required for QA)
@@ -231,7 +231,7 @@ class EncoderQAInfer():
 
         # DataLoaders creation:
         if args.pad_to_max_length:
-            # If padding was already done ot max length, we use the default data collator
+            # If padding was already done to max length, we use the default data collator
             # that will just convert everything to tensors.
             self.data_collator = default_data_collator
         else:
@@ -570,8 +570,7 @@ class EncoderQAInfer():
         )
         first_batch = self.convert_batch_to_fms_style(next(iter(dataloader_for_compile)))
         self.model(**first_batch)
-        if rank == 0:
-            dprint(f"Warmup completed in {time.time() - warmup_start_time:.1f} s\n---")
+        dprint(f"Warmup completed in {time.time() - warmup_start_time:.1f} s\n---")
 
     def run_evaluation(self) -> None:
         """Run QuestionAnswering evaluation."""
@@ -579,9 +578,8 @@ class EncoderQAInfer():
         args = self.args
         eval_dataloader = self.eval_dataloader
 
-        if rank == 0:
-            dprint(f"Running evaluation ({len(eval_dataloader)} samples)...")
-            start_time = time.time()
+        dprint(f"Running evaluation ({len(eval_dataloader)} samples)...")
+        start_time = time.time()
 
         all_start_logits = []
         all_end_logits = []
@@ -669,12 +667,11 @@ class EncoderMLMInfer():
             tokenizer=self.tokenizer.tokenizer,
         )
         output = unmasker(self.prompt)
-        if rank == 0:
-            dprint(f"Run completed in {time.time() - warmup_start_time:.1f} s\n---")
-            if not warmup:
-                dprint(f"{self.prompt}\nAnswers:")
-                for ans in output:
-                    dprint(f"{ans['token_str']:10} | {ans['score']:6.4f}")
+        dprint(f"Run completed in {time.time() - warmup_start_time:.1f} s\n---")
+        if not warmup:
+            dprint(f"{self.prompt}\nAnswers:")
+            for ans in output:
+                dprint(f"{ans['token_str']:10} | {ans['score']:6.4f}")
 
 
 def run_encoder_eval_qa(
