@@ -25,7 +25,7 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
     "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
 )
 
-common_model_paths = common_model_paths = os.environ.get(
+common_model_paths = os.environ.get(
     "MODEL_PATHS",
     ["ibm-granite/granite-3.2-8b-instruct"],
 )
