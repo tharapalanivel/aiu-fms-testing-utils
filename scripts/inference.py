@@ -103,12 +103,17 @@ parser.add_argument(
     type=str,
     default=None,
     choices=["bf16", "fp16", "fp32"],
-    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format",
+    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format. This will break quantized checkpoints.",
 )
 parser.add_argument(
     "--cast_bf16_to_fp16",
     action="store_true",
     help="If set, cast any bf16 weights in the model to fp16 for AIU compiler. Doesn't touch fp32 or quantized",
+)
+parser.add_argument(
+    "--cast_fp16_to_bf16",
+    action="store_true",
+    help="If set, cast any fp16 weights in the model to bf16 for GPU. Doesn't touch fp32 or quantized",
 )
 parser.add_argument(
     "--compile",
@@ -483,10 +488,35 @@ model = get_model(
     fused_weights=fused_weights,
 )
 
+### Quantization
+
+# FP8 model checks
+has_fp8_weights = False
+has_bf16_weights = False
+has_fp16_weights = False
+for param in model.parameters():
+    if param.dtype == torch.float8_e4m3fn:
+        has_fp8_weights = True
+    elif param.dtype == torch.bfloat16:
+        has_bf16_weights = True
+    elif param.dtype == torch.float16:
+        has_fp16_weights = True
+
+if has_fp8_weights:
+    if is_aiu_backend and has_bf16_weights and not args.cast_bf16_to_fp16:
+        raise ValueError("FP8 checkpoints on AIU with bf16 weights require casting to fp16 using --cast_bf16_to_fp16. Do not use --default_dtype!")
+    elif device.type == "cuda" and has_fp16_weights and not args.cast_fp16_to_bf16:
+        raise ValueError("FP8 checkpoints on GPU with fp16 weights require casting to bf16 using --cast_fp16_to_bf16. Do not use --default_dtype!")
+
 if args.cast_bf16_to_fp16:
     for param in model.parameters():
         if param.dtype == torch.bfloat16:
             param.data = param.data.to(dtype=torch.float16)
+
+if args.cast_fp16_to_bf16:
+    for param in model.parameters():
+        if param.dtype == torch.float16:
+            param.data = param.data.to(dtype=torch.bfloat16)
 
 if args.quantization in ["gptq", "int8"]:
     if rank == 0 and args.verbose > 0:
