@@ -499,6 +499,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
                 input_ids, extra_kwargs = __prepare_inputs(
                     batch_size, seq_length, tokenizer, seed=i
                 )
+                extra_kwargs["attn_name"] = ATTN_NAME
                 cpu_validation_info = __load_validation_info(
                     model_path, batch_size, seq_length, max_new_tokens, tokenizer, i
                 )

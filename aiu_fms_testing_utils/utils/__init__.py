@@ -9,10 +9,10 @@ import requests
 import json
 import random
 
-def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, compile_dynamic_sendnn = False, use_cache: bool = True, **padding_kwargs):
+def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, compile_dynamic_sendnn = False, use_cache: bool = True, **extra_kwargs):
     import torch_sendnn
     attention_specific_kwargs = {}
-    attn_name = padding_kwargs["attn_name"]
+    attn_name = extra_kwargs["attn_name"]
     if "paged" in attn_name:
         from aiu_fms_testing_utils.utils.paged import generate, adjust_inputs_to_batch
     else:
@@ -25,15 +25,15 @@ def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int,
 
     # adjust inputs depending on attn_type and dynamic shapes
     _warmup_input_ids = input_ids
-    _padding_kwargs = padding_kwargs
+    _extra_kwargs = extra_kwargs
     _max_new_tokens = max_new_tokens
     if compile_dynamic_sendnn:
         _max_new_tokens = 2
         # always warmup with batch size 2 when using attn_type=paged
         if "paged" in attn_name:
-            _warmup_input_ids, _padding_kwargs = adjust_inputs_to_batch(input_ids, **padding_kwargs)
+            _warmup_input_ids, _extra_kwargs = adjust_inputs_to_batch(input_ids, **extra_kwargs)
 
-    extra_kwargs = {**_padding_kwargs, "only_last_token": "paged" not in attn_name}
+    extra_kwargs = {**_extra_kwargs, "only_last_token": "paged" not in attn_name}
 
     with torch_sendnn.warmup_mode():
         generate(model, _warmup_input_ids, max_new_tokens=_max_new_tokens, do_sample=False, use_cache=use_cache, extra_kwargs=extra_kwargs, **attention_specific_kwargs)

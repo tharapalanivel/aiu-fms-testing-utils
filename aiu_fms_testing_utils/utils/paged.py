@@ -5,7 +5,7 @@ from typing import Any, Callable, List, MutableMapping, Optional, Tuple, Union
 import torch
 import fms.utils.spyre.paged
 
-def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
+def adjust_inputs_to_batch(input_ids: torch.Tensor, **extra_kwargs):
     """
     Adjusts the inputs to a batch. Batch size 1 cannot be handled since we want a symbolic shape for the batch 
     and pytorch automatically sets size 1 dimensions as static
@@ -14,11 +14,11 @@ def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
     """
     input_ids = input_ids[0].repeat(2, 1)
     # ensure we pass along other kwargs
-    kwargs = {**padding_kwargs}
-    mask = padding_kwargs.get("mask", None)
+    kwargs = {**extra_kwargs}
+    mask = extra_kwargs.get("mask", None)
     if mask is not None:
         kwargs["mask"] = torch.stack((mask[0], mask[0]))
-    position_ids = padding_kwargs.get("position_ids", None)
+    position_ids = extra_kwargs.get("position_ids", None)
     if position_ids is not None:
         kwargs["position_ids"] = position_ids[0].repeat(2, 1)
     return input_ids, kwargs
