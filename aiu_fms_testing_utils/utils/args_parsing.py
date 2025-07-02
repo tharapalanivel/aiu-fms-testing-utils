@@ -50,6 +50,22 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
             "weight format by setting the default pytorch format"
         ),
     )
+    parser.add_argument(
+        "--cast_bf16_to_fp16",
+        action="store_true",
+        help=(
+            "If set, cast any bf16 weights in the model to fp16 for AIU compiler. "
+            "Doesn't touch fp32 or quantized"
+        )
+    )
+    parser.add_argument(
+        "--cast_fp16_to_bf16",
+        action="store_true",
+        help=(
+            "If set, cast any fp16 weights in the model to bf16 for GPU. "
+            "Doesn't touch fp32 or quantized"
+        )
+    )
 
     # Quantization arguments
     args_quantization = parser.add_argument_group("Model quantization")
@@ -260,6 +276,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
     args.is_aiu_backend = "aiu" in args.device_type
     args.dynamo_backend = "sendnn" if args.is_aiu_backend else "inductor"
     args.fused_weights = not args.unfuse_weights
+    args.force_16b_dtype = args.cast_bf16_to_fp16 or args.cast_fp16_to_bf16
 
     if args.verbose:
         dprint("=" * 60)

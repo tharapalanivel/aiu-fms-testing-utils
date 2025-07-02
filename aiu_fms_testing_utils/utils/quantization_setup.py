@@ -6,6 +6,7 @@ import json
 import os
 
 # Third Party
+import torch
 from torch import nn
 
 # Local Packages
@@ -133,3 +134,35 @@ def get_linear_config(args: argparse.Namespace) -> dict[str, Any]:
     else:
         linear_config = {"linear_type": "torch_linear"}
     return linear_config
+
+
+def validate_quantization(model: nn.Module, args: argparse.Namespace) -> None:
+    """Ensure compatibility of FP8 models with device-specific operations."""
+
+    has_fp8_weights = False
+    has_bf16_weights = False
+    has_fp16_weights = False
+    for param in model.parameters():
+        if param.dtype == torch.float8_e4m3fn:
+            has_fp8_weights = True
+        elif param.dtype == torch.bfloat16:
+            has_bf16_weights = True
+        elif param.dtype == torch.float16:
+            has_fp16_weights = True
+
+    if has_fp8_weights:
+        if args.is_aiu_backend and has_bf16_weights and not args.cast_bf16_to_fp16:
+            raise ValueError(
+                "FP8 checkpoints on AIU with bf16 weights require casting to fp16 "
+                "using --cast_bf16_to_fp16. Do not use --default_dtype!"
+            )
+        elif (
+            args.device.type == "cuda"
+            and has_fp16_weights
+            and not args.cast_fp16_to_bf16
+        ):
+            raise ValueError(
+                "FP8 checkpoints on GPU with fp16 weights require casting to bf16 "
+                "using --cast_fp16_to_bf16. Do not use --default_dtype!"
+            )
+

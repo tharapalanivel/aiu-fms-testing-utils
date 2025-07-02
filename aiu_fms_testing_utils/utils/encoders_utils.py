@@ -597,8 +597,8 @@ class EncoderQAInfer():
                 batch = self.convert_batch_to_fms_style(batch)
                 batch = move_to_device(batch, args.device)
                 start_logits, end_logits = self.model(**batch)
-                all_start_logits.append(start_logits.cpu().numpy())
-                all_end_logits.append(end_logits.cpu().numpy())
+                all_start_logits.append(start_logits.to(torch.float16).cpu().numpy())
+                all_end_logits.append(end_logits.to(torch.float16).cpu().numpy())
         eval_duration = time.time() - start_time
         dprint(
             f"Runtime: {eval_duration:.0f} s | "

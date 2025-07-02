@@ -120,6 +120,33 @@ def setup_model(args: argparse.Namespace) -> tuple[str | None, torch.device, str
     return default_dtype, device, dist_strat
 
 
+def recast_16b(model: nn.Module, args: argparse.Namespace) -> None:
+    """Cast 16-bit model parameters to selected datatype."""
+
+    if args.cast_bf16_to_fp16:
+        dprint(
+            "Casting all BF16 model parameters to FP16 "
+            "(--cast_bf16_to_fp16 flag is enabled)"
+        )
+        for name, param in model.named_parameters():
+            if param.dtype == torch.bfloat16:
+                if param.max() > torch.finfo(torch.float16).max:
+                    dprint(
+                        f"[WARNING] Casting param {name} to fp16 will truncate the "
+                        "tensor. This may cause accuracy loss. Ignore this warning if "
+                        "this is intended."
+                    )
+                param.data = param.data.to(dtype=torch.float16)
+    elif args.cast_fp16_to_bf16:
+        dprint(
+            "Casting all FP16 model parameters to BF16 "
+            "(--cast_fp16_to_bf16 flag is enabled)"
+        )
+        for param in model.parameters():
+            if param.dtype == torch.float16:
+               param.data = param.data.to(dtype=torch.bfloat16)
+
+
 def print_model_params(model: nn.Module, args: argparse.Namespace) -> None:
     """Printout model and list of model parameters with related statistics."""
 

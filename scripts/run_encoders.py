@@ -16,10 +16,15 @@ from aiu_fms_testing_utils.utils.encoders_utils import (
     run_encoder_eval_qa,
     run_encoder_eval_mlm,
 )
-from aiu_fms_testing_utils.utils.model_setup import setup_model, print_model_params
+from aiu_fms_testing_utils.utils.model_setup import (
+    setup_model,
+    print_model_params,
+    recast_16b
+)
 from aiu_fms_testing_utils.utils.quantization_setup import (
     import_addons,
     get_linear_config,
+    validate_quantization,
 )
 
 parser = argparse.ArgumentParser(
@@ -61,9 +66,14 @@ model = get_model(
     group=distributed.group.WORLD,
     linear_config=linear_config,
     fused_weights=args.fused_weights,
+    attn_name="math_fp8",
 )
 
+if args.force_16b_dtype:
+    recast_16b(model, args)
+
 if args.is_quantized:
+    validate_quantization(model, args)
     print_model_params(model, args)
 
 tokenizer = tokenizers.get_tokenizer(args.tokenizer)
