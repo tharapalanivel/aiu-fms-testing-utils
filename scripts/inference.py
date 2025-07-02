@@ -288,10 +288,6 @@ if args.default_dtype is not None:
 if default_dtype is not None:
     torch.set_default_dtype(default_dtype)
 
-if default_dtype is not None or args.cast_bf16_to_fp16:
-    dprint("You may be casting your checkpoint to a data type with lower dynamic range." \
-    " This can lead to a loss of model accuracy.")
-
 dprint(f"{args}")
 
 is_aiu_backend = "aiu" in args.device_type
@@ -509,8 +505,10 @@ if has_fp8_weights:
         raise ValueError("FP8 checkpoints on GPU with fp16 weights require casting to bf16 using --cast_fp16_to_bf16. Do not use --default_dtype!")
 
 if args.cast_bf16_to_fp16:
-    for param in model.parameters():
+    for name, param in model.named_parameters():
         if param.dtype == torch.bfloat16:
+            if param.max() > torch.finfo(torch.float16).max:
+                dprint(f"[WARNING] You are casting param {name} to fp16, which will cause loss of accuracy. You can ignore this warning if this is intended.")
             param.data = param.data.to(dtype=torch.float16)
 
 if args.cast_fp16_to_bf16:
