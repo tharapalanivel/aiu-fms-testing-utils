@@ -275,10 +275,10 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 else:
                     tensor_cpu_out = cpu_output.to('cuda')
                 logger.debug("tensor converted... get torch abs diff")
-                abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
+                abs_diff = torch.abs(tensor_cpu_out - tensor_cpu_out).flatten().tolist()
                 logger.debug("abs_diff calculated")
                 cos = nn.CosineSimilarity(dim=1)
-                cos_sim = cos(cpu_output.unsqueeze(0), cuda_output.unsqueeze(0))
+                cos_sim = cos(tensor_cpu_out.unsqueeze(0), tensor_cpu_out.unsqueeze(0))
                 logger.debug(cos_sim)
 
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
