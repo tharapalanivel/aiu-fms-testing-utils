@@ -2,8 +2,15 @@ import glob
 import numpy as np
 import argparse
 import os
+import math
+
+import logging
 
 import json
+
+logger = logging.getLogger(__name__)
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(message)s")
 
 parser = argparse.ArgumentParser(
     description="Script to get thresholds metrics"
@@ -58,8 +65,8 @@ for model in models:
                     next(file)
                     for line in file:
                         metric_list.append(float(line))
-            print(f"found {len(metric_files)} metric files")
-            print(model, metric, np.percentile(metric_list, 99.0))
+            logger.info(f"found {len(metric_files)} metric files")
+            logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
             layers = []
             for metric_file in metric_files:
@@ -73,7 +80,7 @@ for model in models:
                         metric_layer_list.append(float(line))
                 layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
-            print(f"found {len(layers)} layers metric files")
+            logger.info(f"found {len(layers)} layers metric files")
 
             for l in layers:
                 for key in l.keys():
@@ -82,9 +89,9 @@ for model in models:
                         metric_val = np.linalg.norm(l[key])
                     else:
                         metric_val = np.mean(l[key])
-                    print(f"Layer {key} avg {metric} = {metric_val}")
-                    tmp[key] = metric_val
+                    tmp[key] = metric_val if not math.isnan(metric_val) else 0.0
                     result_dict[metric].append(tmp)
+                    logger.info(f"Layer {key} avg {metric} = {metric_val}")
 
     f_result_path = os.path.join(file_base, f"{model}-thresholds.json")
     with open(f_result_path, 'w') as fp:
