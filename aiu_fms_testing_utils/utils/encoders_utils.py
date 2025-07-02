@@ -45,6 +45,14 @@ def wrap_encoder(model: nn.Module) -> HFModelArchitecture:
     model.config.linear_config.pop("linear_type", None)
     return to_hf_api(model, task_specific_params=None)
 
+def move_to_device(batch: dict, device: torch.device) -> dict:
+    """Move batch to selected device."""
+
+    batch_on_device = {}
+    for k, v in batch.items():
+        batch_on_device[k] = v.to(device)
+    return batch_on_device
+
 
 class EncoderQAInfer():
     """Run QuestionAnswering task with encoder models."""
@@ -587,6 +595,7 @@ class EncoderQAInfer():
             with torch.no_grad():
                 dprint(f"Step {step + 1} / {len(eval_dataloader)}")
                 batch = self.convert_batch_to_fms_style(batch)
+                batch = move_to_device(batch, args.device)
                 start_logits, end_logits = self.model(**batch)
                 all_start_logits.append(start_logits.cpu().numpy())
                 all_end_logits.append(end_logits.cpu().numpy())

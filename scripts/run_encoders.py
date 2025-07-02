@@ -36,6 +36,7 @@ if args.distributed:
 
 # Main model setup
 default_dtype, device, dist_strat = setup_model(args)
+args.device = device
 
 # Retrieve linear configuration (quantized or not) to instantiate FMS model
 linear_config = get_linear_config(args)
