@@ -255,8 +255,6 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                              device="cuda", 
                                              seq_length=seq_length, max_new_tokens=max_new_tokens, 
                                              tokenizer=tokenizer)
-    
-    absolute_differences = []
 
     assert len(layer_stack_cuda) == len(layer_stack_cpu)
 
@@ -280,16 +278,21 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
                 logger.debug("abs_diff calculated")
                 cos = nn.CosineSimilarity(dim=1)
-                cos_sim = cos(tensor_cpu_out, tensor_cuda_out)
+                cos_sim = cos(cpu_output.unsqueeze(0), cuda_output.unsqueeze(0))
                 logger.debug(cos_sim)
 
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
                 layer_name = str(layer).replace('[','').replace(']', '')
 
-                if not os.path.exists(os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv")):
-                    logger.debug("saving files")
-                    write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv"), "abs_diff")
-                    write_csv(cos_sim, os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv"), "cos_sim")
+                abs_diff_path = os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv")
+                cos_sim_path = os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv")
+
+                if not os.path.exists(abs_diff_path):
+                    logger.debug("saving abs_diff files")
+                    write_csv(abs_diff, abs_diff_path, "abs_diff")
+                if not os.path.exists(cos_sim_path):
+                    logger.debug("saving cos_sim files")
+                    write_csv(cos_sim, cos_sim_path, "cos_sim")
         
     logger.info(f"Completed {model_path} layers' metrics generation")
 
