@@ -78,7 +78,7 @@ for model in models:
             for l in layers:
                 for key in l.keys():
                     tmp = {}
-                    metric_val = np.percentile(l[key], 99.0)
+                    metric_val = np.average(l[key])
                     print(f"Layer {key} avg {metric} = {metric_val}")
                     tmp[key] = metric_val
                     result_dict[metric].append(tmp)

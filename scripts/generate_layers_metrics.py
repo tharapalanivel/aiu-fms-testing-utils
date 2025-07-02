@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 import itertools
 import torch
@@ -15,12 +16,11 @@ from aiu_fms_testing_utils.utils import (
     sample_sharegpt_requests,
     ids_for_prompt,
 )
-from aiu_fms_testing_utils.utils.aiu_setup import dprint
 
-import logging
+
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(message)s")
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
@@ -283,12 +283,13 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 cos_sim = cos(tensor_cpu_out, tensor_cuda_out)
                 logger.debug(cos_sim)
 
-        prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
-        layer_name = str(layer).replace('[','').replace(']', '')
+                prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
+                layer_name = str(layer).replace('[','').replace(']', '')
 
-        logger.debug("saving files")
-        write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv"), "abs_diff")
-        write_csv(cos_sim, os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv"), "cos_sim")
+                if not os.path.exists(os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv")):
+                    logger.debug("saving files")
+                    write_csv(abs_diff, os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv"), "abs_diff")
+                    write_csv(cos_sim, os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv"), "cos_sim")
         
     logger.info(f"Completed {model_path} layers' metrics generation")
 
