@@ -5,7 +5,7 @@ from typing import Any, Callable, List, MutableMapping, Optional, Tuple, Union
 import torch
 import fms.utils.spyre.paged
 
-def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
+def adjust_inputs_to_batch(input_ids: torch.Tensor, **extra_kwargs):
     """
     Adjusts the inputs to a batch. Batch size 1 cannot be handled since we want a symbolic shape for the batch 
     and pytorch automatically sets size 1 dimensions as static
@@ -14,11 +14,11 @@ def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
     """
     input_ids = input_ids[0].repeat(2, 1)
     # ensure we pass along other kwargs
-    kwargs = {**padding_kwargs}
-    mask = padding_kwargs.get("mask", None)
+    kwargs = {**extra_kwargs}
+    mask = extra_kwargs.get("mask", None)
     if mask is not None:
         kwargs["mask"] = torch.stack((mask[0], mask[0]))
-    position_ids = padding_kwargs.get("position_ids", None)
+    position_ids = extra_kwargs.get("position_ids", None)
     if position_ids is not None:
         kwargs["position_ids"] = position_ids[0].repeat(2, 1)
     return input_ids, kwargs
@@ -137,14 +137,23 @@ def generate(
 
     kvheads = kvheads // tensor_parallel_size if kvheads > 1 else kvheads
     head_size = model.config.emb_dim // nheads
-    kwargs["attn_name"] = "spyre_paged_attn"
-    kwargs["past_key_value_states"] = [
-        (
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-        )
-        for _ in range(model.config.nlayers)
-    ]
+    if "fp8" in kwargs["attn_name"]:
+        from fms_mo.aiu_addons.fp8.fp8_utils import ScaledTensor
+        kwargs["past_key_value_states"] = [
+            (
+                ScaledTensor(torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn), torch.tensor(1.0), False),
+                ScaledTensor(torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=torch.float8_e4m3fn), torch.tensor(1.0), False),
+            )
+            for _ in range(model.config.nlayers)
+        ]
+    else:
+        kwargs["past_key_value_states"] = [
+            (
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
+                torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
+            )
+            for _ in range(model.config.nlayers)
+        ]
     kwargs["block_table"] = None
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
@@ -239,6 +248,12 @@ def generate(
                     only_last_token=only_last_token,
                     attn_name=kwargs["attn_name"],
                 )
+
+                # TODO: Figure out how to do this cleanly
+                if "fp8" in kwargs["attn_name"] and seq_i != input_ids.size(0) - 1:
+                    for layer_cache in current_kv_cache:
+                        layer_cache[0]._scaled = False
+                        layer_cache[1]._scaled = False
 
                 outputs_list.append(output[0].squeeze(0))
 

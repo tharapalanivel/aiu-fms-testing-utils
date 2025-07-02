@@ -18,13 +18,13 @@ def warmup_model(
     input_ids: torch.Tensor,
     max_new_tokens: int,
     compile_dynamic_sendnn: bool = False,
-    attn_type="sdpa",
     use_cache: bool = True,
-    **padding_kwargs
+    **extra_kwargs
 ):
     import torch_sendnn
     attention_specific_kwargs = {}
-    if attn_type == "paged":
+    attn_name = extra_kwargs["attn_name"]
+    if "paged" in attn_name:
         from aiu_fms_testing_utils.utils.paged import generate, adjust_inputs_to_batch
     else:
         # TODO: Add a unified generation dependent on attn_type
@@ -36,26 +36,26 @@ def warmup_model(
 
     # adjust inputs depending on attn_type and dynamic shapes
     _warmup_input_ids = input_ids
-    _padding_kwargs = padding_kwargs
+    _extra_kwargs = extra_kwargs
     _max_new_tokens = max_new_tokens
     if compile_dynamic_sendnn:
         _max_new_tokens = 2
         # always warmup with batch size 2 when using attn_type=paged
-        if attn_type == "paged":
-            _warmup_input_ids, _padding_kwargs = adjust_inputs_to_batch(
+        if "paged" in attn_name:
+            _warmup_input_ids, _extra_kwargs = adjust_inputs_to_batch(
                 input_ids,
-                **padding_kwargs,
+                **extra_kwargs,
             )
 
-    extra_kwargs = {**_padding_kwargs, "only_last_token": attn_type != "paged"}
+    extra_kwargs = {**_extra_kwargs, "only_last_token": "paged" not in attn_name}
 
     with torch_sendnn.warmup_mode():
         generate(
             model,
             _warmup_input_ids,
             max_new_tokens=_max_new_tokens,
-            use_cache=use_cache,
             do_sample=False,
+            use_cache=use_cache,
             extra_kwargs=extra_kwargs,
             **attention_specific_kwargs,
         )

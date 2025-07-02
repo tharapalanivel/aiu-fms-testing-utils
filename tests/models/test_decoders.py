@@ -58,6 +58,14 @@ USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
 
 ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
+attention_map = {
+    "sdpa": "sdpa_causal",
+    "paged": "spyre_paged_attn",
+    "math_fp8": "math_fp8",
+    "paged_fp8": "spyre_paged_attn_fp8",
+}
+ATTN_NAME = attention_map[ATTN_TYPE]
+
 FORCE_VALIDATION_LEVEL_1 = (
     os.environ.get("FMS_TEST_SHAPES_FORCE_VALIDATION_LEVEL_1", "0") == "1"
 )
@@ -246,8 +254,8 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     for prompt, _ in prompts_and_sizes:
         prompt_list.append(ids_for_prompt(prompt, tokenizer))
 
-    input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
-    return input_ids, padding_kwargs
+    input_ids, extra_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
+    return input_ids, extra_kwargs
 
 
 def __find_eos_index(reference_tokens, eos_token_id, seq_length, max_new_tokens):
@@ -413,10 +421,11 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
         )
 
     # prepare input_ids
-    input_ids, padding_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
+    input_ids, extra_kwargs = __prepare_inputs(batch_size, seq_length, tokenizer)
+    extra_kwargs["attn_name"] = ATTN_NAME
 
     # warmup aiu model
-    warmup_model(model, input_ids, max_new_tokens, compile_dynamic_sendnn, attn_type=ATTN_TYPE, **padding_kwargs)
+    warmup_model(model, input_ids, max_new_tokens, compile_dynamic_sendnn, **extra_kwargs)
 
     # generate cpu validation info
     cpu_validation_info = __load_validation_info(
@@ -429,7 +438,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
             max_new_tokens,
             LogitsExtractorHook(),
             attn_algorithm="math",
-            **padding_kwargs,
+            **extra_kwargs,
         )
 
         if save_validation_info_outputs:
@@ -448,7 +457,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
 
     # first test validation level 0
     aiu_validation_info = extract_validation_information(
-        model, input_ids, max_new_tokens, None, only_last_token=ATTN_TYPE != "paged", attn_type=ATTN_TYPE, **padding_kwargs
+        model, input_ids, max_new_tokens, None, only_last_token="paged" not in ATTN_NAME, **extra_kwargs
     )
     dprint("aiu validation info extracted for validation level 0")
 
@@ -487,9 +496,10 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
         for i in range(iters):
             # for iteration 0, we have computed the cpu validation info in the prior step for seed=0, so skip
             if i != 0:
-                input_ids, padding_kwargs = __prepare_inputs(
+                input_ids, extra_kwargs = __prepare_inputs(
                     batch_size, seq_length, tokenizer, seed=i
                 )
+                extra_kwargs["attn_name"] = ATTN_NAME
                 cpu_validation_info = __load_validation_info(
                     model_path, batch_size, seq_length, max_new_tokens, tokenizer, i
                 )
@@ -500,7 +510,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
                         max_new_tokens,
                         LogitsExtractorHook(),
                         attn_algorithm="math",
-                        **padding_kwargs,
+                        **extra_kwargs,
                     )
                     dprint(
                         f"cpu validation info extracted for validation level 1 - iter={i}"
@@ -526,8 +536,7 @@ def test_common_shapes(model_path, batch_size, seq_length, max_new_tokens, persi
                 max_new_tokens,
                 GoldenTokenHook(cpu_static_tokens),
                 only_last_token=ATTN_TYPE != "paged",
-                attn_type=ATTN_TYPE, 
-                **padding_kwargs,
+                **extra_kwargs,
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
             if save_validation_info_outputs:
