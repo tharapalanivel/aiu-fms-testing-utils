@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import random
 import time
-import contextlib
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
@@ -18,7 +17,7 @@ from torch import distributed as dist
 from fms.models import get_model, register_model
 from fms.models.llama import LLaMAConfig, _llama_factory_factory
 from fms.utils import generation, tokenizers
-from fms.utils.generation import generate, pad_input_ids
+from fms.utils.generation import pad_input_ids
 
 
 # This example script validates the LLaMA implementation by running inference on a couple of prompts.
@@ -104,7 +103,17 @@ parser.add_argument(
     type=str,
     default=None,
     choices=["bf16", "fp16", "fp32"],
-    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format",
+    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format. This will break quantized checkpoints.",
+)
+parser.add_argument(
+    "--cast_bf16_to_fp16",
+    action="store_true",
+    help="If set, cast any bf16 weights in the model to fp16 for AIU compiler. Doesn't touch fp32 or quantized",
+)
+parser.add_argument(
+    "--cast_fp16_to_bf16",
+    action="store_true",
+    help="If set, cast any fp16 weights in the model to bf16 for GPU. Doesn't touch fp32 or quantized",
 )
 parser.add_argument(
     "--compile",
@@ -218,7 +227,31 @@ parser.add_argument(
     default=0,
     help="Set verbosity level (pass flag as `-v`, `-vv`, `-vvv`)"
 )
+parser.add_argument(
+    "--attention_type",
+    type=str,
+    choices=["sdpa", "paged", "math_fp8", "paged_fp8"],
+    default="sdpa",
+    help="which backend attention to use in mha",
+)
 args = parser.parse_args()
+
+attention_map = {
+    "sdpa": "sdpa_causal",
+    "paged": "spyre_paged_attn",
+    "math_fp8": "math_fp8",
+    "paged_fp8": "spyre_paged_attn_fp8",
+}
+
+attn_name = attention_map[args.attention_type]
+
+if "paged" in attn_name:
+    from aiu_fms_testing_utils.utils.paged import generate
+else:
+    from fms.utils.generation import generate
+
+if "fp8" in attn_name:
+    import fms_mo.aiu_addons.fp8.fp8_attn
 
 if args.quantization == "gptq":
     if "aiu" in args.device_type:
@@ -317,7 +350,7 @@ elif is_aiu_backend:
             print("must set AIU_WORLD_RANK_0")
             exit()
         os.environ.setdefault("FLEX_COMPUTE", "SENTIENT")
-        os.environ.setdefault("FLEX_DEVICE", "VFIO")
+        os.environ.setdefault("FLEX_DEVICE", "PF")
 
     device = torch.device("cpu")
 else:
@@ -450,6 +483,38 @@ model = get_model(
     linear_config=linear_config,
     fused_weights=fused_weights,
 )
+
+### Quantization
+
+# FP8 model checks
+has_fp8_weights = False
+has_bf16_weights = False
+has_fp16_weights = False
+for param in model.parameters():
+    if param.dtype == torch.float8_e4m3fn:
+        has_fp8_weights = True
+    elif param.dtype == torch.bfloat16:
+        has_bf16_weights = True
+    elif param.dtype == torch.float16:
+        has_fp16_weights = True
+
+if has_fp8_weights:
+    if is_aiu_backend and has_bf16_weights and not args.cast_bf16_to_fp16:
+        raise ValueError("FP8 checkpoints on AIU with bf16 weights require casting to fp16 using --cast_bf16_to_fp16. Do not use --default_dtype!")
+    elif device.type == "cuda" and has_fp16_weights and not args.cast_fp16_to_bf16:
+        raise ValueError("FP8 checkpoints on GPU with fp16 weights require casting to bf16 using --cast_fp16_to_bf16. Do not use --default_dtype!")
+
+if args.cast_bf16_to_fp16:
+    for name, param in model.named_parameters():
+        if param.dtype == torch.bfloat16:
+            if param.max() > torch.finfo(torch.float16).max:
+                dprint(f"[WARNING] You are casting param {name} to fp16, which will cause loss of accuracy. You can ignore this warning if this is intended.")
+            param.data = param.data.to(dtype=torch.float16)
+
+if args.cast_fp16_to_bf16:
+    for param in model.parameters():
+        if param.dtype == torch.float16:
+            param.data = param.data.to(dtype=torch.bfloat16)
 
 if args.quantization in ["gptq", "int8"]:
     if rank == 0 and args.verbose > 0:
@@ -594,7 +659,9 @@ else:
     ids = prompts
     if isinstance(ids, list) and len(ids) == 1:
         ids = ids[0].unsqueeze(0)
-    extra_generation_kwargs = None
+    extra_generation_kwargs = {}
+
+extra_generation_kwargs["attn_name"] = attn_name
 
 
 def print_result(result, result_idx: int):
@@ -631,26 +698,21 @@ def infer(use_cache, do_sample, warmup):
     if local_rank == 0 and not warmup:
         dprint(f"use_cache {use_cache};; do_sample {do_sample}")
         dprint("==================")
-    if hasattr(model.config, "ntk_scaling") and model.config.ntk_scaling:
-        max_seq_len = max(max_len, model.config.max_expected_seq_len)
-    else:
-        # without ntk scaling, extending the seq length too far gives bogus results.
-        max_seq_len = model.config.max_expected_seq_len
 
     # Add only_last_token optimization
     global extra_generation_kwargs
     if extra_generation_kwargs is None:
         extra_generation_kwargs = {}
-    extra_generation_kwargs["only_last_token"] = True
-
-    if args.device_type == "cpu":
-        # Bug in 2.3.1 fixed in 2.4.1 for SDPA flash cpu impl when padding too much
-        extra_generation_kwargs["attn_algorithm"] = "math"
+    extra_generation_kwargs["only_last_token"] = "paged" not in attn_name
 
     if not args.no_early_termination and not warmup:
         eos_token_id = tokenizer.eos_token_id
     else:
         eos_token_id = None
+
+    attention_specific_kwargs = {}
+    if attn_name == "sdpa_causal":
+        attention_specific_kwargs["contiguous_cache"] = True
 
     result = generate(
         model,
@@ -658,11 +720,10 @@ def infer(use_cache, do_sample, warmup):
         max_new_tokens=args.max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,
-        max_seq_len=max_seq_len,
         timing=args.timing,
         eos_token_id=eos_token_id,
-        contiguous_cache=True,
         extra_kwargs=extra_generation_kwargs,
+        **attention_specific_kwargs
     )
     if args.timing != "":
         result, timings = result
@@ -696,7 +757,8 @@ if args.compile:
     dprint(f"compilation warmup")
     pt_compile_model_time = time.time()
     if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
-        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
+        for cache in use_cache:
+            warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, **extra_generation_kwargs)
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
