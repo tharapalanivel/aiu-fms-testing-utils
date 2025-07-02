@@ -44,10 +44,11 @@ file_base = args.file_base
 layer_mode = args.file_base if args.file_base else False
 
 for model in models:
+    result_dict = {"model_id": model}
     for metric in metrics:
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
-
+        result_dict[metric] = []
         metric_list = []
 
         if not layer_mode:
@@ -61,24 +62,26 @@ for model in models:
             print(model, metric, np.percentile(metric_list, 99.0))
         else:
             layers = []
-            result_dict = {"model_id": model}
-            result_dict[metric] = []
             for metric_file in metric_files:
                 layer_dict = {}
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
                 layer_name = layer_name.replace(".csv","")
+                metric_layer_list = []
                 with open(metric_file, "r") as file:
                     next(file)
                     for line in file:
-                        metric_list.append(float(line))
-                layer_dict[layer_name] = metric_list
+                        metric_layer_list.append(float(line))
+                layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             print(f"found {len(layers)} layers metric files")
 
             for l in layers:
                 for key in l.keys():
                     tmp = {}
-                    metric_val = np.average(l[key])
+                    if "abs_diff" in metric:
+                        metric_val = np.linalg.norm(l[key])
+                    else:
+                        metric_val = np.mean(l[key])
                     print(f"Layer {key} avg {metric} = {metric_val}")
                     tmp[key] = metric_val
                     result_dict[metric].append(tmp)

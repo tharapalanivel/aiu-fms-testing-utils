@@ -278,9 +278,6 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 cos = nn.CosineSimilarity(dim=0)
                 cos_sim = cos(tensor_cpu_out.unsqueeze(0), tensor_cuda_out.unsqueeze(0)).flatten().tolist()
 
-                distance = torch.sqrt(torch.sum((tensor_cpu_out.flatten() - tensor_cuda_out.flatten())**2))
-                logger.debug(f"Euclidean Distance: {distance}")
-
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, 0, 'float16')
                 layer_name = str(layer).replace('[','').replace(']', '')
 
