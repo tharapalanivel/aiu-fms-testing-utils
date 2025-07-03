@@ -102,7 +102,7 @@ class EncoderQAInfer():
         max_prompt_length = (
             args.max_prompt_length
             if args.max_prompt_length is not None
-            else 384
+            else 384  # this default is targeted at QA task (not a model limitation)
         )
 
         # Some of the questions have lots of whitespace on the left, which is not useful

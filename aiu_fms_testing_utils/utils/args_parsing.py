@@ -176,7 +176,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
         help=(
             "Cap the number of tokens per prompt to a maximum length prior to padding. "
             "If None, prompts to decoder models will have no cap, while prompts to "
-            "encoder models will be capped to a default of 384 tokens."
+            "encoder models will be capped to a default of 384 tokens (for QA task)."
         ),
     )
 
