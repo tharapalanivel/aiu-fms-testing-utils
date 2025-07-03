@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import argparse
 
 import itertools
 import torch
@@ -21,6 +22,21 @@ from aiu_fms_testing_utils.utils import (
 logger = logging.getLogger(__name__)
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(message)s")
+
+parser = argparse.ArgumentParser(
+    description="Script to generate the model's metrics by layer"
+)
+
+parser.add_argument(
+    "--mode",
+    choices=["generate", "model-forward"],
+    default="generate",
+    required=True,
+    help="Sets the output generation mode."
+)
+
+args = parser.parse_args()
+mode = args.mode
 
 ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
 
@@ -80,10 +96,8 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
     return input_ids, padding_kwargs
 
-def __infer_layer(warmup, model, max_len, device,
-                max_new_tokens, batch_size, tokenizer):
+def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer):
     
-
     do_sample = False
     use_cache = True
 
@@ -99,27 +113,30 @@ def __infer_layer(warmup, model, max_len, device,
         # without ntk scaling, extending the seq length too far gives bogus results.
         max_seq_len = model.config.max_expected_seq_len
 
-    with torch.no_grad():
-        result = generate(
-            model,
+    if "generate" in mode:
+        with torch.no_grad():
+            result = generate(
+                model,
+                ids,
+                max_new_tokens=max_new_tokens,
+                use_cache=use_cache,
+                do_sample=do_sample,
+                max_seq_len=max_seq_len,
+                timing="e2e",
+                eos_token_id=None,
+                contiguous_cache=True,
+                extra_kwargs={},
+            )
+            result, timings = result
+            logger.info(f"Generation completed: Result len is {len(result)}")
+            if len(result.shape) == 1:
+                result = result.unsqueeze(0)
+    else:
+        result = model.forward(
             ids,
-            max_new_tokens=max_new_tokens,
-            use_cache=use_cache,
-            do_sample=do_sample,
-            max_seq_len=max_seq_len,
-            timing="e2e",
-            eos_token_id=None,
-            contiguous_cache=True,
-            extra_kwargs={},
-        )
-        result, timings = result
-    logger.info(f"E2E timing information: {timings[0]:.3f}s")
-    if len(result.shape) == 1:
-        result = result.unsqueeze(0)
-
-    if not warmup:
-        for i in range(result.shape[0]):
-            logger.debug(result[i])
+            use_cache=use_cache
+            )
+        logger.info(f"Model forward completed: Result len is {len(result)}")
 
 def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens, tokenizer):
     layer_stack = []
@@ -183,8 +200,7 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
         hooks.append(layer.register_forward_hook(post_hook_fn))
 
     
-    __infer_layer(warmup=True, 
-                  model= model, max_len=seq_length, 
+    __infer_layer(model= model, max_len=seq_length, 
                   device=device, max_new_tokens=max_new_tokens, 
                   batch_size=batch_size, tokenizer=tokenizer)
 
