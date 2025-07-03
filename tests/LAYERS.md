@@ -6,7 +6,7 @@ Generate metrics by layers to be used in tests and model enablement debugging.
 2. [Get Thresholds](./LAYERS.md#2-get-thresholds)
 3. [Apply metrics where needed](./LAYERS.md#3-apply-the-thresholds-where-needed)
 
-The steps as part of the diagram bellow:
+The steps as part of the diagram below:
 ![generate flow](./resources/assets/metrics_fms_deepview_integration.zoom.png)
 To see the full integration with other debugging tools, check [item 3](./LAYERS.md#3-apply-the-thresholds-where-needed).
 
@@ -26,10 +26,10 @@ export MAX_NEW_TOKENS=128
 export OUTPUT_PATH=/tmp/output/granite
 ```
 
-These variables suport single and array values.
+These variables support single and array values.
 
 The argument required for this script is the `--mode`, which is the generation mode desired for the output; The choices can be `generate` or `model-forward`.
-- `generate` uses fms [generate](../scripts/generate_layers_metrics.py#L118) from ; It’s a high-level API that wraps many operations: forward pass, KV cache logic, sampling or greeting decoding, post-processing. 
+- `generate` uses FMS [generate](../scripts/generate_layers_metrics.py#L118); It’s a high-level API that wraps many operations: forward pass, KV cache logic, sampling or greeting decoding, post-processing. 
 ```python
 result = generate(
     model,
@@ -54,7 +54,7 @@ result = model.forward(
 
 ### How to run
 
-Once all is set-up, we can generate the csv metrics:
+Once all is set up, we can generate the CSV metrics:
 
 ```bash
 cd aiu-fms-testing-utils/tests/resources
@@ -104,7 +104,7 @@ Also, a JSON file is saved to the same output dir. A sample file can be found at
 
 ## 3. Apply the thresholds where needed
 
-In case of AIU debugging tools, the thresholds will be applied to compare AIU outputs with CPU, and then assert if the differences are within the threhsolds generated. Bellow, is an archtechture of the full integration:
+In case of AIU debugging tools, the thresholds will be applied to compare AIU outputs with CPU, and then assert if the differences are within the thresholds generated. Bellow, is an architecture of the full integration:
 ![full integration](./resources/assets/metrics_fms_deepview_integration.full.png)
 
 The box named `deepview layer debug` has the diagram of how the model layers outputs are generated to be compared against the CPU results. This is important so that the debug tools can catch operations and layers that have issues in their enablement for AIU hardware.
