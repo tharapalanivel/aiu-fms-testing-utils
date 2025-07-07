@@ -69,9 +69,13 @@ for model in models:
             for metric_file in metric_files:
 
                 with open(metric_file, "r") as file:
-                    next(file)
-                    for line in file:
-                        metric_list.append(float(line))
+                    try:
+                        next(file)
+                        for line in file:
+                            metric_list.append(float(line))
+                    except StopIteration:
+                        logger.info("No more metric files")
+                        pass
             logger.info(f"found {len(metric_files)} metric files")
             logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
@@ -82,9 +86,13 @@ for model in models:
                 layer_name = layer_name.replace(".csv","")
                 metric_layer_list = []
                 with open(metric_file, "r") as file:
-                    next(file)
-                    for line in file:
-                        metric_layer_list.append(float(line))
+                    try:
+                        next(file)
+                        for line in file:
+                            metric_layer_list.append(float(line))
+                    except StopIteration:
+                        logger.info("No more metric files")
+                        pass
                 layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             logger.info(f"found {len(layers)} layers metric files")
