@@ -57,6 +57,25 @@ metrics = [metric for metric in args.metrics]
 file_base = args.file_base
 layer_mode = args.file_base if args.file_base else False
 
+def sort_list_of_dictionaries(data):
+    """Sorts a list of dictionaries alphabetically by key.
+
+    Args:
+        data: A list of dictionaries, each with a single key-value pair.
+
+    Returns:
+        A new list of dictionaries sorted alphabetically by key.
+    """
+    # Extract keys and store them in a separate list
+    keys = [list(d.keys())[0] for d in data]
+
+    # Get the indices that would sort the keys
+    sorted_indices = sorted(range(len(keys)), key=lambda k: keys[k])
+
+    # Reconstruct the list in the sorted order
+    sorted_data = [data[i] for i in sorted_indices]
+    return sorted_data
+
 for model in models:
     result_dict = {"model_id": model}
     for metric in metrics:
@@ -109,6 +128,7 @@ for model in models:
                     logger.info(f"Layer {key} avg {metric} = {metric_val}")
 
     json_output_path = args.output_path if args.output_path else file_base
+    result_dict = sort_list_of_dictionaries(result_dict)
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
     with open(f_result_path, 'w') as fp:
         json.dump(result_dict, fp)

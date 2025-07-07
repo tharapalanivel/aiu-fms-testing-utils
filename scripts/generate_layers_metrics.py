@@ -97,6 +97,20 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     return input_ids, padding_kwargs
 
 def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer):
+    """
+    Infer a model with registered layer hooks using generated inputs.
+
+    Args:
+        model (nn.Module): The model to infer.
+        max_len (int): The maximum length of the input sequence.
+        device (str): The device to use for inference.
+        max_new_tokens (int): The maximum number of new tokens to generate.
+        batch_size (int): The batch size for inference.
+        tokenizer (Tokenizer): The tokenizer to use for encoding inputs.
+
+    Returns:
+        torch.Tensor: The inferred layer output.
+    """
     
     do_sample = False
     use_cache = True
@@ -139,6 +153,21 @@ def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer)
         logger.info(f"Model forward completed: Result len is {len(result)}")
 
 def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens, tokenizer):
+    """
+    This function registers hooks on the model to track the forward pass of each layer.
+    It returns a list of tuples containing the name and output of each layer in the model.
+
+    Args:
+        model (nn.Module): The PyTorch model to be analyzed.
+        batch_size (int): The batch size used for inference.
+        device (torch.device): The device on which the model is running.
+        seq_length (int): The maximum sequence length of the input data.
+        max_new_tokens (int): The maximum number of new tokens to be generated during inference.
+        tokenizer (Tokenizer): The tokenizer used for tokenization.
+
+    Returns:
+        list: A list of tuples containing the name and output of each layer in the model.
+    """
     layer_stack = []
     pt_compile_model_time = time.time()
 
@@ -228,6 +257,19 @@ def convert_tensor(output):
     return torch.zeros(size=(len(output), len(keys)))
 
 def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
+    """
+    Generate metrics for layers in a given model.
+
+    Args:
+        model_path (str): The path to the Hugging Face model.
+        batch_size (int): The batch size used for inference.
+        seq_length (int): The sequence length used for inference.
+        max_new_tokens (int): The maximum number of new tokens allowed for generation.
+
+    Returns:
+        None
+    """
+    
     torch.manual_seed(42)
     os.environ["COMPILATION_MODE"] = "offline_decoder"
 
