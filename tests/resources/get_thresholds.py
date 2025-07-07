@@ -44,6 +44,13 @@ parser.add_argument(
     action="store_true",
     help="Sets the metric generation mode to layers IO"
 )
+parser.add_argument(
+    "--output_path",
+    type=str,
+    default="/tmp/aiu-fms-testing-utils/output",
+    required=False,
+    help="Path where the json thresholds output for the layers will be saved.",
+)
 args = parser.parse_args()
 models = [model.replace("/", "--") for model in args.models]
 metrics = [metric for metric in args.metrics]
@@ -93,7 +100,8 @@ for model in models:
                     result_dict[metric].append(tmp)
                     logger.info(f"Layer {key} avg {metric} = {metric_val}")
 
-    f_result_path = os.path.join(file_base, f"{model}-thresholds.json")
+    json_output_path = args.output_path if args.output_path else file_base
+    f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
     with open(f_result_path, 'w') as fp:
         json.dump(result_dict, fp)
 
