@@ -127,9 +127,8 @@ for model in models:
                     tmp[key] = metric_val if not math.isnan(metric_val) else 0.0
                     result_dict[metric].append(tmp)
                     logger.info(f"Layer {key} avg {metric} = {metric_val}")
-
+            result_dict[metric] = sort_list_of_dictionaries(result_dict[metric])
     json_output_path = args.output_path if args.output_path else file_base
-    result_dict = sort_list_of_dictionaries(result_dict)
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
     with open(f_result_path, 'w') as fp:
         json.dump(result_dict, fp)
