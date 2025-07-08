@@ -111,7 +111,7 @@ for model in models:
         metric_list = []
         if not layer_mode:
             for metric_file in metric_files:
-                metric_list = load_metric_file(metric_file)
+                metric_list = load_metric_file(metric_file, layer_mode)
             logger.info(f"found {len(metric_files)} metric files")
             logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
@@ -120,7 +120,7 @@ for model in models:
                 layer_dict = {}
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
                 layer_name = layer_name.replace(".csv","")
-                metric_layer_list = load_metric_file(metric_file)
+                metric_layer_list = load_metric_file(metric_file, layer_mode)
                 layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             logger.info(f"found {len(layers)} layers metric files")
