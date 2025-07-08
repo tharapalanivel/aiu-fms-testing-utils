@@ -76,6 +76,32 @@ def sort_list_of_dictionaries(data):
     sorted_data = [data[i] for i in sorted_indices]
     return sorted_data
 
+def load_metric_file(file_path, layer_header):
+    """
+    Loads a metric file and returns its values as a list of floats.
+
+    Args:
+        file_path (str): The path to the metric file.
+        layer_header (bool): Whether to skip the first three lines of the file. Default is False.
+
+    Returns:
+        list[float]: A list of metric values read from the file.
+    """
+    values = []
+    try:
+        with open(file_path, "r") as file:
+            if layer_header:
+                for _ in range(3):
+                    next(file)
+            else:
+                next(file)  # skip single header
+            for line in file:
+                values.append(float(line))
+    except StopIteration:
+        logger.info("Path empty or no more metric files found.")
+        pass
+    return values
+
 for model in models:
     result_dict = {"model_id": model}
     for metric in metrics:
@@ -83,18 +109,9 @@ for model in models:
         metric_files = glob.glob(path)
         result_dict[metric] = []
         metric_list = []
-
         if not layer_mode:
             for metric_file in metric_files:
-
-                with open(metric_file, "r") as file:
-                    try:
-                        next(file)
-                        for line in file:
-                            metric_list.append(float(line))
-                    except StopIteration:
-                        logger.info("No more metric files")
-                        pass
+                metric_list = load_metric_file(metric_file)
             logger.info(f"found {len(metric_files)} metric files")
             logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
@@ -103,16 +120,7 @@ for model in models:
                 layer_dict = {}
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
                 layer_name = layer_name.replace(".csv","")
-                metric_layer_list = []
-                with open(metric_file, "r") as file:
-                    try:
-                        for _ in range(3):
-                            next(file)
-                        for line in file:
-                            metric_layer_list.append(float(line))
-                    except StopIteration:
-                        logger.info("No more metric files")
-                        pass
+                metric_layer_list = load_metric_file(metric_file)
                 layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             logger.info(f"found {len(layers)} layers metric files")
