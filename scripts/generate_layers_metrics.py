@@ -346,10 +346,10 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
 
                 if not os.path.exists(abs_diff_path):
                     logger.debug("saving abs_diff files")
-                    write_csv(abs_diff.flatten().tolist(), abs_diff_path, "abs_diff", tensor_cuda_out.shape, abs_diff.shape)
+                    write_csv(abs_diff.flatten().tolist(), abs_diff_path, "abs_diff", tensor_cuda_out.shape, tensor_cpu_out.shape, abs_diff.shape)
                 if not os.path.exists(cos_sim_path):
                     logger.debug("saving cos_sim files")
-                    write_csv(cos_sim.flatten().tolist(), cos_sim_path, "cos_sim", tensor_cuda_out.shape, cos_sim.shape)
+                    write_csv(cos_sim.flatten().tolist(), cos_sim_path, "cos_sim", tensor_cuda_out.shape, tensor_cpu_out.shape, cos_sim.shape)
 
     logger.info(f"Completed {model_path} layers' metrics generation")
 
