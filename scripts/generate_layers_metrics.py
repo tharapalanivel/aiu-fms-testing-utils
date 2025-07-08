@@ -244,7 +244,7 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
 def get_metric_values(metric_list):
     if isinstance(metric_list, list):
         metric_shape = metric_list[0].shape
-        metric_list_res = metric_list
+        metric_list_res = metric_list[0]
     else:
         metric_shape = metric_list.shape
         metric_list_res = metric_list.flatten().tolist()
