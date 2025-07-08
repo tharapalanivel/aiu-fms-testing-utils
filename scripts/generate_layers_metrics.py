@@ -241,9 +241,11 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
 
     return layer_stack
 
-def write_csv(l, path, metric):
+def write_csv(l, path, metric, gpu_layer_shape, cpu_layer_shape, output_shape):
     with open(path, 'w') as f:
         f.write(f'{metric}\n')
+        f.write(f'GPU shape {gpu_layer_shape} CPU shape {cpu_layer_shape}\n')
+        f.write(f'Metric shape {output_shape}\n')
         if not type(l) is float:
             for t in l:
                 f.write(f"{t}\n")
@@ -332,9 +334,9 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                     tensor_cpu_out = convert_tensor(cpu_output)
                 else:
                     tensor_cpu_out = cpu_output.to('cuda')
-                abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out).flatten().tolist()
-                cos = nn.CosineSimilarity(dim=0)
-                cos_sim = cos(tensor_cpu_out.unsqueeze(0), tensor_cuda_out.unsqueeze(0)).flatten().tolist()
+                abs_diff = torch.abs(tensor_cpu_out - tensor_cuda_out)
+                cos = nn.CosineSimilarity(dim=-1)
+                cos_sim = cos(tensor_cpu_out, tensor_cuda_out)
 
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')
                 layer_name = str(layer).replace('[','').replace(']', '')
@@ -344,11 +346,11 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
 
                 if not os.path.exists(abs_diff_path):
                     logger.debug("saving abs_diff files")
-                    write_csv(abs_diff, abs_diff_path, "abs_diff")
+                    write_csv(abs_diff.flatten().tolist(), abs_diff_path, "abs_diff", tensor_cuda_out.shape, abs_diff.shape)
                 if not os.path.exists(cos_sim_path):
                     logger.debug("saving cos_sim files")
-                    write_csv(cos_sim, cos_sim_path, "cos_sim")
-        
+                    write_csv(cos_sim.flatten().tolist(), cos_sim_path, "cos_sim", tensor_cuda_out.shape, cos_sim.shape)
+
     logger.info(f"Completed {model_path} layers' metrics generation")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:

@@ -106,7 +106,8 @@ for model in models:
                 metric_layer_list = []
                 with open(metric_file, "r") as file:
                     try:
-                        next(file)
+                        for _ in range(3):
+                            next(file)
                         for line in file:
                             metric_layer_list.append(float(line))
                     except StopIteration:
