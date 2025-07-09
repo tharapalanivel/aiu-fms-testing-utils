@@ -113,12 +113,17 @@ for model in models:
                     tmp = {}
                     if "abs_diff" in metric:
                         metric_val = abs_diff_linalg_norm(l[key])
-                    if "mean" in metric:
-                        metric_val = list_mean(l[key])
-                    else:
-                        metric_val = list_avg(l[key])
-                    result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
-                    logger.info(f"Layer {key} avg {metric} = {metric_val}")
+                        logger.info(f"Layer {key} abs_diff_linalg_norm = {metric_val}")
+                        result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
+                    if "cos_sim" in metric:
+                        cos_sim_mean = list_mean(l[key])
+                        mean_key = f"{metric}_mean"
+                        result_dict[mean_key][key] = cos_sim_mean if not math.isnan(cos_sim_mean) else 0.0
+                        logger.info(f"Layer {key} cos_sim_mean = {cos_sim_mean}")
+                        cos_sim_avg = list_avg(l[key])
+                        avg_key = f"{metric}_avg"
+                        result_dict[avg_key][key] = cos_sim_avg if not math.isnan(cos_sim_avg) else 0.0
+                        logger.info(f"Layer {key} cos_sim_avg = {metric_val}")
 
     json_output_path = args.output_path if args.output_path else file_base
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
