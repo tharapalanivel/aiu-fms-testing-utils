@@ -28,45 +28,79 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
+    "--models",
+    type=str,
+    default=[],
+    nargs='+',
+    required=True,
+    help="List of models id separated by space. Eg.: ibm-granite/granite-20b-code-instruct-8k /tmp/models/granite-20b-code-cobol-v1"
+)
+parser.add_argument(
     "--mode",
     choices=["generate", "model-forward"],
     default="generate",
     required=True,
     help="Sets the output generation mode."
 )
+parser.add_argument(
+    "--batch_sizes",
+    type=int,
+    default=1,
+    nargs='+',
+    required=True,
+    help="Batch sizes separated by comma."
+)
+parser.add_argument(
+    "--seq_lengths",
+    type=int,
+    default=64,
+    nargs='+',
+    required=True,
+    help="Sequence lengths separated by comma."
+)
+parser.add_argument(
+    "--max_new_tokens",
+    type=int,
+    default=128,
+    nargs='+',
+    required=True,
+    help="Max number of generated tokens separated by comma."
+)
+parser.add_argument(
+    "--output_path",
+    type=str,
+    default="/tmp/output",
+    help="Path to save output files"
+)
+parser.add_argument(
+    "--sharegpt_path",
+    type=str,
+    default=os.path.expanduser("~/share_gpt.json"),
+    help="Path to sharegpt data json"
+)
 
 args = parser.parse_args()
 mode = args.mode
-
-ORIGINAL_HF_HOME = os.environ.get("HF_HOME", None)
-
-SHARE_GPT_DATASET_PATH = os.environ.get(
-    "SHARE_GPT_DATASET_PATH", os.path.expanduser("~/share_gpt.json")
-)
-
-common_model_paths = os.environ.get(
-    "MODEL_PATHS",
-    ["ibm-granite/granite-3.2-8b-instruct"],
-)
-common_batch_sizes = os.environ.get("BATCH_SIZES", [1, 2, 4, 8])
-common_seq_lengths = os.environ.get("SEQ_LENGTHS", [64, 2048])
-common_max_new_tokens = os.environ.get("MAX_NEW_TOKENS", [128])
-
-output_dir = os.environ.get("OUTPUT_PATH", "/tmp/output")
+output_path = args.output_path
+sharegpt_path = args.sharegpt_path
 
 # pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/granite-3-8b-base,/tmp/models/granite-7b-base"
+common_model_paths = args.models
 if isinstance(common_model_paths, str):
     common_model_paths = common_model_paths.split(",")
 
 # pass custom common batch sizes as a comma separated str of ints
+common_batch_sizes = args.batch_sizes
 if isinstance(common_batch_sizes, str):
     common_batch_sizes = [int(bs) for bs in common_batch_sizes.split(",")]
 
 # pass custom common seq lengths as a comma separated str of ints
+common_seq_lengths = args.seq_lengths
 if isinstance(common_seq_lengths, str):
     common_seq_lengths = [int(sl) for sl in common_seq_lengths.split(",")]
 
 # pass custom common max new tokens as a comma separated str of ints
+common_max_new_tokens = args.max_new_tokens
 if isinstance(common_max_new_tokens, str):
     common_max_new_tokens = [int(mnt) for mnt in common_max_new_tokens.split(",")]
 
@@ -81,7 +115,7 @@ common_shapes = list(
 
 def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
     prompts_and_sizes = sample_sharegpt_requests(
-        SHARE_GPT_DATASET_PATH,
+        sharegpt_path,
         batch_size,
         tokenizer,
         int(seq_length / 2),
@@ -243,8 +277,9 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
 
 def get_metric_values(metric_list):
     if isinstance(metric_list, list):
-        metric_shape = metric_list[0].shape
-        metric_list_res = metric_list[0].flatten().tolist()
+        # shape of the first tensor to be printed in file
+        metric_shape = metric_list[0].shape 
+        metric_list_res = torch.stack(metric_list).flatten().tolist()
     else:
         metric_shape = metric_list.shape
         metric_list_res = metric_list.flatten().tolist()
@@ -350,6 +385,9 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                     cos_sim = []
                     abs_diff = []
                     if len(cpu_layer) < 2 and len(cpu_layer[-1]) == 1:
+                        # Some layers have tuple outputs, with more than 2 tensors - this path compares this type of output;
+                        # In case of head layers, the last item of the tuple is a list of tensors with the same lenght as the 
+                        # number of layers in the model. The else path compares this other case.
                         tensor_cuda_out = cuda_output[-1]
                         tensor_cpu_out = cpu_layer[-1]
                         for i in range(len(cpu_layer)):
@@ -385,8 +423,8 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')
                 layer_name = str(layer).replace('[','').replace(']', '')
 
-                abs_diff_path = os.path.join(output_dir, f"{prefix}--{layer_name}.abs_diff.csv")
-                cos_sim_path = os.path.join(output_dir, f"{prefix}--{layer_name}.cos_sim.csv")
+                abs_diff_path = os.path.join(output_path, f"{prefix}--{layer_name}.abs_diff.csv")
+                cos_sim_path = os.path.join(output_path, f"{prefix}--{layer_name}.cos_sim.csv")
 
                 cos_sim_res, cos_shape = get_metric_values(cos_sim)
                 abs_diff_res, abs_diff_shape = get_metric_values(abs_diff)

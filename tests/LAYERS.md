@@ -104,7 +104,7 @@ Also, a JSON file is saved to the same output dir. A sample file can be found at
 
 ## 3. Apply the thresholds where needed
 
-In case of AIU debugging tools, the thresholds will be applied to compare AIU outputs with CPU, and then assert if the differences are within the thresholds generated. Bellow, is an architecture of the full integration:
+In case of AIU debugging tools, the thresholds will be applied to compare AIU outputs with CPU, and then assert if the differences are within the thresholds generated. Below, is an architecture of the full integration:
 ![full integration](./resources/assets/metrics_fms_deepview_integration.full.png)
 
 The box named `deepview layer debug` has the diagram of how the model layers outputs are generated to be compared against the CPU results. This is important so that the debug tools can catch operations and layers that have issues in their enablement for AIU hardware.
