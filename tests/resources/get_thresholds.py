@@ -8,6 +8,8 @@ import logging
 
 import json
 
+from aiu_fms_testing_utils.utils.metrics_utils import abs_diff_linalg_norm, list_mean, list_avg
+
 logger = logging.getLogger(__name__)
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(message)s")
@@ -110,9 +112,11 @@ for model in models:
                 for key in l.keys():
                     tmp = {}
                     if "abs_diff" in metric:
-                        metric_val = np.linalg.norm(l[key])
+                        metric_val = abs_diff_linalg_norm(l[key])
+                    if "mean" in metric:
+                        metric_val = list_mean(l[key])
                     else:
-                        metric_val = np.mean(l[key])
+                        metric_val = list_avg(l[key])
                     result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
                     logger.info(f"Layer {key} avg {metric} = {metric_val}")
 

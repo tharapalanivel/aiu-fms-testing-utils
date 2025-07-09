@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import time
 from fms.utils.tokenizers import BaseTokenizer
+from fms.utils.generation import pad_input_ids
+
 from aiu_fms_testing_utils.utils.aiu_setup import dprint
 from typing import Optional, List, Tuple
 import os
@@ -135,3 +137,19 @@ def sample_squad_v2_qa_requests(
     return __sample_requests(ds, num_requests, tokenizer, prompt_length_min, prompt_length_max, seed)
     
 
+def prepare_inputs(batch_size, seq_length, tokenizer, sharegpt_path, seed=0):
+    prompts_and_sizes = sample_sharegpt_requests(
+        sharegpt_path,
+        batch_size,
+        tokenizer,
+        int(seq_length / 2),
+        seq_length,
+        seed,
+    )
+    ## TODO: for each prompt 
+    prompt_list = []
+    for prompt, _ in prompts_and_sizes:
+        prompt_list.append(ids_for_prompt(prompt, tokenizer))
+
+    input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
+    return input_ids, padding_kwargs

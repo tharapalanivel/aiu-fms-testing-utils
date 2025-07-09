@@ -9,14 +9,12 @@ import torch.nn as nn
 
 from fms.utils import tokenizers
 from fms.models import get_model
-from fms.utils.generation import pad_input_ids, generate
+from fms.utils.generation import generate
 
 from aiu_fms_testing_utils.testing.validation import get_default_validation_prefix
 
-from aiu_fms_testing_utils.utils import (
-    sample_sharegpt_requests,
-    ids_for_prompt,
-)
+from aiu_fms_testing_utils.utils import prepare_inputs
+from aiu_fms_testing_utils.utils.metrics_utils import tensor_abs_diff, tensor_cos_sim
 
 
 logger = logging.getLogger(__name__)
@@ -107,23 +105,6 @@ common_shapes = list(
     )
 )
 
-def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
-    prompts_and_sizes = sample_sharegpt_requests(
-        sharegpt_path,
-        batch_size,
-        tokenizer,
-        int(seq_length / 2),
-        seq_length,
-        seed,
-    )
-    ## TODO: for each prompt 
-    prompt_list = []
-    for prompt, _ in prompts_and_sizes:
-        prompt_list.append(ids_for_prompt(prompt, tokenizer))
-
-    input_ids, padding_kwargs = pad_input_ids(prompt_list, min_pad_length=seq_length)
-    return input_ids, padding_kwargs
-
 def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer):
     """
     Infer a model with registered layer hooks using generated inputs.
@@ -143,7 +124,7 @@ def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer)
     do_sample = False
     use_cache = True
 
-    prompts = __prepare_inputs(batch_size, max_len, tokenizer)
+    prompts = prepare_inputs(batch_size, max_len, tokenizer, sharegpt_path)
     ids, pad_input_ids = prompts
 
     if "cuda" in device:
@@ -370,7 +351,6 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     for layer, cuda_output in layer_stack_cuda:
         tensor_cpu_out = None
         tensor_cuda_out = None
-        cos = nn.CosineSimilarity(dim=-1)
         for cpu_layer, cpu_output in layer_stack_cpu:
             if cpu_layer == layer:
                 logger.info("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
@@ -386,9 +366,9 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                         tensor_cpu_out = cpu_layer[-1]
                         for i in range(len(cpu_layer)):
                             logger.debug(f"inputs: {cuda_output[i].shape} {cpu_output[i].to('cuda').shape}")
-                            cos_sim.append(cos(cuda_output[i], cpu_output[i].to('cuda')))
-                            logger.debug(f"cos_sim output:{cos(cuda_output[i], cpu_output[i].to('cuda')).shape}")
-                            abs_diff.append(torch.abs(cuda_output[i] - cpu_output[i].to('cuda')))
+                            cos_sim.append(tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')))
+                            logger.debug(f"cos_sim output:{tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')).shape}")
+                            abs_diff.append(tensor_abs_diff(cuda_output[i] - cpu_output[i].to('cuda')))
                     else:
                         head_tensor_cpu = cpu_output[-1]
                         head_tensor_gpu = cuda_output[-1]
@@ -398,21 +378,21 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                     tensor_cuda_out = head_tensor_gpu[i][j]
                                     tensor_cpu_out = head_tensor_cpu[i][j]
                                     logger.debug(f"inputs: {head_tensor_gpu[i][j].shape} {head_tensor_cpu[i][j].to('cuda').shape}")
-                                    cos_sim.append(cos(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
-                                    logger.debug(f"cos_sim output:{cos(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]).shape}")
-                                    abs_diff.append(torch.abs(head_tensor_cpu[i][j].to('cuda') - head_tensor_gpu[i][j]))
+                                    cos_sim.append(tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
+                                    logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]).shape}")
+                                    abs_diff.append(tensor_abs_diff(head_tensor_cpu[i][j].to('cuda') - head_tensor_gpu[i][j]))
                             else:
                                 tensor_cuda_out = head_tensor_gpu[i]
                                 tensor_cpu_out = head_tensor_cpu[i]
                                 logger.debug(f"inputs: {head_tensor_gpu[i].shape} {head_tensor_cpu[i].to('cuda').shape}")
-                                cos_sim.append(cos(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
-                                logger.debug(f"cos_sim output:{cos(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]).shape}")
-                                abs_diff.append(torch.abs(head_tensor_cpu[i].to('cuda') - head_tensor_gpu[i]))
+                                cos_sim.append(tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
+                                logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]).shape}")
+                                abs_diff.append(tensor_abs_diff(head_tensor_cpu[i].to('cuda') - head_tensor_gpu[i]))
                 else:
                     tensor_cpu_out = cpu_output.to('cuda')
                     tensor_cuda_out = cuda_output
-                    abs_diff = torch.abs(tensor_cpu_out - cuda_output)
-                    cos_sim = cos(tensor_cpu_out, cuda_output)
+                    abs_diff = tensor_abs_diff(tensor_cpu_out - cuda_output)
+                    cos_sim = tensor_cos_sim(tensor_cpu_out, cuda_output)
 
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')
                 layer_name = str(layer).replace('[','').replace(']', '')
