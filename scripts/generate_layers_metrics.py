@@ -44,27 +44,24 @@ parser.add_argument(
 )
 parser.add_argument(
     "--batch_sizes",
-    type=int,
-    default=1,
-    nargs='+',
+    type=str,
+    default="1",
     required=True,
-    help="Batch sizes separated by comma."
+    help="Batch sizes separated by comma. Eg.: 1,2"
 )
 parser.add_argument(
     "--seq_lengths",
-    type=int,
-    default=64,
-    nargs='+',
+    type=str,
+    default="64",
     required=True,
-    help="Sequence lengths separated by comma."
+    help="Sequence lengths separated by comma. Eg.: 64,2048"
 )
 parser.add_argument(
     "--max_new_tokens",
-    type=int,
-    default=128,
-    nargs='+',
+    type=str,
+    default="128",
     required=True,
-    help="Max number of generated tokens separated by comma."
+    help="Max number of generated tokens separated by comma. Eg.: 64,128"
 )
 parser.add_argument(
     "--output_path",
