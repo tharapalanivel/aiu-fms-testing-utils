@@ -87,8 +87,6 @@ def load_metric_file(file_path, layer_header):
 
 for model in models:
     result_dict = {"model_id": model}
-    if "cos_sim" in metrics:
-        result_dict.update({"cos_sim_mean":{},"cos_sim_avg":{}})
     for metric in metrics:
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
@@ -112,18 +110,18 @@ for model in models:
 
             for l in layers:
                 for key in l.keys():
-                    tmp = {}
                     if "abs_diff" in metric:
-                        metric_val = abs_diff_linalg_norm(l[key])
+                        metric_val = abs_diff_linalg_norm(l[key]) if not math.isnan(abs_diff_linalg_norm(l[key])) else 0.0
                         logger.info(f"Layer {key} abs_diff_linalg_norm = {metric_val}")
-                        result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
-                    if "cos_sim" in metric:
-                        cos_sim_mean = list_mean(l[key])
-                        result_dict["cos_sim_mean"][key] = cos_sim_mean if not math.isnan(cos_sim_mean) else 0.0
-                        logger.info(f"Layer {key} cos_sim_mean = {cos_sim_mean}")
-                        cos_sim_avg = list_avg(l[key])
-                        result_dict["cos_sim_avg"][key] = cos_sim_avg if not math.isnan(cos_sim_avg) else 0.0
-                        logger.info(f"Layer {key} cos_sim_avg = {cos_sim_avg}")
+                        result_dict[metric][key] = metric_val 
+                    elif "avg" in metric:
+                        metric_avg = list_avg(l[key]) if not math.isnan(list_avg(l[key])) else 0.0
+                        logger.info(f"Layer {key} {metric} = {metric_avg}")
+                        result_dict[metric][key] = metric_avg
+                    elif "mean" in metric:
+                        metric_mean = list_mean(l[key]) if not math.isnan(list_mean(l[key])) else 0.0
+                        logger.info(f"Layer {key} {metric} = {metric_mean}")
+                        result_dict[metric][key] = metric_mean
 
     json_output_path = args.output_path if args.output_path else file_base
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
