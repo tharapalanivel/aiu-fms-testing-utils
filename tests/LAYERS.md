@@ -97,28 +97,32 @@ To get the second step of the flow and get the thresholds by layer, run:
 ```bash
 cd /aiu-fms-testing-utils/tests/resources
 
-python3 get_thresholds.py --models ibm-granite/granite-3.2-8b-instruct --metrics abs_diff cos_sim --file_base /tmp/output --layer_io
+python3 get_thresholds.py --models ibm-granite/granite-3.2-8b-instruct --metrics abs_diff cos_sim_avg cos_sim_men --file_base /tmp/output --layer_io
 ```
 It should print the metric of each layer:
 ```bash
-Layer model.base_model.layers25.attn.in_proj.query avg abs_diff = 2.079996666484281
-Layer model.base_model.layers25.attn.in_proj.key avg abs_diff = 1.2256532914682756
-Layer model.base_model.layers25.attn.in_proj.value avg abs_diff = 0.8446561344670284
-Layer model.base_model.layers25.attn.in_proj avg abs_diff = 0.0
-Layer model.base_model.layers25.attn.dense avg abs_diff = 0.23142293885894077
-Layer model.base_model.layers25.ff_ln avg abs_diff = 0.9550253005897409
-Layer model.base_model.layers25.ff_sub_layer.wg avg abs_diff = 1.2256491705546648
-Layer model.base_model.layers25.ff_sub_layer.a avg abs_diff = 0.5235781749861929
-Layer model.base_model.layers25.ff_sub_layer.w1 avg abs_diff = 1.2707070667436549
-Layer model.base_model.layers25.ff_sub_layer.w2 avg abs_diff = 0.5201997339672954
-Layer model.base_model.layers25.ff_sub_layer avg abs_diff = 0.5201997339672954
-Layer model.base_model.layers26.ln avg abs_diff = 0.04852477119171675
+2025-07-09 19:02:40,657 found 484 layers metric files
+2025-07-09 19:02:40,674 Layer model.base_model.embedding abs_diff_linalg_norm = 1.7258892434335918e-07
+2025-07-09 19:02:40,690 Layer model.base_model.layers0.ln abs_diff_linalg_norm = 0.4083323414747196
+2025-07-09 19:02:40,707 Layer model.base_model.layers0.attn.in_proj.query abs_diff_linalg_norm = 0.7099368339133884
+2025-07-09 19:02:40,712 Layer model.base_model.layers0.attn.in_proj.key abs_diff_linalg_norm = 0.40915828503373886
+2025-07-09 19:02:40,716 Layer model.base_model.layers0.attn.in_proj.value abs_diff_linalg_norm = 0.12381335209555287
+2025-07-09 19:02:40,721 Layer model.base_model.layers0.attn.in_proj abs_diff_linalg_norm = 0.12381335209555287
 [...]
-Layer model.base_model.layers39.attn.in_proj.query avg cos_sim = 0.999176025390625
-Layer model.base_model.layers39.attn.in_proj.key avg cos_sim = 0.9991455078125
-Layer model.base_model.layers39.attn.in_proj.value avg cos_sim = 0.9986572265625
-Layer model.base_model.layers39.attn.in_proj avg cos_sim = 0.0
-Layer model.base_model.layers39.attn.dense avg cos_sim = 0.9987258911132812
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.attn.in_proj.value cos_sim_avg = 0.9999685110524297
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.attn.in_proj cos_sim_avg = 0.9999685110524297
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.attn.dense cos_sim_avg = 0.9999954961240292
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.ff_ln cos_sim_avg = 1.0000354265794158
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.ff_sub_layer.wg cos_sim_avg = 1.0000474276021123
+2025-07-09 19:03:27,029 Layer model.base_model.layers39.ff_sub_layer.a cos_sim_avg = 1.0000188555568457
+[...]
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.attn.in_proj.query cos_sim_mean = 0.9999569654464722
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.attn.in_proj.key cos_sim_mean = 1.000030318275094
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.attn.in_proj.value cos_sim_mean = 0.9999886471778154
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.attn.in_proj cos_sim_mean = 0.9999886471778154
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.attn.dense cos_sim_mean = 1.0000049602240324
+2025-07-09 19:03:27,055 Layer model.base_model.layers0.ff_ln cos_sim_mean = 0.9999961135908961
+
 ```
 Also, a JSON file is saved to the same output dir. A sample file can be found at: [sample_layer_th.json](https://github.com/flaviabeo/aiu-fms-testing-utils/blob/generate_metrics_layers/tests/resources/sample_layer_th.json)
 
