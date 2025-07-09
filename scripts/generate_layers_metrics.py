@@ -368,7 +368,7 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                             logger.debug(f"inputs: {cuda_output[i].shape} {cpu_output[i].to('cuda').shape}")
                             cos_sim.append(tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')))
                             logger.debug(f"cos_sim output:{tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')).shape}")
-                            abs_diff.append(tensor_abs_diff(cuda_output[i] - cpu_output[i].to('cuda')))
+                            abs_diff.append(tensor_abs_diff(cuda_output[i], cpu_output[i].to('cuda')))
                     else:
                         head_tensor_cpu = cpu_output[-1]
                         head_tensor_gpu = cuda_output[-1]
@@ -380,18 +380,18 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                     logger.debug(f"inputs: {head_tensor_gpu[i][j].shape} {head_tensor_cpu[i][j].to('cuda').shape}")
                                     cos_sim.append(tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
                                     logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]).shape}")
-                                    abs_diff.append(tensor_abs_diff(head_tensor_cpu[i][j].to('cuda') - head_tensor_gpu[i][j]))
+                                    abs_diff.append(tensor_abs_diff(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
                             else:
                                 tensor_cuda_out = head_tensor_gpu[i]
                                 tensor_cpu_out = head_tensor_cpu[i]
                                 logger.debug(f"inputs: {head_tensor_gpu[i].shape} {head_tensor_cpu[i].to('cuda').shape}")
                                 cos_sim.append(tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
                                 logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]).shape}")
-                                abs_diff.append(tensor_abs_diff(head_tensor_cpu[i].to('cuda') - head_tensor_gpu[i]))
+                                abs_diff.append(tensor_abs_diff(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
                 else:
                     tensor_cpu_out = cpu_output.to('cuda')
                     tensor_cuda_out = cuda_output
-                    abs_diff = tensor_abs_diff(tensor_cpu_out - cuda_output)
+                    abs_diff = tensor_abs_diff(tensor_cpu_out, cuda_output)
                     cos_sim = tensor_cos_sim(tensor_cpu_out, cuda_output)
 
                 prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')

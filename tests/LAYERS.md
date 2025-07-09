@@ -81,7 +81,7 @@ cd aiu-fms-testing-utils/tests/resources
 
 mkdir /tmp/output
 
-python3 generate_layers_metrics.py --mode model-forward --models ibm-granite/granite-20b-code-instruct-8k --batch_sizes 1 --seq_lengths 64 --max_new_tokens 128
+python3 generate_layers_metrics.py --mode model-forward --models ibm-granite/granite-3.2-8b-instruct --batch_sizes 1 --seq_lengths 64 --max_new_tokens 128
 ```
 The files should get created at `/tmp/output` dir:
 ```bash
