@@ -87,6 +87,8 @@ def load_metric_file(file_path, layer_header):
 
 for model in models:
     result_dict = {"model_id": model}
+    if "cos_sim" in metrics:
+        result_dict.update({"cos_sim_mean":{},"cos_sim_avg":{}})
     for metric in metrics:
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
@@ -117,13 +119,11 @@ for model in models:
                         result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
                     if "cos_sim" in metric:
                         cos_sim_mean = list_mean(l[key])
-                        mean_key = f"{metric}_mean"
-                        result_dict[mean_key][key] = cos_sim_mean if not math.isnan(cos_sim_mean) else 0.0
+                        result_dict["cos_sim_mean"][key] = cos_sim_mean if not math.isnan(cos_sim_mean) else 0.0
                         logger.info(f"Layer {key} cos_sim_mean = {cos_sim_mean}")
                         cos_sim_avg = list_avg(l[key])
-                        avg_key = f"{metric}_avg"
-                        result_dict[avg_key][key] = cos_sim_avg if not math.isnan(cos_sim_avg) else 0.0
-                        logger.info(f"Layer {key} cos_sim_avg = {metric_val}")
+                        result_dict["cos_sim_avg"][key] = cos_sim_avg if not math.isnan(cos_sim_avg) else 0.0
+                        logger.info(f"Layer {key} cos_sim_avg = {cos_sim_avg}")
 
     json_output_path = args.output_path if args.output_path else file_base
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
