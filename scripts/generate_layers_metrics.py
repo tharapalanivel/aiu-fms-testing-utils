@@ -177,7 +177,7 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
     Returns:
         list: A list of tuples containing the name and output of each layer in the model.
     """
-    layer_stack = []
+    layer_stack = {}
     pt_compile_model_time = time.time()
 
     module_depth = {}
@@ -228,8 +228,10 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
     def post_hook_fn(module, input, output):
         layer_name = module_name.get(module, 0)
         # Save inputs and outputs
+        tmp = {}
         if hasattr(module, '_debug_input'):
-            layer_stack.append((layer_name, output))
+            tmp[layer_name] = output
+            layer_stack.update(tmp)
             # Clean up
             delattr(module, '_debug_input')
     
@@ -346,71 +348,73 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                              seq_length=seq_length, max_new_tokens=max_new_tokens, 
                                              tokenizer=tokenizer)
 
-    assert len(layer_stack_cuda) == len(layer_stack_cpu)
+    assert len(layer_stack_cuda.keys()) == len(layer_stack_cpu.keys())
 
-    for layer, cuda_output in layer_stack_cuda:
+    for layer_key, output_val in layer_stack_cuda.items():
         tensor_cpu_out = None
         tensor_cuda_out = None
-        for cpu_layer, cpu_output in layer_stack_cpu:
-            if cpu_layer == layer:
-                logger.info("CPU Layer {} GPU Layer {}".format(cpu_layer, layer))
 
-                if type(cpu_output) is tuple and type(cuda_output) is tuple:
-                    cos_sim = []
-                    abs_diff = []
-                    if len(cpu_layer) < 2 and len(cpu_layer[-1]) == 1:
-                        # Some layers have tuple outputs, with more than 2 tensors - this path compares this type of output;
-                        # In case of head layers, the last item of the tuple is a list of tensors with the same lenght as the 
-                        # number of layers in the model. The else path compares this other case.
-                        tensor_cuda_out = cuda_output[-1]
-                        tensor_cpu_out = cpu_layer[-1]
-                        for i in range(len(cpu_layer)):
-                            logger.debug(f"inputs: {cuda_output[i].shape} {cpu_output[i].to('cuda').shape}")
-                            cos_sim.append(tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')))
-                            logger.debug(f"cos_sim output:{tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')).shape}")
-                            abs_diff.append(tensor_abs_diff(cuda_output[i], cpu_output[i].to('cuda')))
-                    else:
-                        head_tensor_cpu = cpu_output[-1]
-                        head_tensor_gpu = cuda_output[-1]
-                        for i in range(len(head_tensor_gpu)):
-                            if isinstance(head_tensor_gpu[i], tuple):
-                                for j in range(len(head_tensor_gpu[i])):
-                                    tensor_cuda_out = head_tensor_gpu[i][j]
-                                    tensor_cpu_out = head_tensor_cpu[i][j]
-                                    logger.debug(f"inputs: {head_tensor_gpu[i][j].shape} {head_tensor_cpu[i][j].to('cuda').shape}")
-                                    cos_sim.append(tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
-                                    logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]).shape}")
-                                    abs_diff.append(tensor_abs_diff(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
-                            else:
-                                tensor_cuda_out = head_tensor_gpu[i]
-                                tensor_cpu_out = head_tensor_cpu[i]
-                                logger.debug(f"inputs: {head_tensor_gpu[i].shape} {head_tensor_cpu[i].to('cuda').shape}")
-                                cos_sim.append(tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
-                                logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]).shape}")
-                                abs_diff.append(tensor_abs_diff(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
+        if layer_key in layer_stack_cpu.keys():
+            cpu_output = layer_stack_cpu[layer_key]
+            cuda_output = output_val
+            logger.info(f"Comparing CPU and GPU Layer {layer_key} output")
+
+            if type(cpu_output) is tuple and type(cuda_output) is tuple:
+                cos_sim = []
+                abs_diff = []
+                if len(cpu_output) < 2 and len(cpu_output[-1]) == 1:
+                    # Some layers have tuple outputs, with more than 2 tensors - this path compares this type of output;
+                    # In case of head layers, the last item of the tuple is a list of tensors with the same lenght as the 
+                    # number of layers in the model. The else path compares this other case.
+                    tensor_cuda_out = cuda_output[-1]
+                    tensor_cpu_out = cpu_output[-1]
+                    for i in range(len(cpu_output)):
+                        logger.debug(f"inputs: {cuda_output[i].shape} {cpu_output[i].to('cuda').shape}")
+                        cos_sim.append(tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')))
+                        logger.debug(f"cos_sim output:{tensor_cos_sim(cuda_output[i], cpu_output[i].to('cuda')).shape}")
+                        abs_diff.append(tensor_abs_diff(cuda_output[i], cpu_output[i].to('cuda')))
                 else:
-                    tensor_cpu_out = cpu_output.to('cuda')
-                    tensor_cuda_out = cuda_output
-                    abs_diff = tensor_abs_diff(tensor_cpu_out, cuda_output)
-                    cos_sim = tensor_cos_sim(tensor_cpu_out, cuda_output)
+                    head_tensor_cpu = cpu_output[-1]
+                    head_tensor_gpu = cuda_output[-1]
+                    for i in range(len(head_tensor_gpu)):
+                        if isinstance(head_tensor_gpu[i], tuple):
+                            for j in range(len(head_tensor_gpu[i])):
+                                tensor_cuda_out = head_tensor_gpu[i][j]
+                                tensor_cpu_out = head_tensor_cpu[i][j]
+                                logger.debug(f"inputs: {head_tensor_gpu[i][j].shape} {head_tensor_cpu[i][j].to('cuda').shape}")
+                                cos_sim.append(tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
+                                logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]).shape}")
+                                abs_diff.append(tensor_abs_diff(head_tensor_cpu[i][j].to('cuda'), head_tensor_gpu[i][j]))
+                        else:
+                            tensor_cuda_out = head_tensor_gpu[i]
+                            tensor_cpu_out = head_tensor_cpu[i]
+                            logger.debug(f"inputs: {head_tensor_gpu[i].shape} {head_tensor_cpu[i].to('cuda').shape}")
+                            cos_sim.append(tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
+                            logger.debug(f"cos_sim output:{tensor_cos_sim(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]).shape}")
+                            abs_diff.append(tensor_abs_diff(head_tensor_cpu[i].to('cuda'), head_tensor_gpu[i]))
+            else:
+                tensor_cpu_out = cpu_output.to('cuda')
+                tensor_cuda_out = cuda_output
+                abs_diff = tensor_abs_diff(tensor_cpu_out, cuda_output)
+                cos_sim = tensor_cos_sim(tensor_cpu_out, cuda_output)
 
-                prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')
-                layer_name = str(layer).replace('[','').replace(']', '')
+            prefix = get_default_validation_prefix(model_path, max_new_token, batch_size, seq_length, 'float16')
+            layer_name = str(layer_key).replace('[','').replace(']', '')
 
-                abs_diff_path = os.path.join(output_path, f"{prefix}--{layer_name}.abs_diff.csv")
-                cos_sim_path = os.path.join(output_path, f"{prefix}--{layer_name}.cos_sim.csv")
+            abs_diff_path = os.path.join(output_path, f"{prefix}--{layer_name}.abs_diff.csv")
+            cos_sim_path = os.path.join(output_path, f"{prefix}--{layer_name}.cos_sim.csv")
 
-                cos_sim_res, cos_shape = get_metric_values(cos_sim)
-                abs_diff_res, abs_diff_shape = get_metric_values(abs_diff)
+            cos_sim_res, cos_shape = get_metric_values(cos_sim)
+            abs_diff_res, abs_diff_shape = get_metric_values(abs_diff)
 
-                if not os.path.exists(abs_diff_path):
-                    logger.debug("saving abs_diff files")
-                    write_csv(abs_diff_res, abs_diff_path, "abs_diff", tensor_cuda_out.shape, tensor_cpu_out.shape, abs_diff_shape)
-                if not os.path.exists(cos_sim_path):
-                    logger.debug("saving cos_sim files")
-                    write_csv(cos_sim_res, cos_sim_path, "cos_sim", tensor_cuda_out.shape, tensor_cpu_out.shape, cos_shape)
+            if not os.path.exists(abs_diff_path):
+                logger.debug("saving abs_diff files")
+                write_csv(abs_diff_res, abs_diff_path, "abs_diff", tensor_cuda_out.shape, tensor_cpu_out.shape, abs_diff_shape)
+            if not os.path.exists(cos_sim_path):
+                logger.debug("saving cos_sim files")
+                write_csv(cos_sim_res, cos_sim_path, "cos_sim", tensor_cuda_out.shape, tensor_cpu_out.shape, cos_shape)
 
-    logger.info(f"Completed {model_path} layers' metrics generation")
+    logger.info(f"Completed {model_path} layers' metrics generation with {mode} mode")
 
 for model_id, batch_size, sequence_length, max_new_token in common_shapes:
     logger.info(f"testing model_id-{model_id}, max_new_tokens-{max_new_token}, batch_size-{batch_size}, seq_length-{sequence_length}")
