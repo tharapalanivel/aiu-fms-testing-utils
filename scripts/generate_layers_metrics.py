@@ -33,7 +33,7 @@ parser.add_argument(
     default=[],
     nargs='+',
     required=True,
-    help="List of models id separated by space. Eg.: ibm-granite/granite-20b-code-instruct-8k /tmp/models/granite-20b-code-cobol-v1"
+    help="List of models id separated by space. Eg.: ibm-granite/granite-3.3-8b-instruct mistralai/Mistral-7B-Instruct-v0.3"
 )
 parser.add_argument(
     "--mode",
@@ -81,10 +81,7 @@ mode = args.mode
 output_path = args.output_path
 sharegpt_path = args.sharegpt_path
 
-# pass custom model path list for eg: EXPORT FMS_TESTING_COMMON_MODEL_PATHS="/tmp/models/granite-3-8b-base,/tmp/models/granite-7b-base"
-common_model_paths = args.models
-if isinstance(common_model_paths, str):
-    common_model_paths = common_model_paths.split(",")
+common_model_paths = [model for model in args.models]
 
 # pass custom common batch sizes as a comma separated str of ints
 common_batch_sizes = args.batch_sizes
