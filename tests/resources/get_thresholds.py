@@ -102,7 +102,7 @@ for model in models:
             layers = []
             for metric_file in metric_files:
                 layer_dict = {}
-                layer_name = metric_file.split("--")[-1].replace(".{}".format(metric), "")
+                layer_name = metric_file.split("--")[-1].replace(".{}".format(metric_name), "")
                 layer_name = layer_name.replace(".csv","")
                 metric_layer_list = load_metric_file(metric_file, layer_mode)
                 layer_dict[layer_name] = metric_layer_list
