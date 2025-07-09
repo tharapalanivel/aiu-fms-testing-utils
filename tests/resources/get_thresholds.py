@@ -57,25 +57,6 @@ metrics = [metric for metric in args.metrics]
 file_base = args.file_base
 layer_mode = args.file_base if args.file_base else False
 
-def sort_list_of_dictionaries(data):
-    """Sorts a list of dictionaries alphabetically by key.
-
-    Args:
-        data: A list of dictionaries, each with a single key-value pair.
-
-    Returns:
-        A new list of dictionaries sorted alphabetically by key.
-    """
-    # Extract keys and store them in a separate list
-    keys = [list(d.keys())[0] for d in data]
-
-    # Get the indices that would sort the keys
-    sorted_indices = sorted(range(len(keys)), key=lambda k: keys[k])
-
-    # Reconstruct the list in the sorted order
-    sorted_data = [data[i] for i in sorted_indices]
-    return sorted_data
-
 def load_metric_file(file_path, layer_header):
     """
     Loads a metric file and returns its values as a list of floats.
@@ -107,7 +88,7 @@ for model in models:
     for metric in metrics:
         path = os.path.join(file_base, f"{model}*{metric}*.csv")
         metric_files = glob.glob(path)
-        result_dict[metric] = []
+        result_dict[metric] = {}
         metric_list = []
         if not layer_mode:
             for metric_file in metric_files:
@@ -132,12 +113,10 @@ for model in models:
                         metric_val = np.linalg.norm(l[key])
                     else:
                         metric_val = np.mean(l[key])
-                    tmp[key] = metric_val if not math.isnan(metric_val) else 0.0
-                    result_dict[metric].append(tmp)
+                    result_dict[metric][key] = metric_val if not math.isnan(metric_val) else 0.0
                     logger.info(f"Layer {key} avg {metric} = {metric_val}")
-            result_dict[metric] = sort_list_of_dictionaries(result_dict[metric])
+
     json_output_path = args.output_path if args.output_path else file_base
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
     with open(f_result_path, 'w') as fp:
         json.dump(result_dict, fp)
-
