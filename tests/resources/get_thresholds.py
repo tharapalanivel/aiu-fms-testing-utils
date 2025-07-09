@@ -32,7 +32,7 @@ parser.add_argument(
     default=[],
     nargs='+',
     required=True,
-    help="List of metrics separated by space. Eg.: diff_mean ce",
+    help="List of metrics separated by space. Eg. for full model mode: diff_mean ce | Eg. for layers mode: abs_diff cos_sim_avg cos_sim_mean",
 )
 parser.add_argument(
     "--file_base",
@@ -88,7 +88,8 @@ def load_metric_file(file_path, layer_header):
 for model in models:
     result_dict = {"model_id": model}
     for metric in metrics:
-        path = os.path.join(file_base, f"{model}*{metric}*.csv")
+        metric_name = "_".join(metric.split("_")[:2]) if layer_mode else metric
+        path = os.path.join(file_base, f"{model}*{metric_name}*.csv")
         metric_files = glob.glob(path)
         result_dict[metric] = {}
         metric_list = []
