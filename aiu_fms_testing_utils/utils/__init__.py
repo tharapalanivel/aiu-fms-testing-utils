@@ -1,25 +1,64 @@
+# Standard
+from typing import Optional, List, Tuple
+import json
+import os
+import random
+import requests
+import time
+
+# Third Party
+from aiu_fms_testing_utils.utils.aiu_setup import dprint
+from fms.utils.tokenizers import BaseTokenizer
 import torch
 import torch.nn as nn
-import time
-from fms.utils.tokenizers import BaseTokenizer
-from fms.utils.generation import generate
-from aiu_fms_testing_utils.utils.aiu_setup import dprint
-from typing import Optional, List, Tuple
-import os
-import requests
-import json
-import random
 
-def warmup_model(model: nn.Module, input_ids: torch.Tensor, max_new_tokens: int, compile_dynamic_sendnn = False, **padding_kwargs):
+
+def warmup_model(
+    model: nn.Module,
+    input_ids: torch.Tensor,
+    max_new_tokens: int,
+    compile_dynamic_sendnn: bool = False,
+    use_cache: bool = True,
+    **extra_kwargs
+):
     import torch_sendnn
+    attention_specific_kwargs = {}
+    attn_name = extra_kwargs["attn_name"]
+    if "paged" in attn_name:
+        from aiu_fms_testing_utils.utils.paged import generate, adjust_inputs_to_batch
+    else:
+        # TODO: Add a unified generation dependent on attn_type
+        from fms.utils.generation import generate
+        attention_specific_kwargs["contiguous_cache"] = True
+
     dprint("AIU warmup")
     pt_compile_model_time = time.time()
-    extra_kwargs = {**padding_kwargs, "only_last_token": True}
-    max_new_tokens_warmup = max_new_tokens
+
+    # adjust inputs depending on attn_type and dynamic shapes
+    _warmup_input_ids = input_ids
+    _extra_kwargs = extra_kwargs
+    _max_new_tokens = max_new_tokens
     if compile_dynamic_sendnn:
-        max_new_tokens_warmup = 2
+        _max_new_tokens = 2
+        # always warmup with batch size 2 when using attn_type=paged
+        if "paged" in attn_name:
+            _warmup_input_ids, _extra_kwargs = adjust_inputs_to_batch(
+                input_ids,
+                **extra_kwargs,
+            )
+
+    extra_kwargs = {**_extra_kwargs, "only_last_token": "paged" not in attn_name}
+
     with torch_sendnn.warmup_mode():
-        generate(model, input_ids, max_new_tokens=max_new_tokens_warmup, max_seq_len=model.config.max_expected_seq_len, use_cache=True, do_sample=False, contiguous_cache=True, extra_kwargs=extra_kwargs)
+        generate(
+            model,
+            _warmup_input_ids,
+            max_new_tokens=_max_new_tokens,
+            do_sample=False,
+            use_cache=use_cache,
+            extra_kwargs=extra_kwargs,
+            **attention_specific_kwargs,
+        )
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
@@ -35,17 +74,17 @@ def __download_file(url, filename):
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
-        
+
         with open(filename, 'wb') as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
         print(f"Successfully downloaded {filename}")
-    
+
     except requests.exceptions.RequestException as e:
         print(f"An error occurred: {e}")
 
 def __sample_requests(
-    prompt_list: List[str], 
+    prompt_list: List[str],
     num_requests: int,
     tokenizer: BaseTokenizer,
     prompt_length_min: int = 32,
@@ -65,16 +104,14 @@ def __sample_requests(
         # Tokenize the prompts and completions.
         prompt = prompt_list[i]
         prompt_token_ids = ids_for_prompt(prompt, tokenizer)
-        
+
         prompt_len = len(prompt_token_ids)
         if prompt_len < prompt_length_min or prompt_len > prompt_length_max:
             # Prune too short or too long sequences.
             continue
         filtered_dataset.append((prompt, prompt_len))
-    
-    return filtered_dataset
-    
 
+    return filtered_dataset
 
 def sample_sharegpt_requests(
     dataset_path: str,
@@ -94,15 +131,22 @@ def sample_sharegpt_requests(
     # Filter out the conversations with less than 2 turns.
     dataset = [data for data in dataset if len(data["conversations"]) >= 2]
     dataset = [data["conversations"][0]["value"] for data in dataset]
-    
-    return __sample_requests(dataset, num_requests, tokenizer, prompt_length_min, prompt_length_max, seed)
+
+    return __sample_requests(
+        dataset,
+        num_requests,
+        tokenizer,
+        prompt_length_min,
+        prompt_length_max,
+        seed,
+    )
 
 def sample_squad_v2_qa_requests(
     dataset_path: str,
-    num_requests: int, 
-    tokenizer: BaseTokenizer, 
-    prompt_length_min: int = 32, 
-    prompt_length_max: int = 64, 
+    num_requests: int,
+    tokenizer: BaseTokenizer,
+    prompt_length_min: int = 32,
+    prompt_length_max: int = 64,
     seed: Optional[int] = None
 ) -> List[Tuple[str, int]]:
     from datasets import load_dataset
@@ -111,10 +155,14 @@ def sample_squad_v2_qa_requests(
         ds = load_dataset(dataset_path)['train']
     else:
         ds = load_dataset("rajpurkar/squad_v2", cache_dir=dataset_path)['train']
-        
-    
+
     ds = [f"{data['context']}\n{data['question']}" for data in ds]
 
-    return __sample_requests(ds, num_requests, tokenizer, prompt_length_min, prompt_length_max, seed)
-    
-
+    return __sample_requests(
+        ds,
+        num_requests,
+        tokenizer,
+        prompt_length_min,
+        prompt_length_max,
+        seed,
+    )
