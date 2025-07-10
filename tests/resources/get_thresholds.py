@@ -2,6 +2,7 @@ import glob
 import numpy as np
 import argparse
 import os
+import re
 
 import logging
 
@@ -58,18 +59,19 @@ metrics = [metric for metric in args.metrics]
 file_base = args.file_base
 layer_mode = args.file_base if args.file_base else False
 
-def load_metric_file(file_path, layer_header):
+
+def load_metric_file(file_path, layer_header, values):
     """
     Loads a metric file and returns its values as a list of floats.
 
     Args:
         file_path (str): The path to the metric file.
         layer_header (bool): Whether to skip the first three lines of the file. Default is False.
+        values (list): Metrics values list
 
     Returns:
         list[float]: A list of metric values read from the file.
     """
-    values = []
     try:
         with open(file_path, "r") as file:
             if layer_header:
@@ -91,19 +93,24 @@ for model in models:
         path = os.path.join(file_base, f"{model}*{metric_name}*.csv")
         metric_files = glob.glob(path)
         result_dict[metric] = {}
-        metric_list = []
         if not layer_mode:
+            metric_list = []
             for metric_file in metric_files:
-                metric_list = load_metric_file(metric_file, layer_mode)
+                metric_list = load_metric_file(metric_file, layer_mode, metric_list)
             logger.info(f"found {len(metric_files)} metric files")
             logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
             layers = []
             for metric_file in metric_files:
                 layer_dict = {}
+                metric_layer_list = []
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric_name), "")
                 layer_name = layer_name.replace(".csv","")
-                metric_layer_list = load_metric_file(metric_file, layer_mode)
+                layer_name = re.sub(r"\.(iter-)([0-9]+)", "", layer_name)
+                path = os.path.join(file_base, f"{model}*{layer_name}*{metric_name}*.csv")
+                metric_layer_files = glob.glob(path)
+                for file_path in metric_layer_files:
+                    metric_layer_list = load_metric_file(file_path, layer_mode, metric_layer_list)
                 layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             logger.info(f"found {len(layers)} layers metric files")

@@ -243,7 +243,7 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
         if hasattr(module, '_debug_input'):
             global generate_iters
             generate_iters += 1
-            layer_name = f"{layer_name}{generate_iters}" if layer_name in layer_stack.keys() else layer_name
+            layer_name = f"{layer_name}.iter-{generate_iters}" if layer_name in layer_stack.keys() else layer_name
             tmp[layer_name] = output
             layer_stack.update(tmp)
             # Clean up
