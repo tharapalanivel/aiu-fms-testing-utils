@@ -101,7 +101,7 @@ for model in models:
             logger.info(f"found {len(metric_files)} metric files")
             logger.info(model, metric, np.percentile(metric_list, 99.0))
         else:
-            layers = []
+            layers = {}
             for metric_file in metric_files:
                 layer_dict = {}
                 metric_layer_list = []
@@ -110,26 +110,28 @@ for model in models:
                 metric_layer_list = load_metric_file(metric_file, layer_mode, metric_layer_list)
                 if re.search(generate_mode_pattern, layer_name):
                     layer_name = re.sub(generate_mode_pattern, "", layer_name)
-                    layer_dict[layer_name].extend(metric_layer_list)
+                    layers[layer_name].extend(metric_layer_list)
+                    logger.debug(f"Output layer with generate mode {layer_name}")
                 else:
                     layer_dict[layer_name] = metric_layer_list
-                layers.append(layer_dict)
-            logger.info(f"found {len(layers)} layers metric files")
+                    logger.debug(f"Output layer {layer_name}")
+                layers.update(layer_dict)
+            logger.info(f"found {len(metric_files)} layers metric files")
 
-            for l in layers:
-                for key in l.keys():
-                    if "abs_diff" in metric:
-                        metric_val = abs_diff_linalg_norm(l[key])
-                        logger.info(f"Layer {key} abs_diff_linalg_norm = {metric_val}")
-                        result_dict[metric][key] = metric_val 
-                    elif "avg" in metric:
-                        metric_avg = np.average(l[key])
-                        logger.info(f"Layer {key} {metric} = {metric_avg}")
-                        result_dict[metric][key] = metric_avg
-                    elif "mean" in metric:
-                        metric_mean = list_mean(l[key])
-                        logger.info(f"Layer {key} {metric} = {metric_mean}")
-                        result_dict[metric][key] = metric_mean
+            for key, l in layers.items():
+                l = np.nan_to_num(l, nan=0.0)
+                if "abs_diff" in metric:
+                    metric_val = abs_diff_linalg_norm(l)
+                    logger.info(f"Layer {key} abs_diff_linalg_norm = {metric_val}")
+                    result_dict[metric][key] = metric_val
+                elif "avg" in metric:
+                    metric_avg = np.average(l)
+                    logger.info(f"Layer {key} {metric} = {metric_avg}")
+                    result_dict[metric][key] = metric_avg
+                elif "mean" in metric:
+                    metric_mean = list_mean(l)
+                    logger.info(f"Layer {key} {metric} = {metric_mean}")
+                    result_dict[metric][key] = metric_mean
 
     json_output_path = args.output_path if args.output_path else file_base
     f_result_path = os.path.join(json_output_path, f"{model}-thresholds.json")
