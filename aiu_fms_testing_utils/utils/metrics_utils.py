@@ -27,17 +27,6 @@ def list_mean(val_list):
     """
     return np.mean(val_list)
 
-def list_avg(val_list):
-    """
-    Calculates the average for all the values in a given list.
-    Args:
-        val_list (list): The list of values
-
-    Returns:
-        float: average value calculated.
-    """
-    return np.average(val_list)
-
 def tensor_abs_diff(tensor1, tensor2):
     """
     Calculate the absolute difference between two tensors.
@@ -55,7 +44,9 @@ def tensor_abs_diff(tensor1, tensor2):
         >>> abs_diff(tensor1, tensor2)
         torch.tensor([3, 3, 3])
     """
-    return torch.abs(tensor1 - tensor2)
+    abs_diff = torch.abs(tensor1 - tensor2)
+    abs_diff[abs_diff == 0.0] = 1e-6
+    return abs_diff
                     
 def tensor_cos_sim(tensor1, tensor2):
     """
@@ -76,4 +67,6 @@ def tensor_cos_sim(tensor1, tensor2):
         >>> print(sim)
     """
     cos = nn.CosineSimilarity(dim=-1)
-    return cos(tensor1, tensor2)
+    cos_sim = cos(tensor1, tensor2)
+    cos_sim[cos_sim == 0.0] = 1e-6
+    return cos_sim

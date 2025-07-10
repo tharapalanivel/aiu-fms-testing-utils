@@ -363,7 +363,8 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                 cos_sim = []
                 abs_diff = []
                 if len(cpu_output) < 2 and len(cpu_output[-1]) == 1:
-                    # Some layers have tuple outputs, with more than 2 tensors - this path compares this type of output;
+                    # Projection layers (often called "query," "key," and "value" projections) are used to transform the input embeddings 
+                    # into separate query, key, and value vectors. They have tuple outputs, with more than 2 tensors - this path compares this type of output;
                     # In case of head layers, the last item of the tuple is a list of tensors with the same lenght as the 
                     # number of layers in the model. The else path compares this other case.
                     tensor_cuda_out = cuda_output[-1]

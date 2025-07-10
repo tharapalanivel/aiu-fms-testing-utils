@@ -2,7 +2,6 @@ import glob
 import numpy as np
 import argparse
 import os
-import math
 
 import logging
 
@@ -112,15 +111,15 @@ for model in models:
             for l in layers:
                 for key in l.keys():
                     if "abs_diff" in metric:
-                        metric_val = abs_diff_linalg_norm(l[key]) if not math.isnan(abs_diff_linalg_norm(l[key])) else 0.0
+                        metric_val = abs_diff_linalg_norm(l[key])
                         logger.info(f"Layer {key} abs_diff_linalg_norm = {metric_val}")
                         result_dict[metric][key] = metric_val 
                     elif "avg" in metric:
-                        metric_avg = list_avg(l[key]) if not math.isnan(list_avg(l[key])) else 0.0
+                        metric_avg = np.average(l[key])
                         logger.info(f"Layer {key} {metric} = {metric_avg}")
                         result_dict[metric][key] = metric_avg
                     elif "mean" in metric:
-                        metric_mean = list_mean(l[key]) if not math.isnan(list_mean(l[key])) else 0.0
+                        metric_mean = list_mean(l[key])
                         logger.info(f"Layer {key} {metric} = {metric_mean}")
                         result_dict[metric][key] = metric_mean
 
