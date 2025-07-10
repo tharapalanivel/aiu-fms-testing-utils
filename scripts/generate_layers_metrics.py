@@ -118,7 +118,7 @@ def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer)
         tokenizer (Tokenizer): The tokenizer to use for encoding inputs.
 
     Returns:
-        torch.Tensor: The inferred layer output.
+        torch.Tensor: The inferred model's layers output.
     """
     
     do_sample = False
