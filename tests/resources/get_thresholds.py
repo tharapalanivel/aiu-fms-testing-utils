@@ -58,6 +58,7 @@ models = [model.replace("/", "--") for model in args.models]
 metrics = [metric for metric in args.metrics]
 file_base = args.file_base
 layer_mode = args.file_base if args.file_base else False
+generate_mode_pattern = r"\.(iter-)([0-9]+)"
 
 
 def load_metric_file(file_path, layer_header, values):
@@ -106,12 +107,12 @@ for model in models:
                 metric_layer_list = []
                 layer_name = metric_file.split("--")[-1].replace(".{}".format(metric_name), "")
                 layer_name = layer_name.replace(".csv","")
-                layer_name = re.sub(r"\.(iter-)([0-9]+)", "", layer_name)
-                path = os.path.join(file_base, f"{model}*{layer_name}*{metric_name}*.csv")
-                metric_layer_files = glob.glob(path)
-                for file_path in metric_layer_files:
-                    metric_layer_list = load_metric_file(file_path, layer_mode, metric_layer_list)
-                layer_dict[layer_name] = metric_layer_list
+                metric_layer_list = load_metric_file(metric_file, layer_mode, metric_layer_list)
+                if re.search(generate_mode_pattern, layer_name):
+                    layer_name = re.sub(generate_mode_pattern, "", layer_name)
+                    layer_dict[layer_name].extend(metric_layer_list)
+                else:
+                    layer_dict[layer_name] = metric_layer_list
                 layers.append(layer_dict)
             logger.info(f"found {len(layers)} layers metric files")
 
