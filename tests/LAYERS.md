@@ -19,27 +19,25 @@ The idea is to run, the prompts through the model with the pre- and post-hooks a
 The script [generate_layers_metrics.py](../scripts/generate_layers_metrics.py) requires the following arguments to be run:
 
 ```bash
-usage: generate_layers_metrics.py [-h] --models MODELS [MODELS ...] --mode
-                                  {generate,model-forward} --batch_sizes BATCH_SIZES
-                                  [BATCH_SIZES ...] --seq_lengths SEQ_LENGTHS [SEQ_LENGTHS ...]
-                                  --max_new_tokens MAX_NEW_TOKENS [MAX_NEW_TOKENS ...]
-                                  [--output_path OUTPUT_PATH] [--sharegpt_path SHAREGPT_PATH]
+usage: generate_layers_metrics.py [-h] [--architecture ARCHITECTURE] [--variant VARIANT] [--model_path MODEL_PATH] --mode {generate,model-forward} --batch_sizes BATCH_SIZES --seq_lengths SEQ_LENGTHS --max_new_tokens MAX_NEW_TOKENS [--output_path OUTPUT_PATH] [--sharegpt_path SHAREGPT_PATH]
 
 Script to generate the model's metrics by layer
 
 options:
   -h, --help            show this help message and exit
-  --models MODELS [MODELS ...]
-                        List of models id separated by space. Eg.: ibm-granite/granite-20b-code-
-                        instruct-8k /tmp/models/granite-20b-code-cobol-v1
+  --architecture ARCHITECTURE
+                        The model architecture Eg.: hf_pretrained
+  --variant VARIANT     The model variants (configuration) to benchmark. E.g. ibm-granite/granite-3.2-8b-instruct
+  --model_path MODEL_PATH
+                        Paths to the directory containing model's weights (.pth files sharded by tensor parallel rank, not HF weights)
   --mode {generate,model-forward}
                         Sets the output generation mode.
-  --batch_sizes BATCH_SIZES [BATCH_SIZES ...]
-                        Batch sizes separated by comma.
-  --seq_lengths SEQ_LENGTHS [SEQ_LENGTHS ...]
-                        Sequence lengths separated by comma.
-  --max_new_tokens MAX_NEW_TOKENS [MAX_NEW_TOKENS ...]
-                        Max number of generated tokens separated by comma.
+  --batch_sizes BATCH_SIZES
+                        Batch sizes separated by comma. Eg.: 1,2
+  --seq_lengths SEQ_LENGTHS
+                        Sequence lengths separated by comma. Eg.: 64,2048
+  --max_new_tokens MAX_NEW_TOKENS
+                        Max number of generated tokens separated by comma. Eg.: 64,128
   --output_path OUTPUT_PATH
                         Path to save output files
   --sharegpt_path SHAREGPT_PATH
@@ -81,7 +79,7 @@ cd aiu-fms-testing-utils/tests/resources
 
 mkdir /tmp/output
 
-python3 generate_layers_metrics.py --mode model-forward --models ibm-granite/granite-3.2-8b-instruct --batch_sizes 1 --seq_lengths 64 --max_new_tokens 128
+python3 generate_layers_metrics.py --mode model-forward --variant ibm-granite/granite-3.2-8b-instruct --architecture hf_pretrained --batch_sizes 1 --seq_lengths 64 --max_new_tokens 128
 ```
 The files should get created at `/tmp/output` dir:
 ```bash

@@ -177,7 +177,6 @@ def prepare_inputs(batch_size, seq_length, tokenizer, sharegpt_path, seed=0):
         seq_length,
         seed,
     )
-    ## TODO: for each prompt 
     prompt_list = []
     for prompt, _ in prompts_and_sizes:
         prompt_list.append(ids_for_prompt(prompt, tokenizer))

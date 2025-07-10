@@ -24,14 +24,21 @@ logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(message)s")
 parser = argparse.ArgumentParser(
     description="Script to generate the model's metrics by layer"
 )
-
 parser.add_argument(
-    "--models",
+    "--architecture",
     type=str,
-    default=[],
-    nargs='+',
-    required=True,
-    help="List of models id separated by space. Eg.: ibm-granite/granite-3.3-8b-instruct mistralai/Mistral-7B-Instruct-v0.3"
+    help="The model architecture Eg.: hf_pretrained",
+)
+parser.add_argument(
+    "--variant",
+    type=str,
+    default=None,
+    help="The model variants (configuration) to benchmark. E.g. ibm-granite/granite-3.2-8b-instruct",
+)
+parser.add_argument(
+    "--model_path",
+    type=str,
+    help="Paths to the directory containing model's weights (.pth files sharded by tensor parallel rank, not HF weights)",
 )
 parser.add_argument(
     "--mode",
@@ -79,7 +86,9 @@ mode = args.mode
 output_path = args.output_path
 sharegpt_path = args.sharegpt_path
 
-common_model_paths = [model for model in args.models]
+common_model_paths = args.model_path if args.model_path else args.variant
+if isinstance(common_model_paths, str):
+    common_model_paths = [str(bs) for bs in common_model_paths.split(",")]
 
 # pass custom common batch sizes as a comma separated str of ints
 common_batch_sizes = args.batch_sizes
@@ -104,6 +113,8 @@ common_shapes = list(
         common_max_new_tokens,
     )
 )
+
+generate_iters = 0
 
 def __infer_layer(model, max_len, device, max_new_tokens, batch_size, tokenizer):
     """
@@ -230,6 +241,9 @@ def __register_call_layers(model, batch_size, device, seq_length, max_new_tokens
         # Save inputs and outputs
         tmp = {}
         if hasattr(module, '_debug_input'):
+            global generate_iters
+            generate_iters += 1
+            layer_name = f"{layer_name}{generate_iters}" if layer_name in layer_stack.keys() else layer_name
             tmp[layer_name] = output
             layer_stack.update(tmp)
             # Clean up
@@ -310,8 +324,8 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     if "HF_HOME" not in os.environ:
         os.environ["HF_HOME"] = "/tmp/models/hf_cache"
 
-    model_path_kwargs = {"variant": model_path}
-    micro_model_kwargs = {"architecture": "hf_pretrained"}
+    model_path_kwargs = {"variant": model_path} if args.variant else {"model_path": model_path}
+    micro_model_kwargs = {"architecture": args.architecture}
 
     get_model_kwargs = {
         **model_path_kwargs,
@@ -342,6 +356,10 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
                                             seq_length=seq_length, max_new_tokens=max_new_tokens, 
                                             tokenizer=tokenizer)
     
+    global generate_iters
+    generate_iters = 0
+    logger.info(f"Finished registering CPU layers")
+
     layer_stack_cuda = __register_call_layers(model=validation_model_cuda,
                                              batch_size=batch_size, 
                                              device="cuda", 
@@ -351,6 +369,7 @@ def generate_layers_metrics(model_path, batch_size, seq_length, max_new_tokens):
     assert len(layer_stack_cuda.keys()) == len(layer_stack_cpu.keys())
 
     for layer_key, output_val in layer_stack_cuda.items():
+        
         tensor_cpu_out = None
         tensor_cuda_out = None
 
