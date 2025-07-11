@@ -110,7 +110,10 @@ for model in models:
                 metric_layer_list = load_metric_file(metric_file, layer_mode, metric_layer_list)
                 if re.search(generate_mode_pattern, layer_name):
                     layer_name = re.sub(generate_mode_pattern, "", layer_name)
-                    layers[layer_name].extend(metric_layer_list)
+                    if not layer_name in layers.keys():
+                        layers[layer_name] = metric_layer_list
+                    else:
+                        layers[layer_name].extend(metric_layer_list)
                     logger.debug(f"Output layer with generate mode {layer_name}")
                 else:
                     layer_dict[layer_name] = metric_layer_list
