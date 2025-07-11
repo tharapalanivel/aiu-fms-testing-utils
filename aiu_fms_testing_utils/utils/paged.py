@@ -27,7 +27,6 @@ def adjust_inputs_to_batch(input_ids: torch.Tensor, **extra_kwargs):
 def generate(
     model: Union[Callable, torch.nn.Module],
     input_ids: torch.Tensor,
-    max_seq_len: int = 4096,
     max_new_tokens: int = 256,
     temperature: float = 1.0,
     top_k: int = 10,
@@ -55,7 +54,6 @@ def generate(
         model: A function or nn.Module that takes a batch of input_ids and
             returns logits
         input_ids: a rectangular tensor of input_ids (batch x seq)
-        max_seq_len: the sequence length of the model
         max_new_tokens: max tokens to generate
         temperature: temperature of softmax when sampling
         top_k: only search among top k tokens
