@@ -713,11 +713,11 @@ def infer(use_cache, do_sample, warmup):
     attention_specific_kwargs = {}
     if attn_name == "sdpa_causal":
         attention_specific_kwargs["contiguous_cache"] = True
+        attention_specific_kwargs["max_seq_len"] = ids.shape[1] + args.max_new_tokens
 
     result = generate(
         model,
         ids,
-        max_seq_len=ids.shape[1] + args.max_new_tokens,
         max_new_tokens=args.max_new_tokens,
         use_cache=use_cache,
         do_sample=do_sample,

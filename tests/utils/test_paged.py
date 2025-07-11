@@ -39,7 +39,6 @@ def test_paged_equivalence():
         result_paged = paged_generate(
             _model_mock,
             ids,
-            max_seq_len=ids.shape[1] + 5,
             max_new_tokens=5,
             do_sample=False,
             use_cache=True,
