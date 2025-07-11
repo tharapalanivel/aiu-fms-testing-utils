@@ -90,7 +90,7 @@ if isinstance(model, RoBERTa):
 if args.compile:
     dprint("Compiling model...")
     if args.is_aiu_backend:
-        model.compile(backend="sendnn_decoder")
+        model.compile(backend="sendnn")
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
