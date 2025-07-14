@@ -75,7 +75,10 @@ def aiu_dist_setup(rank, world_size, local_rank=-0, local_size=-1, verbose=False
 # Environment variables utilities
 # ==============================================================
 def set_aiu_env_vars(args: argparse.Namespace) -> None:
-    """Set necessary environment variables for AIU"""
+    """Set necessary environment variables for AIU
+
+    NOTE: to enable graph export, set DTCOMPILER_KEEP_EXPORT=true in your env
+    """
 
     if not args.is_encoder:
         if not args.compile_dynamic:
@@ -106,7 +109,6 @@ def set_aiu_env_vars(args: argparse.Namespace) -> None:
             torch._dynamo.config.assume_static_by_default = True
             torch._dynamo.config.automatic_dynamic_shapes = False
 
-        # os.environ.setdefault("DTCOMPILER_KEEP_EXPORT", "true")
         os.environ.setdefault("COMPILATION_MODE", "offline_decoder")
 
     if args.device_type == "aiu-senulator":
