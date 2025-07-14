@@ -45,7 +45,6 @@ def tensor_abs_diff(tensor1, tensor2):
         torch.tensor([3, 3, 3])
     """
     abs_diff = torch.abs(tensor1 - tensor2)
-    abs_diff[abs_diff == 0.0] = 1e-6
     return abs_diff
                     
 def tensor_cos_sim(tensor1, tensor2):
@@ -67,6 +66,7 @@ def tensor_cos_sim(tensor1, tensor2):
         >>> print(sim)
     """
     cos = nn.CosineSimilarity(dim=-1)
+    tensor1[tensor1 == 0.0] = 1e-6
+    tensor2[tensor2 == 0.0] = 1e-6
     cos_sim = cos(tensor1, tensor2)
-    cos_sim[cos_sim == 0.0] = 1e-6
     return cos_sim
