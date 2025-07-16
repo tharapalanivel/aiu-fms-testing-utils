@@ -242,8 +242,8 @@ def generate(
                 # FP8 per-sentence scale handling
                 if "fp8" in kwargs["attn_name"]:
                     for layer_idx, (t1, t2) in enumerate(current_kv_cache):
-                        t1._scale = current_kv_scales[layer_idx][seq_i]
-                        t2._scale = current_kv_scales[layer_idx][seq_i]
+                        t1._scale = current_kv_scales[layer_idx][0][seq_i].reshape(-1)
+                        t2._scale = current_kv_scales[layer_idx][1][seq_i].reshape(-1)
 
                 only_last_token = kwargs.get("only_last_token", False)
 
@@ -288,6 +288,10 @@ def generate(
             torch._dynamo.mark_dynamic(kwargs["position_ids"], 0)
             torch._dynamo.mark_dynamic(kwargs["current_tkv_mask"], 0)
             torch._dynamo.mark_dynamic(kwargs["left_padded_prompt_mask"], 0)
+            if "fp8" in kwargs["attn_name"]:
+                for k_cache, v_cache in kwargs["past_key_value_states"]:
+                    torch._dynamo.mark_dynamic(k_cache._scale, 0)
+                    torch._dynamo.mark_dynamic(v_cache._scale, 0)
 
             # seq
             torch._dynamo.mark_static(input_ids, 1)  # always 1
