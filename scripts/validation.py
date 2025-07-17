@@ -222,6 +222,9 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+dprint("*** DEPRECATION WARNING ***")
+dprint("validation.py script has been deprecated in favor of test_decoders.py")
+
 extra_get_model_kwargs = {}
 for a in args.extra_get_model_kwargs:
      a_split = a.split("=")
