@@ -164,7 +164,7 @@ if compile_dynamic_sendnn:
     os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(
         (((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) + 1) * 64
     )
-    os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(common_batch_sizes))
+    os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(max(common_batch_sizes), 2))
 
 # thresholds are chosen based on 1024 tokens per sequence
 # 1% error threshold rate between cpu fp32 and cuda fp16
