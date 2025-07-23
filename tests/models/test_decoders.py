@@ -66,6 +66,7 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
 )
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
+TIMING = os.environ.get("TIMING", "")
 
 ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
 attention_map = {
@@ -492,6 +493,7 @@ def test_common_shapes(
             max_new_tokens,
             LogitsExtractorHook(),
             attn_algorithm="math",
+            timing=TIMING,
             **extra_kwargs,
         )
 
@@ -516,6 +518,7 @@ def test_common_shapes(
         max_new_tokens,
         None,
         only_last_token="paged" not in ATTN_NAME,
+        timing=TIMING,
         **extra_kwargs,
     )
     dprint("aiu validation info extracted for validation level 0")
@@ -568,6 +571,7 @@ def test_common_shapes(
                         max_new_tokens,
                         LogitsExtractorHook(),
                         attn_algorithm="math",
+                        timing=TIMING,
                         **extra_kwargs,
                     )
                     dprint(
@@ -594,6 +598,7 @@ def test_common_shapes(
                 max_new_tokens,
                 GoldenTokenHook(cpu_static_tokens),
                 only_last_token=ATTN_TYPE != "paged",
+                timing=TIMING,
                 **extra_kwargs,
             )
             dprint(f"aiu validation info extracted for validation level 1 - iter={i}")
