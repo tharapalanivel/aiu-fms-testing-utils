@@ -23,8 +23,8 @@ classifiers=[
     "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
-"ibm-fms @ git+https://github.com/foundation-model-stack/foundation-model-stack@main",
-"fms-model-optimizer @ git+https://github.com/foundation-model-stack/fms-model-optimizer@main",
+"ibm-fms",
+"fms-model-optimizer",
 "sentencepiece",
 "numpy",
 "transformers",
