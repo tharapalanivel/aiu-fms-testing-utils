@@ -106,23 +106,15 @@ def generate(
 
     result = input_ids
     next_input = input_ids
-    BLOCK_SIZE = 64
-    _MAX_BATCH = int(
-        os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", str(input_ids.size(0)))
-    )
-    _MAX_CONTEXT_LENGTH = int(
-        os.environ.setdefault(
-            "VLLM_DT_MAX_CONTEXT_LEN",
-            str(
-                (((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) + 1)
-                * BLOCK_SIZE
-            ),
-        )
-    )
-    NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
-
     # this includes empty pages and max_new_tokens
     max_possible_context_length = input_ids.size(1) + max_new_tokens
+
+    BLOCK_SIZE = 64
+
+    _MAX_BATCH = int(os.environ["VLLM_DT_MAX_BATCH_SIZE"])
+    _MAX_CONTEXT_LENGTH = int(os.environ["VLLM_DT_MAX_CONTEXT_LEN"])
+    NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
+
     if hasattr(model, "head"):
         model_dtype = model.head.weight.dtype
     elif hasattr(model, "shared"):

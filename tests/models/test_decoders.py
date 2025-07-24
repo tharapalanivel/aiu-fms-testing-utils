@@ -165,7 +165,7 @@ if compile_dynamic_sendnn:
     import bisect
 
     __largest_context = max(common_seq_lengths) + max(common_max_new_tokens)
-    __supported_context_lengths = [64, 128, 256, 512, 1024, 2048, 4096, 8192]
+    __supported_context_lengths = [256, 512, 1024, 2048, 4096, 8192]
     os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(
         __supported_context_lengths[
             bisect.bisect_left(__supported_context_lengths, __largest_context)
@@ -423,7 +423,7 @@ def test_common_shapes(
     os.environ["COMPILATION_MODE"] = "offline_decoder"
 
     dprint(
-        f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}"
+        f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}, attn_type={ATTN_TYPE}"
     )
 
     # we don't currently support inferring gptq from get_model, so we must use an adapter with hf_configured

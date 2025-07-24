@@ -690,6 +690,18 @@ else:
 
 extra_generation_kwargs["attn_name"] = attn_name
 
+if "paged" in attn_name:
+    import bisect
+
+    __largest_context = ids.shape[1] + args.max_new_tokens
+    __supported_context_lengths = [64, 128, 256, 512, 1024, 2048, 4096, 8192]
+    os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(
+        __supported_context_lengths[
+            bisect.bisect_left(__supported_context_lengths, __largest_context)
+        ]
+    )
+    os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(ids.shape[0], 2))
+
 
 def print_result(result, result_idx: int):
     if local_rank != 0:
