@@ -314,7 +314,7 @@ def generate(
                     mask=mask_i,
                     past_key_value_states=current_kv_cache,
                     use_cache=kwargs["use_cache"],
-                    index=-1 if only_last_token else None,
+                    only_last_token=only_last_token,
                     attn_name=kwargs["attn_name"],
                 )
 

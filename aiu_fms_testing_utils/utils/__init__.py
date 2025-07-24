@@ -13,6 +13,7 @@ from fms.utils.generation import pad_input_ids
 import torch
 import torch.nn as nn
 
+
 def warmup_model(
     model: nn.Module,
     input_ids: torch.Tensor,

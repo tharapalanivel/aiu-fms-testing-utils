@@ -66,7 +66,6 @@ SHARE_GPT_DATASET_PATH = os.environ.get(
 )
 USE_MICRO_MODELS = os.environ.get("FMS_TEST_SHAPES_USE_MICRO_MODELS", "1") == "1"
 USE_DISTRIBUTED = os.environ.get("FMS_TEST_SHAPES_DISTRIBUTED", "0") == "1"
-
 TIMING = os.environ.get("TIMING", "")
 
 ATTN_TYPE = os.environ.get("FMS_TEST_SHAPES_ATTN_TYPE", "sdpa")
@@ -347,10 +346,6 @@ def __load_validation_info(
     else:
         return None
 
-class PersistentModel:
-    """This class will either get a model that is pre-compiled (if compile_dynamic_sendnn) or re-create the model for each test"""
-    def __init__(self):
-        self.model = None
 
 class PersistentModel:
     """This class will either get a model that is pre-compiled (if compile_dynamic_sendnn) or re-create the model for each test"""

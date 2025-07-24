@@ -690,6 +690,7 @@ else:
 
 extra_generation_kwargs["attn_name"] = attn_name
 
+
 def print_result(result, result_idx: int):
     if local_rank != 0:
         return
@@ -729,7 +730,6 @@ def infer(use_cache, do_sample, warmup):
     global extra_generation_kwargs
     if extra_generation_kwargs is None:
         extra_generation_kwargs = {}
-
     extra_generation_kwargs["only_last_token"] = "paged" not in attn_name
 
     if not args.no_early_termination and not warmup:
@@ -794,7 +794,6 @@ use_cache = [
 if args.compile:
     dprint("compilation warmup")
     pt_compile_model_time = time.time()
-
     if "aiu" in args.device_type:
         for cache in use_cache:
             warmup_model(
