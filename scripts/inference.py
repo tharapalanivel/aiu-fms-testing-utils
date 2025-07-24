@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import random
 import time
-import contextlib
 
 # Third Party
 from aiu_fms_testing_utils.utils import aiu_setup, warmup_model
@@ -36,7 +35,7 @@ parser.add_argument(
     type=str,
     choices=["cuda", "cpu", "aiu", "aiu-senulator"],
     default="cuda",
-    help="The device to run the model on"
+    help="The device to run the model on",
 )
 parser.add_argument(
     "--architecture",
@@ -104,7 +103,17 @@ parser.add_argument(
     type=str,
     default=None,
     choices=["bf16", "fp16", "fp32"],
-    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format",
+    help="If set to one of the choices, overrides the model checkpoint weight format by setting the default pytorch format. This will break quantized checkpoints.",
+)
+parser.add_argument(
+    "--cast_bf16_to_fp16",
+    action="store_true",
+    help="If set, cast any bf16 weights in the model to fp16 for AIU compiler. Doesn't touch fp32 or quantized",
+)
+parser.add_argument(
+    "--cast_fp16_to_bf16",
+    action="store_true",
+    help="If set, cast any fp16 weights in the model to bf16 for GPU. Doesn't touch fp32 or quantized",
 )
 parser.add_argument(
     "--compile",
@@ -213,37 +222,52 @@ parser.add_argument(
     help="Number of iterations of inference to perform. Used for variance performance capture.",
 )
 parser.add_argument(
-    '-v', '--verbose',
-    action='count',
+    "-v",
+    "--verbose",
+    action="count",
     default=0,
-    help="Set verbosity level (pass flag as `-v`, `-vv`, `-vvv`)"
+    help="Set verbosity level (pass flag as `-v`, `-vv`, `-vvv`)",
 )
 parser.add_argument(
     "--attention_type",
     type=str,
-    choices=["sdpa", "paged"],
+    choices=["sdpa", "paged", "math_fp8", "paged_fp8"],
     default="sdpa",
     help="which backend attention to use in mha",
 )
 args = parser.parse_args()
 
-if args.attention_type == "paged":
+attention_map = {
+    "sdpa": "sdpa_causal",
+    "paged": "spyre_paged_attn",
+    "math_fp8": "math_fp8",
+    "paged_fp8": "spyre_paged_attn_fp8",
+}
+
+attn_name = attention_map[args.attention_type]
+
+if "paged" in attn_name:
     from aiu_fms_testing_utils.utils.paged import generate
 else:
     from fms.utils.generation import generate
 
+if "fp8" in attn_name:
+    import fms_mo.aiu_addons.fp8.fp8_attn  # noqa: F401
+
 if args.quantization == "gptq":
     if "aiu" in args.device_type:
         try:
-            from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear
+            from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear  # noqa
+
             print("Loaded `aiu_addons` functionalities")
-        except:
+        except ImportError:
             raise ImportError("Failed to import GPTQ addons from fms-mo.")
 elif args.quantization == "int8":
     try:
-        from fms_mo.aiu_addons.i8i8 import i8i8_aiu_adapter, i8i8_aiu_linear
+        from fms_mo.aiu_addons.i8i8 import i8i8_aiu_adapter, i8i8_aiu_linear  # noqa
+
         print("Loaded `aiu_addons` functionalities")
-    except:
+    except ImportError:
         raise ImportError("Failed to import INT8 addons from fms-mo.")
 
 # this is a test model config
@@ -281,7 +305,7 @@ if args.device_type == "cuda":
     device = torch.device(args.device_type, local_rank)
     torch.cuda.set_device(device)
 elif is_aiu_backend:
-    from torch_sendnn import torch_sendnn
+    from torch_sendnn import torch_sendnn  # noqa
 
     if not args.distributed:
         aiu_setup.aiu_setup(rank, world_size)
@@ -329,7 +353,7 @@ elif is_aiu_backend:
             print("must set AIU_WORLD_RANK_0")
             exit()
         os.environ.setdefault("FLEX_COMPUTE", "SENTIENT")
-        os.environ.setdefault("FLEX_DEVICE", "VFIO")
+        os.environ.setdefault("FLEX_DEVICE", "PF")
 
     device = torch.device("cpu")
 else:
@@ -356,7 +380,9 @@ else:
 fused_weights = not args.unfuse_weights
 if args.quantization == "gptq":
     if fused_weights and is_aiu_backend:
-        raise ValueError("GPTQ checkpoints on AIU must always run with --unfuse_weights")
+        raise ValueError(
+            "GPTQ checkpoints on AIU must always run with --unfuse_weights"
+        )
     if default_dtype is not None:
         raise ValueError(
             "GPTQ default_dtype must be None to preserve the checkpoint data types."
@@ -373,7 +399,7 @@ if args.quantization == "gptq":
 
     qconfig_path = args.model_path + "/quantize_config.json"
     if os.path.exists(qconfig_path):
-        with open(qconfig_path, 'r') as f:
+        with open(qconfig_path, "r") as f:
             dprint(f"loading quantization config from {qconfig_path}")
             qconfig = json.load(f)
             group_size = qconfig["group_size"]
@@ -397,7 +423,9 @@ if args.quantization == "gptq":
     }
 elif args.quantization == "int8":
     if fused_weights and is_aiu_backend:
-        raise ValueError("INT8 checkpoints on AIU must always run with --unfuse_weights")
+        raise ValueError(
+            "INT8 checkpoints on AIU must always run with --unfuse_weights"
+        )
     if default_dtype is not None:
         raise ValueError(
             "INT8 default_dtype must be None to preserve the checkpoint data types."
@@ -425,17 +453,15 @@ elif args.quantization == "int8":
         elif any("roberta" in p.lower() for p in [args.model_path, args.architecture]):
             smoothquant_layers = ["query", "key", "value", "w1"]
         else:
-            raise NotImplementedError(
-                "INT8 architecture does not support smoothquant."
-            )
+            raise NotImplementedError("INT8 architecture does not support smoothquant.")
     else:
         smoothquant_layers = []
 
     linear_config = {
         "linear_type": partial(
             select_int8_module,
-            smoothquant = args.int8_smoothquant,
-            smoothquant_layers = smoothquant_layers,
+            smoothquant=args.int8_smoothquant,
+            smoothquant_layers=smoothquant_layers,
         ),
         "weight_per_channel": args.int8_weight_per_channel,
         "activ_quant_type": args.int8_activ_quant_type,
@@ -443,12 +469,12 @@ elif args.quantization == "int8":
 else:
     linear_config = {"linear_type": "torch_linear"}
 
-dprint("="*60)
+dprint("=" * 60)
 dprint(f"model_path={args.model_path}")
 dprint(f"{linear_config=}")
 dprint(f"{fused_weights=}")
 dprint(f"data_type={default_dtype}")
-dprint("="*60 + "\n")
+dprint("=" * 60 + "\n")
 
 model = get_model(
     args.architecture,
@@ -463,15 +489,67 @@ model = get_model(
     fused_weights=fused_weights,
 )
 
+### Quantization
+
+# FP8 model checks
+has_fp8_weights = False
+has_bf16_weights = False
+has_fp16_weights = False
+for param in model.parameters():
+    if param.dtype == torch.float8_e4m3fn:
+        has_fp8_weights = True
+    elif param.dtype == torch.bfloat16:
+        has_bf16_weights = True
+    elif param.dtype == torch.float16:
+        has_fp16_weights = True
+
+if has_fp8_weights:
+    if is_aiu_backend and has_bf16_weights and not args.cast_bf16_to_fp16:
+        raise ValueError(
+            "FP8 checkpoints on AIU with bf16 weights require casting to fp16 using --cast_bf16_to_fp16. Do not use --default_dtype!"
+        )
+    elif device.type == "cuda" and has_fp16_weights and not args.cast_fp16_to_bf16:
+        raise ValueError(
+            "FP8 checkpoints on GPU with fp16 weights require casting to bf16 using --cast_fp16_to_bf16. Do not use --default_dtype!"
+        )
+
+if args.cast_bf16_to_fp16:
+    for name, param in model.named_parameters():
+        if param.dtype == torch.bfloat16:
+            if param.max() > torch.finfo(torch.float16).max:
+                dprint(
+                    f"[WARNING] You are casting param {name} to fp16, which will cause loss of accuracy. You can ignore this warning if this is intended."
+                )
+            param.data = param.data.to(dtype=torch.float16)
+
+if args.cast_fp16_to_bf16:
+    for param in model.parameters():
+        if param.dtype == torch.float16:
+            param.data = param.data.to(dtype=torch.bfloat16)
+
 if args.quantization in ["gptq", "int8"]:
     if rank == 0 and args.verbose > 0:
-        dprint("PARAMS:\n" + "\n".join(f"{k:60} {str(v.dtype):15} {str(v.device):10} {list(v.size())}" for k,v in model.named_parameters()))
-        dprint("BUFFERS:\n" + "\n".join(f"{k:60} {str(v.dtype):15} {str(v.device):10} {list(v.size())}" for k,v in model.named_buffers()))
-        dprint("="*60 + "\n")
+        dprint(
+            "PARAMS:\n"
+            + "\n".join(
+                f"{k:60} {str(v.dtype):15} {str(v.device):10} {list(v.size())}"
+                for k, v in model.named_parameters()
+            )
+        )
+        dprint(
+            "BUFFERS:\n"
+            + "\n".join(
+                f"{k:60} {str(v.dtype):15} {str(v.device):10} {list(v.size())}"
+                for k, v in model.named_buffers()
+            )
+        )
+        dprint("=" * 60 + "\n")
     if args.architecture == "llama":
-        dprint("[NOTE] In Llama models, it's OK for bias and rotary embeddings to be marked as unused keys.")
+        dprint(
+            "[NOTE] In Llama models, it's OK for bias and rotary embeddings to be marked as unused keys."
+        )
     dprint(model)
-    dprint("="*60 + "\n")
+    dprint("=" * 60 + "\n")
 
 tokenizer = tokenizers.get_tokenizer(args.tokenizer)
 model.eval()
@@ -482,7 +560,9 @@ dprint(f"loading complete, took {loading_model_time:.3f}s")
 if args.compile:
     dprint("compiling model")
     if is_aiu_backend:
-        model.compile(backend="sendnn", options={'sendnn.dynamic': args.compile_dynamic_sendnn})
+        model.compile(
+            backend="sendnn", options={"sendnn.dynamic": args.compile_dynamic_sendnn}
+        )
     else:
         # compiling can make first inference pass slow
         model.compile(mode=args.compile_mode, backend=args.compile_backend)
@@ -538,9 +618,9 @@ if args.prompt_path != "":
     assert len(prompt_file_paths) > 0, f"Can't find any prompt files at {prompt_path}"
 
     # Check if we have enough files
-    assert (
-        len(prompt_file_paths) >= args.batch_size
-    ), f"Not enough prompt files at {prompt_path} for a batch size of {args.batch_size}"
+    assert len(prompt_file_paths) >= args.batch_size, (
+        f"Not enough prompt files at {prompt_path} for a batch size of {args.batch_size}"
+    )
 
     prompts = []
     for i, prompt_file_path in enumerate(prompt_file_paths):
@@ -596,7 +676,7 @@ max_len = max([len(prompt) for prompt in prompts])
 
 if args.fixed_prompt_length != 0 and args.fixed_prompt_length < max_len:
     dprint(
-        f"One or more prompts require truncation. Truncation has been disabled as fixed_prompt_length has been set."
+        "One or more prompts require truncation. Truncation has been disabled as fixed_prompt_length has been set."
     )
     exit(1)
 prompts = truncate_prompts_to_max_length(prompts, max_len, max_allowed_length)
@@ -606,8 +686,9 @@ else:
     ids = prompts
     if isinstance(ids, list) and len(ids) == 1:
         ids = ids[0].unsqueeze(0)
-    extra_generation_kwargs = None
+    extra_generation_kwargs = {}
 
+extra_generation_kwargs["attn_name"] = attn_name
 
 def print_result(result, result_idx: int):
     if local_rank != 0:
@@ -648,12 +729,8 @@ def infer(use_cache, do_sample, warmup):
     global extra_generation_kwargs
     if extra_generation_kwargs is None:
         extra_generation_kwargs = {}
-    extra_generation_kwargs["only_last_token"] = os.environ.get("PAGED_OPTIMIZATION_ONLY_LAST_TOKEN", "1") == "1"
-    dprint(f"using only_last_token={extra_generation_kwargs["only_last_token"]}")
 
-    if args.device_type == "cpu":
-        # Bug in 2.3.1 fixed in 2.4.1 for SDPA flash cpu impl when padding too much
-        extra_generation_kwargs["attn_algorithm"] = "math"
+    extra_generation_kwargs["only_last_token"] = "paged" not in attn_name
 
     if not args.no_early_termination and not warmup:
         eos_token_id = tokenizer.eos_token_id
@@ -661,8 +738,9 @@ def infer(use_cache, do_sample, warmup):
         eos_token_id = None
 
     attention_specific_kwargs = {}
-    if args.attention_type == "sdpa":
+    if attn_name == "sdpa_causal":
         attention_specific_kwargs["contiguous_cache"] = True
+        attention_specific_kwargs["max_seq_len"] = ids.shape[1] + args.max_new_tokens
 
     result = generate(
         model,
@@ -673,7 +751,7 @@ def infer(use_cache, do_sample, warmup):
         timing=args.timing,
         eos_token_id=eos_token_id,
         extra_kwargs=extra_generation_kwargs,
-        **attention_specific_kwargs
+        **attention_specific_kwargs,
     )
     if args.timing != "":
         result, timings = result
@@ -681,14 +759,24 @@ def infer(use_cache, do_sample, warmup):
             dprint(f"E2E timing information: {timings[0]:.3f}s")
         elif args.timing == "per-token":
             if not warmup:
-                dprint(f"First-token latency: {timings[0]*1000:.3f} ms")
-                dprint(f"Average next-token latency (including first token): {np.mean(timings)*1000:.3f} ms")
+                dprint(f"First-token latency: {timings[0] * 1000:.3f} ms")
+                dprint(
+                    f"Average next-token latency (including first token): {np.mean(timings) * 1000:.3f} ms"
+                )
                 if len(timings) > 1:
-                    dprint(f"Average next-token latency: {np.mean(timings[1:])*1000:.3f} ms")
-                    dprint(f"Max next-token latency: {np.max(timings[1:])*1000:.3f} ms (token #{np.argmax(timings[1:]) + 2})")
-                    dprint(f"Min next-token latency: {np.min(timings[1:])*1000:.3f} ms (token #{np.argmin(timings[1:]) + 2})")
-                    dprint(f"Std deviation of next-token latencies: {np.std(timings[1:])*1000:.3f} ms")
-            timings = [f"{t*1000:.3f}" for t in timings]
+                    dprint(
+                        f"Average next-token latency: {np.mean(timings[1:]) * 1000:.3f} ms"
+                    )
+                    dprint(
+                        f"Max next-token latency: {np.max(timings[1:]) * 1000:.3f} ms (token #{np.argmax(timings[1:]) + 2})"
+                    )
+                    dprint(
+                        f"Min next-token latency: {np.min(timings[1:]) * 1000:.3f} ms (token #{np.argmin(timings[1:]) + 2})"
+                    )
+                    dprint(
+                        f"Std deviation of next-token latencies: {np.std(timings[1:]) * 1000:.3f} ms"
+                    )
+            timings = [f"{t * 1000:.3f}" for t in timings]
             dprint(f"Per-token timing information: {', '.join(timings)} ms")
     if len(result.shape) == 1:
         result = result.unsqueeze(0)
@@ -704,10 +792,18 @@ use_cache = [
 ]  # True/False are identical with greedy iff `torch.use_deterministic_algorithms(True)`
 
 if args.compile:
-    dprint(f"compilation warmup")
+    dprint("compilation warmup")
     pt_compile_model_time = time.time()
-    if args.device_type == "aiu":  # only run warmup for AIU, no need for senulator
-        warmup_model(model, ids, args.max_new_tokens, args.compile_dynamic_sendnn, attn_type=args.attention_type, **extra_generation_kwargs)
+
+    if "aiu" in args.device_type:
+        for cache in use_cache:
+            warmup_model(
+                model,
+                ids,
+                args.max_new_tokens,
+                args.compile_dynamic_sendnn,
+                **extra_generation_kwargs,
+            )
         aiu_warmup_time = time.time()
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
@@ -719,7 +815,7 @@ if args.compile:
     pt_compile_model_time = time.time() - pt_compile_model_time
     dprint(f"PT compile complete, took {pt_compile_model_time:.3f}s")
 
-dprint(f"generating output")
+dprint("generating output")
 
 for sample, cache in itertools.product(do_sample, use_cache):
     for _ in range(args.iters):

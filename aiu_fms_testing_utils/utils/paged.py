@@ -3,25 +3,27 @@ import random
 import time
 from typing import Any, Callable, List, MutableMapping, Optional, Tuple, Union
 import torch
-import fms.utils.spyre.paged
+import fms.utils.spyre.paged  # noqa
 
-def adjust_inputs_to_batch(input_ids: torch.Tensor, **padding_kwargs):
+
+def adjust_inputs_to_batch(input_ids: torch.Tensor, **extra_kwargs):
     """
-    Adjusts the inputs to a batch. Batch size 1 cannot be handled since we want a symbolic shape for the batch 
+    Adjusts the inputs to a batch. Batch size 1 cannot be handled since we want a symbolic shape for the batch
     and pytorch automatically sets size 1 dimensions as static
-    
+
     Note: This is fixed in pytorch 2.7
     """
     input_ids = input_ids[0].repeat(2, 1)
     # ensure we pass along other kwargs
-    kwargs = {**padding_kwargs}
-    mask = padding_kwargs.get("mask", None)
+    kwargs = {**extra_kwargs}
+    mask = extra_kwargs.get("mask", None)
     if mask is not None:
         kwargs["mask"] = torch.stack((mask[0], mask[0]))
-    position_ids = padding_kwargs.get("position_ids", None)
+    position_ids = extra_kwargs.get("position_ids", None)
     if position_ids is not None:
         kwargs["position_ids"] = position_ids[0].repeat(2, 1)
     return input_ids, kwargs
+
 
 # FIXME: We should use default generate, but that will require a larger re-work of generate
 def generate(
@@ -54,7 +56,6 @@ def generate(
         model: A function or nn.Module that takes a batch of input_ids and
             returns logits
         input_ids: a rectangular tensor of input_ids (batch x seq)
-        max_seq_len: the sequence length of the model
         max_new_tokens: max tokens to generate
         temperature: temperature of softmax when sampling
         top_k: only search among top k tokens
@@ -88,7 +89,7 @@ def generate(
     if isinstance(input_ids, torch.Tensor):
         if len(input_ids.shape) == 1:
             input_ids = input_ids.unsqueeze(0)
-        
+
         is_batch = input_ids.shape[0] > 1
         # our model requires batch dimension
         if not is_batch:
@@ -106,8 +107,18 @@ def generate(
     result = input_ids
     next_input = input_ids
     BLOCK_SIZE = 64
-    _MAX_BATCH = int(os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", str(input_ids.size(0))))
-    _MAX_CONTEXT_LENGTH = int(os.environ.setdefault("VLLM_DT_MAX_CONTEXT_LEN", str((((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) + 1) * BLOCK_SIZE)))
+    _MAX_BATCH = int(
+        os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", str(input_ids.size(0)))
+    )
+    _MAX_CONTEXT_LENGTH = int(
+        os.environ.setdefault(
+            "VLLM_DT_MAX_CONTEXT_LEN",
+            str(
+                (((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) + 1)
+                * BLOCK_SIZE
+            ),
+        )
+    )    
     NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
 
     # this includes empty pages and max_new_tokens
@@ -139,14 +150,48 @@ def generate(
 
     kvheads = kvheads // tensor_parallel_size if kvheads > 1 else kvheads
     head_size = model.config.emb_dim // nheads
-    kwargs["attn_name"] = "spyre_paged_attn"
-    kwargs["past_key_value_states"] = [
-        (
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-            torch.zeros(NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype),
-        )
-        for _ in range(model.config.nlayers)
-    ]
+    if "fp8" in kwargs["attn_name"]:
+        from fms_mo.aiu_addons.fp8.fp8_utils import ScaledTensor
+
+        kwargs["past_key_value_states"] = [
+            (
+                ScaledTensor(
+                    torch.zeros(
+                        NUM_BLOCKS,
+                        BLOCK_SIZE,
+                        kvheads,
+                        head_size,
+                        dtype=torch.float8_e4m3fn,
+                    ),
+                    torch.tensor([1.0] * input_ids.shape[0], dtype=torch.float32),
+                    False,
+                ),
+                ScaledTensor(
+                    torch.zeros(
+                        NUM_BLOCKS,
+                        BLOCK_SIZE,
+                        kvheads,
+                        head_size,
+                        dtype=torch.float8_e4m3fn,
+                    ),
+                    torch.tensor([1.0] * input_ids.shape[0], dtype=torch.float32),
+                    False,
+                ),
+            )
+            for _ in range(model.config.nlayers)
+        ]
+    else:
+        kwargs["past_key_value_states"] = [
+            (
+                torch.zeros(
+                    NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype
+                ),
+                torch.zeros(
+                    NUM_BLOCKS, BLOCK_SIZE, kvheads, head_size, dtype=model_dtype
+                ),
+            )
+            for _ in range(model.config.nlayers)
+        ]
     kwargs["block_table"] = None
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
@@ -225,6 +270,11 @@ def generate(
 
             outputs_list = []
             current_kv_cache = kwargs["past_key_value_states"]
+
+            if "fp8" in kwargs["attn_name"]:
+                current_kv_scales = [
+                    (t1._scale, t2._scale) for t1, t2 in kwargs["past_key_value_states"]
+                ]
             for seq_i, current_tkv in enumerate(context_lengths):
                 
                 # remove extra pads from the input_ids, slot_mapping, position_ids, mask to account for empty pages
@@ -250,6 +300,13 @@ def generate(
                 torch._dynamo.mark_dynamic(mask_i, 2)
                 torch._dynamo.mark_dynamic(mask_i, 3)
 
+                # FP8 per-sentence scale handling
+                if "fp8" in kwargs["attn_name"]:
+                    for layer_idx, (t1, t2) in enumerate(current_kv_cache):
+                        t1._scale = current_kv_scales[layer_idx][0][seq_i].reshape(-1)
+                        t2._scale = current_kv_scales[layer_idx][1][seq_i].reshape(-1)
+
+                only_last_token = kwargs.get("only_last_token", False)
                 output, current_kv_cache = model(
                     input_ids_i,
                     slot_mapping=slot_mapping_i,
@@ -264,6 +321,21 @@ def generate(
                 # only last token must be handled here to properly stack the tensors
                 if not only_last_token:
                     output = output[:, -1, :]
+
+                # TODO: Figure out how to do this cleanly
+                if "fp8" in kwargs["attn_name"]:
+                    for layer_idx, (t1, t2) in enumerate(current_kv_cache):
+                        current_kv_scales[layer_idx][0][seq_i] = t1._scale
+                        current_kv_scales[layer_idx][1][seq_i] = t2._scale
+
+                    if seq_i != input_ids.size(0) - 1:
+                        for layer_cache in current_kv_cache:
+                            layer_cache[0]._scaled = False
+                            layer_cache[1]._scaled = False
+                    else:
+                        for layer_idx, (t1, t2) in enumerate(current_kv_cache):
+                            t1._scale = current_kv_scales[layer_idx][0]
+                            t2._scale = current_kv_scales[layer_idx][1]
 
                 outputs_list.append(output[0].squeeze(0))
 
@@ -280,6 +352,10 @@ def generate(
             torch._dynamo.mark_dynamic(kwargs["position_ids"], 0)
             torch._dynamo.mark_dynamic(kwargs["current_tkv_mask"], 0)
             torch._dynamo.mark_dynamic(kwargs["left_padded_prompt_mask"], 0)
+            if "fp8" in kwargs["attn_name"]:
+                for k_cache, v_cache in kwargs["past_key_value_states"]:
+                    torch._dynamo.mark_dynamic(k_cache._scale, 0)
+                    torch._dynamo.mark_dynamic(v_cache._scale, 0)
 
             # seq
             torch._dynamo.mark_static(input_ids, 1)  # always 1
@@ -311,7 +387,7 @@ def generate(
                 v, _ = torch.topk(logits, top_k)
                 logits[logits < v[:, [-1]]] = -float("inf")
 
-            probs = F.softmax(logits, dim=-1)
+            probs = F.softmax(logits, dim=-1)  # noqa: F821
             next_val = torch.multinomial(probs, num_samples=1)
         else:
             next_val = torch.argmax(logits, dim=-1).unsqueeze(0).t()
