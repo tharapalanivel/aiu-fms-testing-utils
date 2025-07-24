@@ -162,8 +162,14 @@ if isinstance(skip_assertions, str):
 compile_dynamic_sendnn = ATTN_TYPE == "paged"
 
 if compile_dynamic_sendnn:
+    import bisect
+
+    __largest_context = max(common_seq_lengths) + max(common_max_new_tokens)
+    __supported_context_lengths = [64, 128, 256, 512, 1024, 2048, 4096, 8192]
     os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(
-        (((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) + 1) * 64
+        __supported_context_lengths[
+            bisect.bisect_left(__supported_context_lengths, __largest_context)
+        ]
     )
     os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(max(common_batch_sizes), 2))
 
@@ -290,7 +296,7 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
         SHARE_GPT_DATASET_PATH,
         batch_size,
         tokenizer,
-        int(seq_length / 2),
+        seq_length // 2,
         seq_length,
         seed,
     )

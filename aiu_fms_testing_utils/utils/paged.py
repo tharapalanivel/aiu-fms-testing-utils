@@ -118,7 +118,7 @@ def generate(
                 * BLOCK_SIZE
             ),
         )
-    )    
+    )
     NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
 
     # this includes empty pages and max_new_tokens
@@ -196,7 +196,7 @@ def generate(
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
     random.shuffle(block_numbers)
-    
+
     # this is the true number of left pads when computing paged attention using a paged kv-cache
     # it may include whole empty pages
     left_padded_prompt_mask = (kwargs["position_ids"] == 0).sum(dim=1) - 1
@@ -205,11 +205,13 @@ def generate(
     context_lengths_without_pads = (kwargs["position_ids"] != 0).sum(dim=1) + 1
 
     # this is the context length for each sequence with no empty pages (padded to multiple of 64)
-    context_lengths = BLOCK_SIZE * ((context_lengths_without_pads + BLOCK_SIZE - 1) // BLOCK_SIZE)
+    context_lengths = BLOCK_SIZE * (
+        (context_lengths_without_pads + BLOCK_SIZE - 1) // BLOCK_SIZE
+    )
 
     # left_padded_prompt_mask - empty_slots + context_lengths
     current_tkv_mask = torch.fill(context_lengths, torch.max(context_lengths))
-    
+
     slot_mapping = []
     block_table = []
     # each sequence has the possibility of a different tkv, so loop over that
@@ -217,7 +219,6 @@ def generate(
         block_table_i = [block_numbers.pop(0) for _ in range(seq_tkv // BLOCK_SIZE)]
         slot_mapping_i = []
         for pos_i in range(seq_tkv):
-            
             # we may have already popped a block, so index to the proper block
             block_number = block_table_i[pos_i // BLOCK_SIZE]
 
@@ -249,7 +250,9 @@ def generate(
 
             # we no longer have a global pos_i, each sequence has its own pos_i
             slot_mapping = []
-            for seq_i, pos_i in enumerate(current_tkv_mask - 1): # subtract 1 here to 0-index
+            for seq_i, pos_i in enumerate(
+                current_tkv_mask - 1
+            ):  # subtract 1 here to 0-index
                 if pos_i % BLOCK_SIZE == 0:
                     block_number = block_numbers.pop(0)
                     block_table[seq_i].append(block_number)
@@ -258,11 +261,20 @@ def generate(
                 slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
                 slot_mapping.append([slot])
 
-            kwargs["block_table"] = torch.tensor([([b_seq[0]] * (max(2, max([len(b) for b in block_table])) - len(b_seq))) + b_seq for b_seq in block_table], dtype=torch.int64)
+            kwargs["block_table"] = torch.tensor(
+                [
+                    (
+                        [b_seq[0]]
+                        * (max(2, max([len(b) for b in block_table])) - len(b_seq))
+                    )
+                    + b_seq
+                    for b_seq in block_table
+                ],
+                dtype=torch.int64,
+            )
             kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
             kwargs["current_tkv_mask"] = current_tkv_mask
             kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
-
 
         # prefill
         if i == 0:
@@ -276,16 +288,26 @@ def generate(
                     (t1._scale, t2._scale) for t1, t2 in kwargs["past_key_value_states"]
                 ]
             for seq_i, current_tkv in enumerate(context_lengths):
-                
                 # remove extra pads from the input_ids, slot_mapping, position_ids, mask to account for empty pages
                 # each input should be padded to its smallest multiple of BLOCK_SIZE (64)
-                input_ids_i = input_ids[seq_i][-current_tkv:].unsqueeze(0)
-                slot_mapping_i = torch.tensor(slot_mapping[seq_i][-current_tkv:], dtype=torch.int64).unsqueeze(0)
-                position_ids_i = kwargs["position_ids"][seq_i][-current_tkv:].unsqueeze(0)
+                # we need to clone these tensors to ensure the pointer offset is 0
+                input_ids_i = input_ids[seq_i][-current_tkv:].unsqueeze(0).clone()
+                slot_mapping_i = (
+                    torch.tensor(slot_mapping[seq_i][-current_tkv:], dtype=torch.int64)
+                    .unsqueeze(0)
+                    .clone()
+                )
+                position_ids_i = (
+                    kwargs["position_ids"][seq_i][-current_tkv:].unsqueeze(0).clone()
+                )
 
                 # This view will result in a discontiguous tensor (creates a new graph during compile)
                 # For this reason, we must explicitly make contiguous
-                mask_i = kwargs["mask"][seq_i][:, -current_tkv:, -current_tkv:].unsqueeze(0).contiguous()
+                mask_i = (
+                    kwargs["mask"][seq_i][:, -current_tkv:, -current_tkv:]
+                    .unsqueeze(0)
+                    .contiguous()
+                )
 
                 # batch dynamic
                 torch._dynamo.mark_static(input_ids_i, 0)
@@ -368,7 +390,7 @@ def generate(
             # handle the only_last_token here as it is already being handled above in prefill
             if not only_last_token:
                 logits = logits[:, -1, :]
-            
+
             output = (logits, past_key_value_states)
 
         if use_cache:
@@ -378,7 +400,6 @@ def generate(
             kwargs["past_key_value_states"] = past_key_value_states
         else:
             logits = output
-
 
         if do_sample:
             # get logits from last value in sequence nad scale
