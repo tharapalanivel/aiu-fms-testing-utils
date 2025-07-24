@@ -3,6 +3,7 @@ from fms.models import get_model
 from fms.utils.generation import pad_input_ids, generate
 from aiu_fms_testing_utils.utils.paged import generate as paged_generate
 from fms.utils.tokenizers import get_tokenizer
+import os
 
 
 def test_paged_equivalence():
@@ -32,6 +33,8 @@ def test_paged_equivalence():
             use_cache=True,
             extra_kwargs=padding_kwargs,
         )
+        os.environ["VLLM_DT_MAX_BATCH_SIZE"] = "2"
+        os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = "256"
 
         result_paged = paged_generate(
             _model_mock,
@@ -39,6 +42,6 @@ def test_paged_equivalence():
             max_new_tokens=5,
             do_sample=False,
             use_cache=True,
-            extra_kwargs=padding_kwargs,
+            extra_kwargs={"attn_name": "spyre_paged_attn", **padding_kwargs},
         )
         torch.testing.assert_close(result, result_paged)
