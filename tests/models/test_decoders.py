@@ -162,8 +162,16 @@ if isinstance(skip_assertions, str):
 compile_dynamic_sendnn = ATTN_TYPE == "paged"
 
 if compile_dynamic_sendnn:
+    import bisect
+
+    # the compiler supports certain max context lengths (VLLM_DT_MAX_CONTEXT_LEN)
+    # this will ensure that we select smallest supported VLLM_DT_MAX_CONTEXT_LEN that fits the largest possible context (prompt size + max_new_tokens)
+    __largest_context = max(common_seq_lengths) + max(common_max_new_tokens)
+    __supported_context_lengths = [256, 512, 1024, 2048, 4096, 8192]
     os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(
-        (((max(common_seq_lengths) + max(common_max_new_tokens)) // 64) + 1) * 64
+        __supported_context_lengths[
+            bisect.bisect_left(__supported_context_lengths, __largest_context)
+        ]
     )
     os.environ["VLLM_DT_MAX_BATCH_SIZE"] = str(max(max(common_batch_sizes), 2))
 
@@ -290,7 +298,7 @@ def __prepare_inputs(batch_size, seq_length, tokenizer, seed=0):
         SHARE_GPT_DATASET_PATH,
         batch_size,
         tokenizer,
-        int(seq_length / 2),
+        seq_length // 2,
         seq_length,
         seed,
     )
@@ -417,7 +425,7 @@ def test_common_shapes(
     os.environ["COMPILATION_MODE"] = "offline_decoder"
 
     dprint(
-        f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}"
+        f"testing model={model_path}, batch_size={batch_size}, seq_length={seq_length}, max_new_tokens={max_new_tokens}, micro_model={USE_MICRO_MODELS}, attn_type={ATTN_TYPE}"
     )
 
     # we don't currently support inferring gptq from get_model, so we must use an adapter with hf_configured

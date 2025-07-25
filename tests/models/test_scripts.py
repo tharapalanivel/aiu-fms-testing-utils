@@ -20,6 +20,7 @@ else:
 common_batch_sizes = [1, 8]
 common_seq_lengths = [64]
 common_max_new_tokens = [12]
+common_attn_types = ["sdpa", "paged"]
 
 common_params = list(
     itertools.product(
@@ -27,6 +28,7 @@ common_params = list(
         common_batch_sizes,
         common_seq_lengths,
         common_max_new_tokens,
+        common_attn_types,
     )
 )
 
@@ -51,7 +53,12 @@ def execute_script(execute_cmd):
             raise Exception(error)
 
 
-def execute_inference(model_path, max_new_tokens, batch_size, seq_length):
+def execute_inference(model_path, batch_size, seq_length, max_new_tokens, attn_type):
+    extra_args = []
+    if attn_type == "paged":
+        extra_args.append("--compile_dynamic_sendnn")
+        extra_args.append("--attention_type=paged")
+
     execute_cmd = [
         "python3",
         INFERENCE_FILE_PATH,
@@ -68,7 +75,7 @@ def execute_inference(model_path, max_new_tokens, batch_size, seq_length):
         "--device_type=aiu",
         "--default_dtype=fp16",
     ]
-    return execute_script(execute_cmd)
+    return execute_script(execute_cmd + extra_args)
 
 
 common_asserts = [
@@ -93,10 +100,15 @@ common_inference_params = [
 
 
 @pytest.mark.parametrize(
-    "model_path,batch_size,seq_length,max_new_tokens,asserts", common_inference_params
+    "model_path,batch_size,seq_length,max_new_tokens,attn_type,asserts",
+    common_inference_params,
 )
-def test_inference_script(model_path, max_new_tokens, seq_length, batch_size, asserts):
-    result_text = execute_inference(model_path, max_new_tokens, batch_size, seq_length)
+def test_inference_script(
+    model_path, batch_size, seq_length, max_new_tokens, attn_type, asserts
+):
+    result_text = execute_inference(
+        model_path, batch_size, seq_length, max_new_tokens, attn_type
+    )
 
     for common_assert in asserts:
         assert common_assert in result_text

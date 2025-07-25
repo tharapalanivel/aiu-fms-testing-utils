@@ -106,21 +106,17 @@ def generate(
 
     result = input_ids
     next_input = input_ids
+    # this includes empty pages and max_new_tokens
+    max_possible_context_length = input_ids.size(1) + max_new_tokens
+
     BLOCK_SIZE = 64
-    _MAX_BATCH = int(
-        os.environ.setdefault("VLLM_DT_MAX_BATCH_SIZE", str(input_ids.size(0)))
-    )
-    _MAX_CONTEXT_LENGTH = int(
-        os.environ.setdefault(
-            "VLLM_DT_MAX_CONTEXT_LEN",
-            str(
-                (((input_ids.size(1) + max_new_tokens - 1) // BLOCK_SIZE) + 1)
-                * BLOCK_SIZE
-            ),
-        )
-    )
+
+    # these variables are guaranteed to be set in another location (inference.py, test_decoders.py, etc.)
+    # if we set these variables here, we run the risk of warming up and generating with different sizes
+    _MAX_BATCH = int(os.environ["VLLM_DT_MAX_BATCH_SIZE"])
+    _MAX_CONTEXT_LENGTH = int(os.environ["VLLM_DT_MAX_CONTEXT_LEN"])
     NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
-    max_seq_len = input_ids.size(1) + max_new_tokens
+
     if hasattr(model, "head"):
         model_dtype = model.head.weight.dtype
     elif hasattr(model, "shared"):
@@ -194,27 +190,41 @@ def generate(
     block_numbers = [i for i in range(NUM_BLOCKS)]
     # this will ensure we don't have contiguous blocks
     random.shuffle(block_numbers)
+
+    # this is the true number of left pads when computing paged attention using a paged kv-cache
+    # it may include whole empty pages
     left_padded_prompt_mask = (kwargs["position_ids"] == 0).sum(dim=1) - 1
-    current_context_lengths = (kwargs["position_ids"] != 0).sum(dim=1) + 1
-    current_tkv_mask = left_padded_prompt_mask + current_context_lengths
+
+    # this is the context length for each sequence without pads
+    context_lengths_without_pads = (kwargs["position_ids"] != 0).sum(dim=1) + 1
+
+    # this is the context length for each sequence with no empty pages (padded to multiple of 64)
+    context_lengths = BLOCK_SIZE * (
+        (context_lengths_without_pads + BLOCK_SIZE - 1) // BLOCK_SIZE
+    )
+
+    # left_padded_prompt_mask - empty_slots + context_lengths
+    current_tkv_mask = torch.fill(context_lengths, torch.max(context_lengths))
+
     slot_mapping = []
     block_table = []
-    for seq_i in input_ids:
-        block_table_i = []
+    # each sequence has the possibility of a different tkv, so loop over that
+    for seq_tkv in context_lengths:
+        block_table_i = [block_numbers.pop(0) for _ in range(seq_tkv // BLOCK_SIZE)]
         slot_mapping_i = []
-        for pos_i in range(seq_i.size(0)):
-            if pos_i % BLOCK_SIZE == 0:
-                block_number = block_numbers.pop(0)
-                block_table_i.append(block_number)
+        for pos_i in range(seq_tkv):
+            # we may have already popped a block, so index to the proper block
+            block_number = block_table_i[pos_i // BLOCK_SIZE]
+
             block_offset = pos_i % BLOCK_SIZE
             slot = block_number * BLOCK_SIZE + block_offset
             slot_mapping_i.append(slot)
         slot_mapping.append(slot_mapping_i)
         block_table.append(block_table_i)
-    kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
     kwargs["current_tkv_mask"] = None
     kwargs["left_padded_prompt_mask"] = None
     kwargs["use_cache"] = use_cache
+    only_last_token = kwargs.get("only_last_token", False)
 
     prompt_length = input_ids.shape[1]
 
@@ -223,29 +233,7 @@ def generate(
         start_time = time.time()
 
     for i in range(max_new_tokens):
-        input_ids = next_input[:, -max_seq_len:]
-
-        # prepare any padding keyword arguments
-        # iteration 0 is the prefill step (cache has not been filled yet), so no need to extend the mask/position_ids
-        if i > 0:
-            kwargs["mask"] = None
-            kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
-            pos_i = result.size(1) - 1
-            if pos_i % BLOCK_SIZE == 0:
-                for block_table_i in block_table:
-                    block_number = block_numbers.pop(0)
-                    block_table_i.append(block_number)
-            block_offset = pos_i % BLOCK_SIZE
-
-            slot_mapping = []
-            for block_table_i in block_table:
-                slot = block_table_i[-1] * BLOCK_SIZE + block_offset
-                slot_mapping.append([slot])
-            kwargs["block_table"] = torch.tensor(block_table, dtype=torch.int64)
-            kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
-            current_tkv_mask = current_tkv_mask + 1
-            kwargs["current_tkv_mask"] = current_tkv_mask
-            kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
+        input_ids = next_input[:, -max_possible_context_length:]
 
         # prefill
         if i == 0:
@@ -253,15 +241,32 @@ def generate(
 
             outputs_list = []
             current_kv_cache = kwargs["past_key_value_states"]
+
             if "fp8" in kwargs["attn_name"]:
                 current_kv_scales = [
                     (t1._scale, t2._scale) for t1, t2 in kwargs["past_key_value_states"]
                 ]
-            for seq_i in range(input_ids.size(0)):
-                input_ids_i = input_ids[seq_i].unsqueeze(0)
-                slot_mapping_i = kwargs["slot_mapping"][seq_i].unsqueeze(0)
-                position_ids_i = kwargs["position_ids"][seq_i].unsqueeze(0)
-                mask_i = kwargs["mask"][seq_i].unsqueeze(0)
+            for seq_i, current_tkv in enumerate(context_lengths):
+                # remove extra pads from the input_ids, slot_mapping, position_ids, mask to account for empty pages
+                # each input should be padded to its smallest multiple of BLOCK_SIZE (64)
+                # we need to clone these tensors to ensure the pointer offset is 0
+                input_ids_i = input_ids[seq_i][-current_tkv:].unsqueeze(0).clone()
+                slot_mapping_i = (
+                    torch.tensor(slot_mapping[seq_i][-current_tkv:], dtype=torch.int64)
+                    .unsqueeze(0)
+                    .clone()
+                )
+                position_ids_i = (
+                    kwargs["position_ids"][seq_i][-current_tkv:].unsqueeze(0).clone()
+                )
+
+                # This view will result in a discontiguous tensor (creates a new graph during compile)
+                # For this reason, we must explicitly make contiguous
+                mask_i = (
+                    kwargs["mask"][seq_i][:, -current_tkv:, -current_tkv:]
+                    .unsqueeze(0)
+                    .contiguous()
+                )
 
                 # batch dynamic
                 torch._dynamo.mark_static(input_ids_i, 0)
@@ -283,7 +288,6 @@ def generate(
                         t2._scale = current_kv_scales[layer_idx][1][seq_i].reshape(-1)
 
                 only_last_token = kwargs.get("only_last_token", False)
-
                 output, current_kv_cache = model(
                     input_ids_i,
                     slot_mapping=slot_mapping_i,
@@ -294,6 +298,10 @@ def generate(
                     only_last_token=only_last_token,
                     attn_name=kwargs["attn_name"],
                 )
+
+                # only last token must be handled here to properly stack the tensors
+                if not only_last_token:
+                    output = output[:, -1, :]
 
                 # TODO: Figure out how to do this cleanly
                 if "fp8" in kwargs["attn_name"]:
@@ -313,10 +321,41 @@ def generate(
                 outputs_list.append(output[0].squeeze(0))
 
             output = (torch.stack(outputs_list), current_kv_cache)
-
         # decode
         else:
+            # prepare any padding keyword arguments
+            # iteration 0 is the prefill step (cache has not been filled yet), so no need to extend the mask/position_ids
+
             # mask is no longer used here
+            kwargs["mask"] = None
+            kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
+
+            # we no longer have a global pos_i, each sequence has its own pos_i
+            slot_mapping = []
+            for seq_i, pos_i in enumerate(current_tkv_mask):
+                if pos_i % BLOCK_SIZE == 0:
+                    block_number = block_numbers.pop(0)
+                    block_table[seq_i].append(block_number)
+
+                block_offset = pos_i % BLOCK_SIZE
+                slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
+                slot_mapping.append([slot])
+
+            kwargs["block_table"] = torch.tensor(
+                [
+                    (
+                        [b_seq[0]]
+                        * (max(2, max([len(b) for b in block_table])) - len(b_seq))
+                    )
+                    + b_seq
+                    for b_seq in block_table
+                ],
+                dtype=torch.int64,
+            )
+            kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
+            current_tkv_mask = current_tkv_mask + 1
+            kwargs["current_tkv_mask"] = current_tkv_mask
+            kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
 
             # batch
             torch._dynamo.mark_dynamic(input_ids, 0)
@@ -336,7 +375,16 @@ def generate(
             torch._dynamo.mark_static(kwargs["slot_mapping"], 1)  # always 1
             torch._dynamo.mark_static(kwargs["position_ids"], 1)  # always 1
 
-            output = model(input_ids, **kwargs)
+            logits, past_key_value_states = model(input_ids, **kwargs)
+
+            # typically this is done outside of prefill/decode logic, but since this logic already exists as part of the
+            # conditional for prefill (since prefill does this within a loop for each batch size 1 prefill), we also provide
+            # this same logic as part of the decode conditional
+            if not only_last_token:
+                logits = logits[:, -1, :]
+
+            output = (logits, past_key_value_states)
+
         if use_cache:
             logits, past_key_value_states = output
             # TODO: this should go away when reduce-overhead issues are fixed, or
@@ -344,9 +392,6 @@ def generate(
             kwargs["past_key_value_states"] = past_key_value_states
         else:
             logits = output
-
-        if not kwargs.get("only_last_token", False):
-            logits = logits[:, -1, :]
 
         if do_sample:
             # get logits from last value in sequence nad scale
