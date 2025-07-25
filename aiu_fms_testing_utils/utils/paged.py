@@ -235,39 +235,6 @@ def generate(
     for i in range(max_new_tokens):
         input_ids = next_input[:, -max_possible_context_length:]
 
-        # prepare any padding keyword arguments
-        # iteration 0 is the prefill step (cache has not been filled yet), so no need to extend the mask/position_ids
-        if i > 0:
-            kwargs["mask"] = None
-            kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
-
-            # we no longer have a global pos_i, each sequence has its own pos_i
-            slot_mapping = []
-            for seq_i, pos_i in enumerate(current_tkv_mask):
-                if pos_i % BLOCK_SIZE == 0:
-                    block_number = block_numbers.pop(0)
-                    block_table[seq_i].append(block_number)
-
-                block_offset = pos_i % BLOCK_SIZE
-                slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
-                slot_mapping.append([slot])
-
-            kwargs["block_table"] = torch.tensor(
-                [
-                    (
-                        [b_seq[0]]
-                        * (max(2, max([len(b) for b in block_table])) - len(b_seq))
-                    )
-                    + b_seq
-                    for b_seq in block_table
-                ],
-                dtype=torch.int64,
-            )
-            kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
-            current_tkv_mask = current_tkv_mask + 1
-            kwargs["current_tkv_mask"] = current_tkv_mask
-            kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
-
         # prefill
         if i == 0:
             kwargs["mask"] = kwargs["mask"].unsqueeze(1)
@@ -354,10 +321,41 @@ def generate(
                 outputs_list.append(output[0].squeeze(0))
 
             output = (torch.stack(outputs_list), current_kv_cache)
-
         # decode
         else:
+            # prepare any padding keyword arguments
+            # iteration 0 is the prefill step (cache has not been filled yet), so no need to extend the mask/position_ids
+
             # mask is no longer used here
+            kwargs["mask"] = None
+            kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
+
+            # we no longer have a global pos_i, each sequence has its own pos_i
+            slot_mapping = []
+            for seq_i, pos_i in enumerate(current_tkv_mask):
+                if pos_i % BLOCK_SIZE == 0:
+                    block_number = block_numbers.pop(0)
+                    block_table[seq_i].append(block_number)
+
+                block_offset = pos_i % BLOCK_SIZE
+                slot = block_table[seq_i][-1] * BLOCK_SIZE + block_offset
+                slot_mapping.append([slot])
+
+            kwargs["block_table"] = torch.tensor(
+                [
+                    (
+                        [b_seq[0]]
+                        * (max(2, max([len(b) for b in block_table])) - len(b_seq))
+                    )
+                    + b_seq
+                    for b_seq in block_table
+                ],
+                dtype=torch.int64,
+            )
+            kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
+            current_tkv_mask = current_tkv_mask + 1
+            kwargs["current_tkv_mask"] = current_tkv_mask
+            kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
 
             # batch
             torch._dynamo.mark_dynamic(input_ids, 0)
