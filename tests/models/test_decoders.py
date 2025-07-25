@@ -164,6 +164,8 @@ compile_dynamic_sendnn = ATTN_TYPE == "paged"
 if compile_dynamic_sendnn:
     import bisect
 
+    # the compiler supports certain max context lengths (VLLM_DT_MAX_CONTEXT_LEN)
+    # this will ensure that we select smallest supported VLLM_DT_MAX_CONTEXT_LEN that fits the largest possible context (prompt size + max_new_tokens)
     __largest_context = max(common_seq_lengths) + max(common_max_new_tokens)
     __supported_context_lengths = [256, 512, 1024, 2048, 4096, 8192]
     os.environ["VLLM_DT_MAX_CONTEXT_LEN"] = str(

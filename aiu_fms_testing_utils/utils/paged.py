@@ -238,13 +238,10 @@ def generate(
         if i > 0:
             kwargs["mask"] = None
             kwargs["position_ids"] = kwargs["position_ids"][:, -1:] + 1
-            current_tkv_mask = current_tkv_mask + 1
 
             # we no longer have a global pos_i, each sequence has its own pos_i
             slot_mapping = []
-            for seq_i, pos_i in enumerate(
-                current_tkv_mask - 1
-            ):  # subtract 1 here to 0-index
+            for seq_i, pos_i in enumerate(current_tkv_mask):
                 if pos_i % BLOCK_SIZE == 0:
                     block_number = block_numbers.pop(0)
                     block_table[seq_i].append(block_number)
@@ -265,6 +262,7 @@ def generate(
                 dtype=torch.int64,
             )
             kwargs["left_padded_prompt_mask"] = left_padded_prompt_mask
+            current_tkv_mask = current_tkv_mask + 1
             kwargs["current_tkv_mask"] = current_tkv_mask
             kwargs["slot_mapping"] = torch.tensor(slot_mapping, dtype=torch.int64)
 
@@ -379,7 +377,9 @@ def generate(
 
             logits, past_key_value_states = model(input_ids, **kwargs)
 
-            # handle the only_last_token here as it is already being handled above in prefill
+            # typically this is done outside of prefill/decode logic, but since this logic already exists as part of the
+            # conditional for prefill (since prefill does this within a loop for each batch size 1 prefill), we also provide
+            # this same logic as part of the decode conditional
             if not only_last_token:
                 logits = logits[:, -1, :]
 
