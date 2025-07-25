@@ -111,6 +111,8 @@ def generate(
 
     BLOCK_SIZE = 64
 
+    # these variables are guaranteed to be set in another location (inference.py, test_decoders.py, etc.)
+    # if we set these variables here, we run the risk of warming up and generating with different sizes
     _MAX_BATCH = int(os.environ["VLLM_DT_MAX_BATCH_SIZE"])
     _MAX_CONTEXT_LENGTH = int(os.environ["VLLM_DT_MAX_CONTEXT_LEN"])
     NUM_BLOCKS = (_MAX_BATCH * _MAX_CONTEXT_LENGTH) // BLOCK_SIZE
