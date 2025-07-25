@@ -803,11 +803,16 @@ if args.compile:
                 args.compile_dynamic_sendnn,
                 **extra_generation_kwargs,
             )
-        aiu_warmup_time = time.time()
-        for sample, cache in itertools.product(do_sample, use_cache):
-            infer(cache, sample, True)
-        aiu_warmup_time = time.time() - aiu_warmup_time
-        dprint(f"AIU warmup complete, took {aiu_warmup_time:.3f}s")
+        if (
+            args.device_type == "aiu"
+        ):  # run device initialization warmup for AIU, skip for senulator
+            aiu_warmup_time = time.time()
+            for sample, cache in itertools.product(do_sample, use_cache):
+                infer(cache, sample, True)
+            aiu_warmup_time = time.time() - aiu_warmup_time
+            dprint(
+                f"AIU device initialization warmup complete, took {aiu_warmup_time:.3f}s"
+            )
     else:
         for sample, cache in itertools.product(do_sample, use_cache):
             infer(cache, sample, True)
