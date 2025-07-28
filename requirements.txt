@@ -1,5 +1,0 @@
-ibm-fms @ git+https://github.com/foundation-model-stack/foundation-model-stack@main
-fms-model-optimizer @ git+https://github.com/foundation-model-stack/fms-model-optimizer@main
-sentencepiece
-numpy
-transformers
