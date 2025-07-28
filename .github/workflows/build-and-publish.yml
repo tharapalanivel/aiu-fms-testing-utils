@@ -1,4 +1,4 @@
-name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+name: Publish Python 🐍 distribution 📦 to PyPI
 on:
   release:
     types: [published]
@@ -27,14 +27,14 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
-  
-  publish-to-testpypi:
-    name: Publish Python 🐍 distribution 📦 to TestPyPI
+
+  publish-to-pypi:
+    name: Publish Python 🐍 distribution 📦 to PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment: # 1. create new deployment environment in gh for security and for trusted publisher
-      name: testpypi
-      url: https://test.pypi.org/project/aiu-fms-testing-utils
+    environment: # 1. A new pypi environment need to be created in gh
+      name: pypi
+      url: https://pypi.org/project/aiu-fms-testing-utils
     permissions:
       id-token: write  # Required for Trusted Publishing
     if: github.event_name == 'release'
@@ -44,32 +44,9 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
-      # 2. Add github as trusted publisher in pypi. This enables publishing without credentials from env variables.
-      - name: Publish distribution 📦 to TestPyPI
+      # 2. Need to set github as trusted publisher in PyPi project to publish without credentials from env
+      - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/ # testpyi api endpoint
-          verbose: true
-
-  # publish-to-pypi:
-  #   name: Publish Python 🐍 distribution 📦 to PyPI
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   environment: # 1. create new deployment environment in gh
-  #     name: pypi
-  #     url: https://pypi.org/project/aiu-fms-testing-utils
-  #   permissions:
-  #     id-token: write  # Required for Trusted Publishing
-  #   if: github.event_name == 'release'
-  #   steps:
-  #     - name: Download all the dists
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: python-package-distributions
-  #         path: dist/
-  #     # 2. setting github as trusted publisher in pypi. This enables publishing without using credentials from env
-  #     - name: Publish distribution 📦 to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         repository-url: https://test.pypi.org/legacy/ # pypi api endpoint
-  #         verbose: false
+          repository-url: https://pypi.org/legacy/ # pypi api endpoint
+          verbose: false
