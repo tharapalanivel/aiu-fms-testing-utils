@@ -10,24 +10,36 @@ name = "aiu-fms-testing-utils"
 dynamic = ["version"]
 description = "Spyre FMS Testing Utils"
 authors = [
-  {name = "Thara Palanivel", email = "Tharangini.Palanivel@ibm.com"},
-  {name = "Ted Chang", email = "htchang@us.ibm.com"},
+  {name = "Thara Palanivel", email = "tpalan@ibm.com"},
+  {name = "Joshua Rosenkranz", email = "jmrosenk@us.ibm.com"},
+  {name = "Antoni Viros i Martin", email = "aviros@ibm.com"},
 ]
 license = "Apache-2.0"
 readme = "README.md"
 requires-python = "~=3.12"
 keywords = ['aiu-fms-testing-utils', 'python', 'utils']
 classifiers=[
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Unit",
+    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 dependencies = [
-"ibm-fms",
-"fms-model-optimizer",
-"sentencepiece",
-"numpy",
-"transformers",
+"ibm-fms>=1.1.0,<2.0",
+"fms-model-optimizer>=0.5.0,<1.0",
+"sentencepiece>=0.2.0,<0.3.0",
+"numpy>=2.3.2,<3.0",
+"transformers>=4.54.0,<5.0",
 ]
 
 [project.optional-dependencies]
