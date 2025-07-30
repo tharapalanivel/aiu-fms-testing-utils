@@ -16,14 +16,13 @@ authors = [
 ]
 license = "Apache-2.0"
 readme = "README.md"
-requires-python = "~=3.12"
+requires-python = ">=3.11,<3.13"
 keywords = ['aiu-fms-testing-utils', 'python', 'utils']
 classifiers=[
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -38,8 +37,9 @@ dependencies = [
 "ibm-fms>=1.1.0,<2.0",
 "fms-model-optimizer>=0.5.0,<1.0",
 "sentencepiece>=0.2.0,<0.3.0",
-"numpy>=2.3.2,<3.0",
-"transformers>=4.54.0,<5.0",
+"numpy>=1.26.4,<2.3.0",
+"transformers>=4.45,<4.54",
+"torch==2.7.1",
 ]
 
 [project.optional-dependencies]
