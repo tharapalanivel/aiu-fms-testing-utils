@@ -15,9 +15,6 @@ import torch.nn as nn
 
 import warnings
 
-ENFORCE_HETEROGENEOUS = bool(os.getenv("ENFORCE_HETEROGENEOUS", False))
-PAD_MULTIPLE = int(os.getenv("PAD_MULTIPLE", 64))
-
 
 def warmup_model(
     model: nn.Module,
@@ -102,32 +99,52 @@ def get_pad_size(prompt_len: int, pad_multiple: int = 64):
         prompt length 65 with pad multiple = 64 returns 128
         prompt length 64 with pad multiple = 64 returns 64
     """
-    if prompt_len <= 0:
-        warnings.warn(f"{prompt_len=} which should probably be > 0", stacklevel=2)
+    # handle outliers and case where you cannot divide by 0
+    if prompt_len <= 0 or pad_multiple == 0:
+        if prompt_len < 0:
+            warnings.warn(f"{prompt_len=} which should probably be > 0", stacklevel=2)
         return 0
     else:
         return ((prompt_len + pad_multiple - 1) // pad_multiple) * pad_multiple
 
 
-def merge_enforce_keep_hetergenous(
+def _merge_enforce_keep_heterogeneous(
     enforce_list: List[Tuple[str, int]],
     heterogeneous_list: List[Tuple[str, int]],
     batch_size: int,
 ):
     """
     Method for returning a list that contains both enforced sizes and is heterogeneous
+
+    Args:
+        enforce_list: List[Tuple[str, int]], a list of prompt/prompt_len that contains prompt_lens
+            that must be enforced
+        heterogeneous_list: List[Tuple[str, int]], a list of prompt/prompt_len where all prompt_lens
+            are heterogeneous to the extent possible. i.e. if batch size is 3 but only 2 possible
+            prompt length exists, this list will contain both prompt lengths with third item sharing
+            the same prompt length as one of the previous items.
+        batch_size: int, will define the final size of the list.
+
+    Returns:
+        List[Tuple[str,int]] that will have all elements from enforce_list
     """
     final_list = enforce_list.copy()
     unique_sizes = {num for _, num in enforce_list}
     for prompt, size in heterogeneous_list:
         if len(final_list) >= batch_size:
             break
+        # if the size hasn't been covered by enforce_list, add to list to keep it heterogeneous
         if size not in unique_sizes:
             final_list.append((prompt, size))
             unique_sizes.add(size)
     if len(final_list) > batch_size:
         warnings.warn(
             f"Requested {batch_size=}, which is smaller than the enforced list, will return list larger than requested size",
+            stacklevel=2,
+        )
+    elif len(final_list) < batch_size:
+        warnings.warn(
+            f"Requested {batch_size=}, than possible combined list. Will return smaller list than batch size",
             stacklevel=2,
         )
     return final_list
@@ -140,8 +157,9 @@ def __sample_requests(
     prompt_length_min: int = 32,
     prompt_length_max: int = 64,
     seed: Optional[int] = None,
-    enforce_heterogeneous: bool = ENFORCE_HETEROGENEOUS,
+    enforce_heterogeneous: bool = False,
     enforce_sizes: List[int] = [],
+    pad_multiple: int = 64,
 ):
     """
     Shuffles dataset, tokenizes the prompts and then filters
@@ -151,19 +169,21 @@ def __sample_requests(
         prompt_length_max (int): filters out prompts larger than this value.
         enforce_sizes (List[int]): sample request will grab a prompt with this length if available.
         enforce_heterogeneous (bool): Pads all prompts within batch size to nearest multiple of 64.
-
-    Returns:
+        pad_multiple (int): Used only when enforce_heterogeneous is True or enforce_sizes is not empty, asserts that prompt_length would be padded to this multiple
         List[Tuple[str, int]]: a filtered dataset
     """
 
     # Based on min/max prompt length, one can back out the number of possible heterogeneous values
-    max_heterogeneous_combinations = (prompt_length_max // PAD_MULTIPLE) - (
-        (prompt_length_min - 1) // PAD_MULTIPLE
+    max_heterogeneous_combinations = (prompt_length_max // pad_multiple) - (
+        (prompt_length_min - 1) // pad_multiple
     )
 
     # Filter out sequences that are too long or too short
     filtered_dataset: List[Tuple[str, int]] = []
     enforced_dataset: List[Tuple[str, int]] = []
+
+    # To track sizes seen
+    seen_sizes: List[int] = []
 
     if enforce_sizes:
         for size in enforce_sizes:
@@ -198,27 +218,21 @@ def __sample_requests(
             and max_heterogeneous_combinations > len(filtered_dataset)
             and len(filtered_dataset) < num_requests
         ):
-            pad_multiple_exists = False
-            for _, size in filtered_dataset:
-                current_padded_size = get_pad_size(prompt_len)
-                dataset_padded_size = get_pad_size(size)
+            # for _, size in filtered_dataset:
+            current_padded_size = get_pad_size(prompt_len, pad_multiple)
 
-                # If it's in the list of enforce_sizes it is enforced, can remove from list
-                if current_padded_size in enforce_sizes:
-                    enforce_sizes.remove(current_padded_size)
-                    enforced_dataset.append((prompt, prompt_len))
+            # If it's in the list of enforce_sizes it is enforced, can remove from list
+            if current_padded_size in enforce_sizes:
+                enforce_sizes.remove(current_padded_size)
+                enforced_dataset.append((prompt, prompt_len))
 
-                if current_padded_size == dataset_padded_size:
-                    pad_multiple_exists = True
-            if pad_multiple_exists:
-                continue
-            filtered_dataset.append((prompt, prompt_len))
+            if current_padded_size not in seen_sizes:
+                filtered_dataset.append((prompt, prompt_len))
+                seen_sizes.append(current_padded_size)
         # Forcing search for enforce_sizes
         elif enforce_sizes:
-            current_padded_size = get_pad_size(prompt_len)
-            if current_padded_size not in enforce_sizes:
-                continue
-            else:
+            current_padded_size = get_pad_size(prompt_len, pad_multiple)
+            if current_padded_size in enforce_sizes:
                 enforce_sizes.remove(current_padded_size)
                 enforced_dataset.append((prompt, prompt_len))
         # when not enforcing heterogeneous or when exhausted all possible prompt_lengths
@@ -228,10 +242,10 @@ def __sample_requests(
 
     if num_requests > max_heterogeneous_combinations:
         print(
-            f"There will be repeats because {num_requests=} while {max_heterogeneous_combinations=}"
+            f"There will be prompt size repeats because {num_requests=} while {max_heterogeneous_combinations=}"
         )
     if enforced_dataset:
-        filtered_dataset = merge_enforce_keep_hetergenous(
+        filtered_dataset = _merge_enforce_keep_heterogeneous(
             enforced_dataset, filtered_dataset, num_requests
         )
 
@@ -247,6 +261,7 @@ def sample_sharegpt_requests(
     seed: Optional[int] = None,
     enforce_heterogeneous: bool = False,
     enforce_sizes: List[int] = [],
+    pad_multiple: int = 64,
 ) -> List[Tuple[str, int]]:
     if not os.path.exists(dataset_path):
         print("downloading share-gpt dataset as it does not exist")
@@ -271,6 +286,7 @@ def sample_sharegpt_requests(
         seed,
         enforce_heterogeneous,
         enforce_sizes,
+        pad_multiple,
     )
 
 
@@ -283,6 +299,7 @@ def sample_squad_v2_qa_requests(
     seed: Optional[int] = None,
     enforce_heterogeneous: bool = False,
     enforce_sizes: List[int] = [],
+    pad_multiple: int = 64,
 ) -> List[Tuple[str, int]]:
     from datasets import load_dataset
 
@@ -302,6 +319,7 @@ def sample_squad_v2_qa_requests(
         seed,
         enforce_heterogeneous,
         enforce_sizes,
+        pad_multiple,
     )
 
 

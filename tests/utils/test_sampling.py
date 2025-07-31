@@ -1,7 +1,7 @@
 from aiu_fms_testing_utils.utils import (
     sample_sharegpt_requests,
     get_pad_size,
-    merge_enforce_keep_hetergenous,
+    _merge_enforce_keep_heterogeneous,
 )
 from typing import List
 from transformers import AutoTokenizer
@@ -12,7 +12,8 @@ import os
 BATCH_SIZES = [0, 1, 2, 3, 4, 8, 16]
 ENFORCE_HETEROGENEOUS = [True, False]
 ENFORCE_SIZES = [[], [64, 256], [64, 128, 2048, 4096]]
-
+SEED = [0, 1, 15, 256]
+PAD_SIZES = [0, 64, 128, 256]
 
 prompt_max_length = 4096
 prompt_min_length = 64
@@ -26,12 +27,16 @@ def expected_error(num_request: int, enforce_sizes: List[int]):
 
 
 @pytest.mark.parametrize("batch_size", BATCH_SIZES)
-def test_merge_enforce_keep_hetergenous(batch_size):
+def test_merge_enforce_keep_heterogeneous(batch_size):
+    """
+    testing that all items in keep_list are kept while returning correct batch size by populating
+    final_list from flex_list and keeping everything heterogeneous
+    """
     num_keep = 0
     num_flex = 0
     keep_list = [("keep", 0), ("keep", 2), ("keep", 3)]
     flexible_list = [("flex", 2), ("flex", 3), ("flex", 4), ("flex", 5), ("flex", 6)]
-    final_list = merge_enforce_keep_hetergenous(keep_list, flexible_list, batch_size)
+    final_list = _merge_enforce_keep_heterogeneous(keep_list, flexible_list, batch_size)
     for text, _ in final_list:
         if text == "keep":
             num_keep += 1
@@ -45,31 +50,30 @@ def test_merge_enforce_keep_hetergenous(batch_size):
         assert num_flex == min(batch_size - num_keep, len_unique_num - num_keep)
 
 
-def test_get_pad_size():
-    PAD_MULTIPLE = [64, 128]
-    PROMPT_LENGTH = [-65, -1, 0, 1, 63, 64, 65, 128]
-    for pad_multiple in PAD_MULTIPLE:
-        for prompt_len in PROMPT_LENGTH:
-            if prompt_len <= 0:
-                assert get_pad_size(prompt_len, pad_multiple) == 0
-            elif 1 <= prompt_len <= pad_multiple:
-                assert get_pad_size(prompt_len, pad_multiple) == pad_multiple
-            elif pad_multiple + 1 <= prompt_len <= 2 * pad_multiple:
-                assert get_pad_size(prompt_len, pad_multiple) == 2 * pad_multiple
-            else:
-                raise NotImplementedError
+@pytest.mark.parametrize("expected_pad_size", PAD_SIZES)
+def test_get_pad_size(expected_pad_size):
     # check default 64
     assert get_pad_size(63) == 64
 
+    assert get_pad_size(0, expected_pad_size) == 0
+    assert get_pad_size(expected_pad_size - 1, expected_pad_size) == expected_pad_size
+    assert get_pad_size(expected_pad_size, expected_pad_size) == expected_pad_size
+    assert (
+        get_pad_size(expected_pad_size + 1, expected_pad_size) == 2 * expected_pad_size
+    )
+    assert get_pad_size(-1, expected_pad_size) == 0
 
-ENFORCE_TEST_COMBO = list(product(BATCH_SIZES, ENFORCE_HETEROGENEOUS, ENFORCE_SIZES))
+
+ENFORCE_TEST_COMBO = list(
+    product(BATCH_SIZES, ENFORCE_HETEROGENEOUS, ENFORCE_SIZES, SEED)
+)
 
 
 @pytest.mark.parametrize(
-    "batch_size, enforce_heterogeneous, enforce_sizes", ENFORCE_TEST_COMBO
+    "batch_size, enforce_heterogeneous, enforce_sizes, seed", ENFORCE_TEST_COMBO
 )
 def test_enforce_heterogeneous_and_size(
-    batch_size, enforce_heterogeneous, enforce_sizes
+    batch_size, enforce_heterogeneous, enforce_sizes, seed
 ):
     prompt_max_length = 4096
     prompt_min_length = 64
@@ -90,7 +94,7 @@ def test_enforce_heterogeneous_and_size(
             tokenizer,
             prompt_min_length,
             prompt_max_length,
-            0,
+            seed,
             enforce_heterogeneous,
             enforce_sizes,
         )
