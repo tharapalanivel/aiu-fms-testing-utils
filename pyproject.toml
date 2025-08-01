@@ -1,0 +1,54 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0"
+    ]
+
+[project]
+name = "aiu-fms-testing-utils"
+dynamic = ["version"]
+description = "Spyre FMS Testing Utils"
+authors = [
+  {name = "Thara Palanivel", email = "tpalan@ibm.com"},
+  {name = "Joshua Rosenkranz", email = "jmrosenk@us.ibm.com"},
+  {name = "Antoni Viros i Martin", email = "aviros@ibm.com"},
+]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+keywords = ['aiu-fms-testing-utils', 'python', 'utils']
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Unit",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+"ibm-fms>=1.1.0,<2.0",
+"fms-model-optimizer>=0.5.0,<1.0",
+"sentencepiece>=0.2.0,<0.3.0",
+"numpy>=1.26.4,<2.3.0",
+"transformers>=4.45,<4.54",
+"torch==2.7.1",
+]
+
+[project.optional-dependencies]
+dev = ["wheel>=0.42.0,<1.0", "packaging>=23.2,<25"]
+
+[tool.setuptools_scm]
+version_file = "aiu_fms_testing_utils/_version.py"
+
+[project.urls]
+Homepage = "https://github.com/foundation-model-stack/aiu-fms-testing-utils"
+Repository = "https://github.com/foundation-model-stack/aiu-fms-testing-utils"
+Issues = "https://github.com/foundation-model-stack/aiu-fms-testing-utils/issues"
