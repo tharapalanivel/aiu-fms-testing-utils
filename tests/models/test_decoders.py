@@ -27,6 +27,12 @@ from aiu_fms_testing_utils.utils.aiu_setup import dprint, aiu_dist_setup
 
 import os
 
+# try:
+#     import fms_mo.aiu_addons.fp8.fp8_attn  # noqa: F401
+#     FP8_ENABLED = True
+# except ImportError:
+#     FP8_ENABLED = False
+
 try:
     from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear  # noqa: F401
 
@@ -257,7 +263,10 @@ def __maybe_get_gptq_kwargs(model_path):
     if GPTQ_ENABLED:
         # TODO: hf_configured/hf_pretrained options in get_model should be inferring the linear_config based on the hf quantization_config attribute
         config = AutoConfig.from_pretrained(model_path)
-        if hasattr(config, "quantization_config"):
+        if (
+            hasattr(config, "quantization_config")
+            and config.quantization_config["quant_method"] == "gptq"
+        ):
             gptq_adapter_step.append("gptq_qweights_transpose_aiu")
             group_size = config.quantization_config["group_size"]
             desc_act = config.quantization_config["desc_act"]
@@ -361,15 +370,17 @@ class PersistentModel:
     def __init__(self):
         self.model = None
 
-    def get_or_create(self, is_gptq, **kwargs):
+    def get_or_create(self, is_gptq, is_fp8, **kwargs):
         if self.model is None:
             model = get_model(
                 device_type="cpu",
-                data_type=None if is_gptq else torch.float16,
+                data_type=None if is_fp8 or is_gptq else torch.float16,
                 fused_weights=False,
                 **kwargs,
             )
             self.__maybe_reset_model(model, is_gptq)
+
+            self.__maybe_prepare_fp8_weights(model, is_fp8)
 
             model.eval()
             model.compile(
@@ -382,6 +393,19 @@ class PersistentModel:
             return model
         else:
             return self.model
+
+    @staticmethod
+    def __maybe_prepare_fp8_weights(model, is_fp8):
+        # if is_fp8 and not FP8_ENABLED:
+        #     raise ValueError("cannot run fp8 if fp8 is not enabled")
+        if is_fp8:
+            for name, param in model.named_parameters():
+                if param.dtype == torch.bfloat16:
+                    if param.max() > torch.finfo(torch.float16).max:
+                        dprint(
+                            f"[WARNING] You are casting param {name} to fp16, which will cause loss of accuracy. You can ignore this warning if this is intended."
+                        )
+                    param.data = param.data.to(dtype=torch.float16)
 
     # TODO: This was added as we require a special reset for gptq models. Ideally, we would be able to do something like this reset when calling reset_parameters() on the model
     #  however the gptq modules are yet to support this
@@ -431,6 +455,7 @@ def test_common_shapes(
     # we don't currently support inferring gptq from get_model, so we must use an adapter with hf_configured
     gptq_kwargs_aiu, gptq_kwargs_cpu = __maybe_get_gptq_kwargs(model_path)
     is_gptq = len(gptq_kwargs_aiu) != 0
+    is_fp8 = "fp8" in ATTN_NAME
 
     micro_model_path = micro_model_mapping.get(model_path, None)
     if USE_MICRO_MODELS and micro_model_path is None:
@@ -464,7 +489,7 @@ def test_common_shapes(
 
     # prepare the AIU model
     model = persistent_model.get_or_create(
-        is_gptq, **gptq_kwargs_aiu, **get_model_kwargs
+        is_gptq, is_fp8, **gptq_kwargs_aiu, **get_model_kwargs
     )
 
     # prepare the cpu model
