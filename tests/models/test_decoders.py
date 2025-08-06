@@ -27,12 +27,6 @@ from aiu_fms_testing_utils.utils.aiu_setup import dprint, aiu_dist_setup
 
 import os
 
-# try:
-#     import fms_mo.aiu_addons.fp8.fp8_attn  # noqa: F401
-#     FP8_ENABLED = True
-# except ImportError:
-#     FP8_ENABLED = False
-
 try:
     from fms_mo.aiu_addons.gptq import gptq_aiu_adapter, gptq_aiu_linear  # noqa: F401
 
@@ -396,8 +390,6 @@ class PersistentModel:
 
     @staticmethod
     def __maybe_prepare_fp8_weights(model, is_fp8):
-        # if is_fp8 and not FP8_ENABLED:
-        #     raise ValueError("cannot run fp8 if fp8 is not enabled")
         if is_fp8:
             for name, param in model.named_parameters():
                 if param.dtype == torch.bfloat16:
@@ -495,7 +487,7 @@ def test_common_shapes(
     # prepare the cpu model
     validation_model = get_model(
         device_type="cpu",
-        data_type=None if is_gptq else torch.float32,
+        data_type=None if is_fp8 or is_gptq else torch.float32,
         fused_weights=False,
         **gptq_kwargs_cpu,
         **get_model_kwargs,
